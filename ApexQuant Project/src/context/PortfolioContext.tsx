@@ -123,8 +123,13 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const addAssetToPortfolio = (newAsset: Asset) => {
-    if (assets.some(a => a.ticker === newAsset.ticker)) return;
-    setAssets(prev => [...prev, { ...newAsset, weight: 10 }]);
+    setAssets(prev => {
+      const exists = prev.some(a => a.ticker === newAsset.ticker);
+      if (exists) {
+        return prev.map(a => a.ticker === newAsset.ticker ? { ...a, weight: a.weight > 0 ? a.weight : 10 } : a);
+      }
+      return [...prev, { ...newAsset, weight: 10 }];
+    });
   };
 
   const removeAssetFromPortfolio = (ticker: string) => {

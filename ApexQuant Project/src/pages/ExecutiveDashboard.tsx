@@ -71,26 +71,16 @@ export const ExecutiveDashboard: React.FC = () => {
     });
   }, [history, activeAssets, timeframe, benchmark]);
 
-  // Asset category donut chart breakdown
-  const categoryData = useMemo(() => {
-    const categories: Record<string, number> = {};
-    activeAssets.forEach(a => {
-      categories[a.category] = (categories[a.category] || 0) + a.weight;
-    });
-
-    const categoryColors: Record<string, string> = {
-      'Bonds': '#059669',
-      'Equities': '#3b82f6',
-      'ETFs': '#8b5cf6',
-      'Crypto': '#f59e0b',
-      'Forex': '#06b6d4',
-      'Commodities': '#eab308'
-    };
-
-    return Object.keys(categories).map(cat => ({
-      name: cat,
-      value: Number(categories[cat].toFixed(1)),
-      color: categoryColors[cat] || '#64748b'
+  // Individual Asset pie chart dataset (showing actual asset names on hover)
+  const individualAssetData = useMemo(() => {
+    const totalW = activeAssets.reduce((sum, a) => sum + a.weight, 0) || 1;
+    return activeAssets.map(a => ({
+      name: a.ticker,
+      fullName: `${a.ticker} (${a.name})`,
+      value: Number(((a.weight / totalW) * 100).toFixed(1)),
+      rawWeight: a.weight,
+      category: a.category,
+      color: a.color
     }));
   }, [activeAssets]);
 
@@ -263,29 +253,29 @@ export const ExecutiveDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Asset Category Allocation Donut Chart */}
+        {/* Asset Allocation Donut Chart showing actual asset names on hover */}
         <div className="glass-card p-5 space-y-4 flex flex-col justify-between w-full">
           <div>
             <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
               <PieIcon className="w-4 h-4 text-emerald-400" />
               Asset Allocation Breakdown
             </h2>
-            <p className="text-xs text-slate-400">By Instrument Category & Weight %</p>
+            <p className="text-xs text-slate-400">Hover over slices to see exact asset names & weight %</p>
           </div>
 
           <div className="h-[280px] min-h-[260px] w-full my-2">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={categoryData}
+                  data={individualAssetData}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
                   outerRadius={85}
-                  paddingAngle={4}
+                  paddingAngle={3}
                   dataKey="value"
                 >
-                  {categoryData.map((entry, index) => (
+                  {individualAssetData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} stroke="#0f172a" strokeWidth={2} />
                   ))}
                 </Pie>
@@ -294,9 +284,13 @@ export const ExecutiveDashboard: React.FC = () => {
                     backgroundColor: '#0f172a',
                     borderColor: '#1e293b',
                     borderRadius: '8px',
-                    fontSize: '12px'
+                    fontSize: '12px',
+                    color: '#f8fafc'
                   }}
-                  formatter={(value: any) => [`${value}%`, 'Weight']}
+                  formatter={(val: any, name: any, item: any) => [
+                    `${val}% Weight`,
+                    item?.payload?.fullName || name
+                  ]}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -307,9 +301,9 @@ export const ExecutiveDashboard: React.FC = () => {
             {activeAssets.map(asset => (
               <div key={asset.ticker} className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: asset.color }} />
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: asset.color }} />
                   <span className="font-semibold text-slate-200">{asset.ticker}</span>
-                  <span className="text-[10px] text-slate-400">{asset.category}</span>
+                  <span className="text-[10px] text-slate-400 truncate max-w-[120px]">{asset.name}</span>
                 </div>
                 <span className="font-mono font-bold text-slate-100">{asset.weight}%</span>
               </div>

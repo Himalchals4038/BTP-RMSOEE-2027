@@ -5,6 +5,7 @@
         "backtesting",
         "Bharti",
         "BHARTIARTL",
+        "cand",
         "Cardano",
         "Chainlink",
         "CPER",
@@ -25,6 +26,7 @@
         "Solana",
         "Sortino",
         "SOXX",
+        "sparkline",
         "sparklines",
         "SPDR"
     ]

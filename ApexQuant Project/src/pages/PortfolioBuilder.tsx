@@ -23,7 +23,8 @@ import {
   TrendingUp,
   TrendingDown,
   Filter,
-  BookOpen
+  BookOpen,
+  X
 } from 'lucide-react';
 
 export const PortfolioBuilder: React.FC = () => {
@@ -65,23 +66,35 @@ export const PortfolioBuilder: React.FC = () => {
   // Autocomplete search candidate assets
   const filteredSearchCandidates = useMemo(() => {
     if (!searchQuery.trim()) return [];
+    const q = searchQuery.toLowerCase().trim();
     return assets.filter(a =>
-      a.ticker.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.name.toLowerCase().includes(searchQuery.toLowerCase())
+      a.ticker.toLowerCase().includes(q) ||
+      a.name.toLowerCase().includes(q) ||
+      a.category.toLowerCase().includes(q)
     );
   }, [assets, searchQuery]);
 
-  // Asset list to display
+  // Main Asset Card Grid display (filtered dynamically by searchQuery)
   const displayedAssets = useMemo(() => {
-    let filtered = assets.filter(a => {
-      if (selectedCategoryFilter === 'ALL') return true;
-      return a.category === selectedCategoryFilter;
-    });
+    let list = assets;
 
-    if (showTop5Only && !searchQuery.trim()) {
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      return list.filter(a =>
+        a.ticker.toLowerCase().includes(q) ||
+        a.name.toLowerCase().includes(q) ||
+        a.category.toLowerCase().includes(q)
+      );
+    }
+
+    if (selectedCategoryFilter !== 'ALL') {
+      list = list.filter(a => a.category === selectedCategoryFilter);
+    }
+
+    if (showTop5Only) {
       if (selectedCategoryFilter === 'ALL') {
         const categoryMap: Record<string, typeof assets> = {};
-        filtered.forEach(a => {
+        list.forEach(a => {
           categoryMap[a.category] = categoryMap[a.category] || [];
           if (categoryMap[a.category].length < 5) {
             categoryMap[a.category].push(a);
@@ -89,11 +102,11 @@ export const PortfolioBuilder: React.FC = () => {
         });
         return Object.values(categoryMap).flat();
       } else {
-        return filtered.slice(0, 5);
+        return list.slice(0, 5);
       }
     }
 
-    return filtered;
+    return list;
   }, [assets, selectedCategoryFilter, showTop5Only, searchQuery]);
 
   // Compute category exposure sums
@@ -221,7 +234,10 @@ export const PortfolioBuilder: React.FC = () => {
                 {['ALL', 'Crypto', 'Equities', 'Bonds', 'ETFs', 'Forex', 'Commodities'].map(cat => (
                   <button
                     key={cat}
-                    onClick={() => setSelectedCategoryFilter(cat)}
+                    onClick={() => {
+                      setSelectedCategoryFilter(cat);
+                      setSearchQuery('');
+                    }}
                     className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
                       selectedCategoryFilter === cat ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'
                     }`}
@@ -233,38 +249,48 @@ export const PortfolioBuilder: React.FC = () => {
             </div>
           </div>
 
-          {/* Autocomplete Ticker Search Bar */}
+          {/* Autocomplete & Instant Filter Ticker Search Bar */}
           <div className="relative">
-            <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg px-3 py-2">
-              <Search className="w-4 h-4 text-slate-400 mr-2" />
+            <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg px-3 py-2.5 focus-within:border-blue-500 transition-all">
+              <Search className="w-4 h-4 text-slate-400 mr-2 shrink-0" />
               <input
                 type="text"
-                placeholder="Search symbol or security name (e.g., HDFC Bank, NVIDIA, BTC, ETH, IN10Y)..."
+                placeholder="Live Search ticker or company name (e.g., HDFC Bank, NVIDIA, BTC, ETH, IN10Y)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none"
               />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
-            {/* Dropdown Candidate Results */}
-            {filteredSearchCandidates.length > 0 && (
+            {/* Dropdown Candidate Suggestions */}
+            {searchQuery.trim() && filteredSearchCandidates.length > 0 && (
               <div className="absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-30 max-h-48 overflow-y-auto">
                 {filteredSearchCandidates.map(cand => (
                   <div
                     key={cand.ticker}
                     onClick={() => {
                       addAssetToPortfolio(cand);
-                      setSearchQuery('');
                     }}
                     className="p-2.5 hover:bg-slate-800 flex items-center justify-between cursor-pointer text-xs border-b border-slate-800/50"
                   >
                     <div>
-                      <span className="font-bold text-white mr-2">{cand.ticker}</span>
-                      <span className="text-slate-400 text-[11px]">{cand.name}</span>
+                      <span className="font-bold text-white mr-2 font-mono">{cand.ticker}</span>
+                      <span className="text-slate-300 text-[11px]">{cand.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-slate-400">{cand.category}</span>
-                      <Plus className="w-4 h-4 text-emerald-400" />
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-semibold">{cand.category}</span>
+                      <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
+                        <Plus className="w-3.5 h-3.5" />
+                        {cand.weight > 0 ? `${cand.weight}%` : 'Activate (10%)'}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -272,116 +298,133 @@ export const PortfolioBuilder: React.FC = () => {
             )}
           </div>
 
-          {/* Asset Grid Layout with Embedded Price Chart Sparklines and Read Wiki Quick-Link */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-            {displayedAssets.map(asset => (
-              <div
-                key={asset.ticker}
-                className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition-all flex flex-col justify-between space-y-3 shadow-md"
-              >
-                {/* Header info */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => toggleAssetLock(asset.ticker)}
-                      className={`p-1 rounded transition-colors ${asset.isLocked ? 'bg-amber-500/20 text-amber-400' : 'text-slate-500 hover:text-slate-300'}`}
-                      title={asset.isLocked ? 'Locked (Excluded from Auto-Normalize)' : 'Unlocked'}
-                    >
-                      {asset.isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
-                    </button>
-                    <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: asset.color }} />
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-white font-mono text-sm">{asset.ticker}</span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-semibold">{asset.category}</span>
-                        <button
-                          onClick={() => openDocForAsset(asset.name)}
-                          className="text-slate-500 hover:text-blue-400 transition-colors p-0.5"
-                          title={`Read Wikipedia & Financial Theory Docs for ${asset.name}`}
-                        >
-                          <BookOpen className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                      <div className="text-[11px] text-slate-400 line-clamp-1">{asset.name}</div>
-                    </div>
-                  </div>
-
-                  <div className="text-right shrink-0">
-                    <div className="font-mono font-bold text-slate-100 text-sm">
-                      {asset.currency}{asset.price < 1 ? asset.price.toString() : asset.price.toLocaleString()}
-                    </div>
-                    <div className={`text-[11px] font-bold flex items-center justify-end gap-0.5 ${asset.change24h >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {asset.change24h >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                      {asset.change24h >= 0 ? '+' : ''}{asset.change24h}%
-                    </div>
-                  </div>
-                </div>
-
-                {/* 30-Day Mini Price Sparkline Chart */}
-                <div className="h-14 w-full bg-slate-950/70 rounded-lg p-1 border border-slate-800">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={getSparklineData(asset.ticker)}>
-                      <defs>
-                        <linearGradient id={`grad_${asset.ticker}`} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={asset.change24h >= 0 ? '#10b981' : '#ef4444'} stopOpacity={0.35}/>
-                          <stop offset="100%" stopColor={asset.change24h >= 0 ? '#10b981' : '#ef4444'} stopOpacity={0.0}/>
-                        </linearGradient>
-                      </defs>
-                      <Area
-                        type="monotone"
-                        dataKey="price"
-                        stroke={asset.change24h >= 0 ? '#10b981' : '#ef4444'}
-                        strokeWidth={1.8}
-                        fill={`url(#grad_${asset.ticker})`}
-                        isAnimationActive={false}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* Sliders & Weight Controls Footer */}
-                <div className="space-y-2 pt-1 border-t border-slate-800/60">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400 text-[11px]">
-                      Vol: <span className="text-slate-200 font-mono">{asset.annualizedVol}%</span>
-                    </span>
-
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1">
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={asset.weight}
-                          onChange={(e) => updateAssetWeight(asset.ticker, Number(e.target.value))}
-                          className="w-14 bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-xs text-right font-mono font-bold text-emerald-400 focus:outline-none focus:border-blue-500"
-                        />
-                        <span className="text-xs text-slate-400 font-bold">%</span>
-                      </div>
-                      {asset.weight > 0 && (
-                        <button
-                          onClick={() => removeAssetFromPortfolio(asset.ticker)}
-                          className="text-slate-600 hover:text-rose-400 transition-colors p-1 cursor-pointer"
-                          title="Remove asset"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="0.5"
-                    value={asset.weight}
-                    onChange={(e) => updateAssetWeight(asset.ticker, Number(e.target.value))}
-                  />
-                </div>
+          {/* Asset Cards Grid */}
+          {displayedAssets.length === 0 ? (
+            <div className="py-12 text-center text-xs text-slate-400 bg-slate-900/50 rounded-xl border border-slate-800">
+              No securities match &quot;<span className="text-white font-semibold">{searchQuery}</span>&quot; in category &quot;{selectedCategoryFilter}&quot;.
+              <div className="mt-3">
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedCategoryFilter('ALL');
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-500 transition-colors"
+                >
+                  Clear Search & View All Securities
+                </button>
               </div>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              {displayedAssets.map(asset => (
+                <div
+                  key={asset.ticker}
+                  className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition-all flex flex-col justify-between space-y-3 shadow-md"
+                >
+                  {/* Header info */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => toggleAssetLock(asset.ticker)}
+                        className={`p-1 rounded transition-colors ${asset.isLocked ? 'bg-amber-500/20 text-amber-400' : 'text-slate-500 hover:text-slate-300'}`}
+                        title={asset.isLocked ? 'Locked (Excluded from Auto-Normalize)' : 'Unlocked'}
+                      >
+                        {asset.isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                      </button>
+                      <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: asset.color }} />
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-white font-mono text-sm">{asset.ticker}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-semibold">{asset.category}</span>
+                          <button
+                            onClick={() => openDocForAsset(asset.name)}
+                            className="text-slate-500 hover:text-blue-400 transition-colors p-0.5"
+                            title={`Read Wikipedia & Financial Theory Docs for ${asset.name}`}
+                          >
+                            <BookOpen className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <div className="text-[11px] text-slate-400 line-clamp-1">{asset.name}</div>
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      <div className="font-mono font-bold text-slate-100 text-sm">
+                        {asset.currency}{asset.price < 1 ? asset.price.toString() : asset.price.toLocaleString()}
+                      </div>
+                      <div className={`text-[11px] font-bold flex items-center justify-end gap-0.5 ${asset.change24h >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {asset.change24h >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                        {asset.change24h >= 0 ? '+' : ''}{asset.change24h}%
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 30-Day Mini Price Sparkline Chart */}
+                  <div className="h-14 w-full bg-slate-950/70 rounded-lg p-1 border border-slate-800">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={getSparklineData(asset.ticker)}>
+                        <defs>
+                          <linearGradient id={`grad_${asset.ticker}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={asset.change24h >= 0 ? '#10b981' : '#ef4444'} stopOpacity={0.35}/>
+                            <stop offset="100%" stopColor={asset.change24h >= 0 ? '#10b981' : '#ef4444'} stopOpacity={0.0}/>
+                          </linearGradient>
+                        </defs>
+                        <Area
+                          type="monotone"
+                          dataKey="price"
+                          stroke={asset.change24h >= 0 ? '#10b981' : '#ef4444'}
+                          strokeWidth={1.8}
+                          fill={`url(#grad_${asset.ticker})`}
+                          isAnimationActive={false}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Sliders & Weight Controls Footer */}
+                  <div className="space-y-2 pt-1 border-t border-slate-800/60">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-400 text-[11px]">
+                        Vol: <span className="text-slate-200 font-mono">{asset.annualizedVol}%</span>
+                      </span>
+
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={asset.weight}
+                            onChange={(e) => updateAssetWeight(asset.ticker, Number(e.target.value))}
+                            className="w-14 bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-xs text-right font-mono font-bold text-emerald-400 focus:outline-none focus:border-blue-500"
+                          />
+                          <span className="text-xs text-slate-400 font-bold">%</span>
+                        </div>
+                        {asset.weight > 0 && (
+                          <button
+                            onClick={() => removeAssetFromPortfolio(asset.ticker)}
+                            className="text-slate-600 hover:text-rose-400 transition-colors p-1 cursor-pointer"
+                            title="Remove asset"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="0.5"
+                      value={asset.weight}
+                      onChange={(e) => updateAssetWeight(asset.ticker, Number(e.target.value))}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Custom User Constraint Controls */}
