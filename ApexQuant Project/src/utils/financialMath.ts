@@ -25,13 +25,12 @@ export const CURRENCY_MAP: Record<CurrencyCode, CurrencyConfig> = {
 };
 
 // Clean Compact Currency Formatter: Bounded, realistic numbers with strict 2-decimal restriction
-export function formatCompactCurrency(val: number, currencyCode: CurrencyCode = 'USD'): string {
-  const config = CURRENCY_MAP[currencyCode] || CURRENCY_MAP.USD;
+export function formatCompactCurrency(val: number, currencyCode: CurrencyCode = 'INR'): string {
+  const config = CURRENCY_MAP[currencyCode] || CURRENCY_MAP.INR;
   if (isNaN(val) || val === 0) return `${config.symbol}0.00`;
 
-  const convertedVal = val * config.rateVsUsd;
-  const absVal = Math.abs(convertedVal);
-  const sign = convertedVal < 0 ? '-' : '';
+  const absVal = Math.abs(val);
+  const sign = val < 0 ? '-' : '';
 
   if (currencyCode === 'INR') {
     if (absVal >= 1e7) return `${sign}₹${(absVal / 1e7).toFixed(2)} Cr`;
@@ -166,7 +165,7 @@ export function computeBetaAlpha(portfolioReturns: number[], benchmarkReturns: n
 export function computeKRIMetrics(
   activeAssets: Asset[],
   history: HistoricalDataPoint[],
-  benchmarkTicker: string = 'SP500'
+  benchmarkTicker: string = 'NIFTY50'
 ): KRIMetrics {
   const activeWeights = activeAssets.filter(a => a.weight > 0);
   const totalWeight = activeWeights.reduce((sum, a) => sum + a.weight, 0);

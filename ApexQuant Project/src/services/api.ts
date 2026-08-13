@@ -31,7 +31,7 @@ export const PortfolioApiService = {
   },
 
   // Calculate or fetch KRIs
-  async getKRIMetrics(assets: Asset[], benchmark: string = 'SP500'): Promise<KRIMetrics> {
+  async getKRIMetrics(assets: Asset[], benchmark: string = 'NIFTY50'): Promise<KRIMetrics> {
     if (isLiveApiMode) {
       await new Promise(res => setTimeout(res, 300));
     }

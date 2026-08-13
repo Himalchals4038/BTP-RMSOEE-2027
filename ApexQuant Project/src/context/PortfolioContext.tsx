@@ -4,18 +4,39 @@ import type { CurrencyCode } from '../utils/financialMath';
 import { INITIAL_ASSET_CATALOG } from '../services/mockData';
 import { PortfolioApiService, setApiMode } from '../services/api';
 
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  accountType: 'Institutional Prime' | 'Retail HNI' | 'Sandbox Demo';
+  kycStatus: 'Verified' | 'Pending' | 'Not Verified';
+  dpId: string;
+  isLoggedIn: boolean;
+}
+
 interface PortfolioContextType {
   assets: Asset[];
   kri: KRIMetrics;
   constraints: PortfolioConstraints;
   activeTab: string;
+  activeSubTab: string | null;
   benchmark: 'SP500' | 'NIFTY50';
   currency: CurrencyCode;
   selectedDocTerm: string;
   isLiveApi: boolean;
   isLoading: boolean;
   backtestResult: BacktestResult | null;
+  theme: 'light' | 'dark';
+  currentUser: UserProfile;
+  activeUserModal: 'login' | 'reset_password' | 'edit_profile' | 'switch_user' | null;
+  setActiveUserModal: (modal: 'login' | 'reset_password' | 'edit_profile' | 'switch_user' | null) => void;
+  loginUser: (userId: string, pass: string) => void;
+  logoutUser: () => void;
+  updateUserProfile: (profile: Partial<UserProfile>) => void;
+  switchUserAccount: (accountType: 'Institutional Prime' | 'Retail HNI' | 'Sandbox Demo') => void;
+  toggleTheme: () => void;
   setActiveTab: (tab: string) => void;
+  setActiveSubTab: (subTab: string | null) => void;
   setBenchmark: (bench: 'SP500' | 'NIFTY50') => void;
   setCurrency: (curr: CurrencyCode) => void;
   openDocForAsset: (term: string) => void;
@@ -35,14 +56,78 @@ interface PortfolioContextType {
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined);
 
 export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('apexquant_theme');
+    return (saved === 'dark' || saved === 'light') ? saved : 'light';
+  });
+
+  const [currentUser, setCurrentUser] = useState<UserProfile>({
+    id: '8512437145',
+    name: 'ApexQuant Trader',
+    email: 'trader@apexquant.io',
+    accountType: 'Institutional Prime',
+    kycStatus: 'Verified',
+    dpId: '1208160009482100',
+    isLoggedIn: true
+  });
+
+  const [activeUserModal, setActiveUserModal] = useState<'login' | 'reset_password' | 'edit_profile' | 'switch_user' | null>(null);
   const [assets, setAssets] = useState<Asset[]>(INITIAL_ASSET_CATALOG);
   const [activeTab, setActiveTab] = useState<string>('dashboard');
-  const [benchmark, setBenchmark] = useState<'SP500' | 'NIFTY50'>('SP500');
-  const [currency, setCurrency] = useState<CurrencyCode>('USD');
+  const [activeSubTab, setActiveSubTab] = useState<string | null>(null);
+  const [benchmark, setBenchmark] = useState<'SP500' | 'NIFTY50'>('NIFTY50');
+  const [currency, setCurrency] = useState<CurrencyCode>('INR');
   const [selectedDocTerm, setSelectedDocTerm] = useState<string>('Modern Portfolio Theory');
   const [isLiveApi, setIsLiveApi] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [backtestResult, setBacktestResult] = useState<BacktestResult | null>(null);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('apexquant_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
+  const loginUser = (userId: string) => {
+    setCurrentUser(prev => ({
+      ...prev,
+      id: userId || '8512437145',
+      isLoggedIn: true
+    }));
+    setActiveUserModal(null);
+  };
+
+  const logoutUser = () => {
+    setCurrentUser(prev => ({
+      ...prev,
+      isLoggedIn: false
+    }));
+    setActiveUserModal(null);
+  };
+
+  const updateUserProfile = (profileUpdate: Partial<UserProfile>) => {
+    setCurrentUser(prev => ({
+      ...prev,
+      ...profileUpdate
+    }));
+    setActiveUserModal(null);
+  };
+
+  const switchUserAccount = (accountType: 'Institutional Prime' | 'Retail HNI' | 'Sandbox Demo') => {
+    setCurrentUser(prev => ({
+      ...prev,
+      accountType
+    }));
+    setActiveUserModal(null);
+  };
 
   const [constraints, setConstraints] = useState<PortfolioConstraints>({
     volatilityCap: 15,
@@ -182,13 +267,24 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         kri,
         constraints,
         activeTab,
+        activeSubTab,
         benchmark,
         currency,
         selectedDocTerm,
         isLiveApi,
         isLoading,
         backtestResult,
+        theme,
+        currentUser,
+        activeUserModal,
+        setActiveUserModal,
+        loginUser,
+        logoutUser,
+        updateUserProfile,
+        switchUserAccount,
+        toggleTheme,
         setActiveTab,
+        setActiveSubTab,
         setBenchmark,
         setCurrency,
         openDocForAsset,
