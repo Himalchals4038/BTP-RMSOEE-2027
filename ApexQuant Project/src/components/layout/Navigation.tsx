@@ -8,11 +8,13 @@ import {
   Globe,
   BookOpen,
   Sparkles,
-  ShieldCheck
+  ShieldCheck,
+  Download,
+  FileSpreadsheet
 } from 'lucide-react';
 
 export const Navigation: React.FC = () => {
-  const { activeTab, setActiveTab, activeSubTab, setActiveSubTab } = usePortfolio();
+  const { activeTab, setActiveTab, activeSubTab, setActiveSubTab, exportReportCSV, exportReportPDF } = usePortfolio();
 
   const mainNavItems = [
     { id: 'dashboard', label: 'Portfolio', icon: LayoutDashboard },
@@ -110,26 +112,51 @@ export const Navigation: React.FC = () => {
         <div className="max-w-[1750px] mx-auto flex items-center justify-center divide-x divide-[var(--border-subtle)] text-xs font-semibold text-[var(--text-secondary)] whitespace-nowrap">
           {secondaryNavItems.map((sItem) => {
             const isSubActive = activeSubTab === sItem.id;
+            const isReports = sItem.id === 'reports';
+
             return (
-              <button
-                key={sItem.id}
-                onClick={() => {
-                  setActiveSubTab(sItem.id);
-                  if (sItem.targetTab) setActiveTab(sItem.targetTab);
-                }}
-                className={`px-3 py-1 flex items-center gap-1 transition-colors cursor-pointer ${
-                  isSubActive
-                    ? 'text-[var(--icici-orange)] font-bold bg-[var(--bg-card)] rounded shadow-2xs border border-[var(--border-color)]'
-                    : 'hover:text-[var(--text-primary)]'
-                }`}
-              >
-                <span>{sItem.label}</span>
-                {sItem.badge && (
-                  <span className="text-[9px] bg-red-500 text-white px-1.5 py-0.2 rounded font-extrabold">
-                    {sItem.badge}
-                  </span>
+              <React.Fragment key={sItem.id}>
+                <button
+                  onClick={() => {
+                    setActiveSubTab(sItem.id);
+                    if (sItem.targetTab) setActiveTab(sItem.targetTab);
+                  }}
+                  className={`px-3 py-1 flex items-center gap-1 transition-colors cursor-pointer ${
+                    isSubActive
+                      ? 'text-[var(--icici-orange)] font-bold bg-[var(--bg-card)] rounded shadow-2xs border border-[var(--border-color)]'
+                      : 'hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  <span>{sItem.label}</span>
+                  {sItem.badge && (
+                    <span className="text-[9px] bg-red-500 text-white px-1.5 py-0.2 rounded font-extrabold">
+                      {sItem.badge}
+                    </span>
+                  )}
+                </button>
+
+                {/* Excel & PDF Download Buttons Placed Right Beside Reports Option */}
+                {isReports && (
+                  <div className="flex items-center gap-1.5 pl-2 pr-1 my-0.5">
+                    <button
+                      onClick={exportReportCSV}
+                      className="flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-600 dark:text-emerald-400 font-extrabold text-[10px] border border-emerald-500/30 transition-all cursor-pointer shadow-2xs"
+                      title="Download Portfolio Report in Excel (CSV) Format"
+                    >
+                      <FileSpreadsheet className="w-3 h-3 text-emerald-500" />
+                      <span>Excel</span>
+                    </button>
+                    <button
+                      onClick={exportReportPDF}
+                      className="flex items-center gap-1 px-2 py-0.5 rounded bg-rose-600/15 hover:bg-rose-600/25 text-rose-600 dark:text-rose-400 font-extrabold text-[10px] border border-rose-500/30 transition-all cursor-pointer shadow-2xs"
+                      title="Download Institutional PDF Report"
+                    >
+                      <Download className="w-3 h-3 text-rose-500" />
+                      <span>PDF</span>
+                    </button>
+                  </div>
                 )}
-              </button>
+              </React.Fragment>
             );
           })}
         </div>

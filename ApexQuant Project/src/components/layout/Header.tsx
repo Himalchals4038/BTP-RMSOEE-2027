@@ -5,8 +5,6 @@ import type { CurrencyCode } from '../../utils/financialMath';
 import {
   TrendingUp,
   Radio,
-  Download,
-  FileSpreadsheet,
   Globe,
   Coins,
   Search,
@@ -25,7 +23,6 @@ import {
 
 import {
   getStocksFromIndexedDB,
-  DEFAULT_STOCKS_DATA,
   type StockItemRecord
 } from '../../services/indexedDBService';
 
@@ -37,8 +34,6 @@ export const Header: React.FC = () => {
     setCurrency,
     isLiveApi,
     toggleApiMode,
-    exportReportPDF,
-    exportReportCSV,
     theme,
     toggleTheme,
     setActiveTab,
@@ -51,7 +46,7 @@ export const Header: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const [stocksMasterList, setStocksMasterList] = useState<StockItemRecord[]>(DEFAULT_STOCKS_DATA);
+  const [stocksMasterList, setStocksMasterList] = useState<StockItemRecord[]>([]);
 
   // Load stocks master list from IndexedDB on component mount
   React.useEffect(() => {
@@ -267,25 +262,6 @@ export const Header: React.FC = () => {
               </>
             )}
           </button>
-
-          {/* Quick PDF/CSV Export Group */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={exportReportCSV}
-              className="p-1.5 rounded bg-black/20 hover:bg-black/30 border border-white/30 text-white transition-colors cursor-pointer"
-              title="Export Portfolio as CSV"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-amber-300" />
-            </button>
-            <button
-              onClick={exportReportPDF}
-              className="flex items-center gap-1 px-2.5 py-1 rounded bg-white text-[#d32f2f] hover:bg-orange-50 font-bold text-xs shadow-md transition-all cursor-pointer"
-              title="Download Institutional PDF Report"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">PDF</span>
-            </button>
-          </div>
 
           {/* User Profile Badge & Dropdown (ICICI Direct Style) */}
           <div className="relative flex items-center gap-1.5 pl-1">

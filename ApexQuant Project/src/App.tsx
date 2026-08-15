@@ -1,52 +1,64 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { PortfolioProvider, usePortfolio } from './context/PortfolioContext';
 import { Header } from './components/layout/Header';
 import { Navigation } from './components/layout/Navigation';
-import { ExecutiveDashboard } from './pages/ExecutiveDashboard';
-import { PortfolioBuilder } from './pages/PortfolioBuilder';
-import { EfficientFrontierPage } from './pages/EfficientFrontier';
-import { BacktesterPage } from './pages/Backtester';
-import { MarketExplorerPage } from './pages/MarketExplorer';
-import { DocumentationPage } from './pages/Documentation';
-import { DualShieldSmartEngine } from './pages/DualShieldSmartEngine';
-import { SafeInvestmentEngine } from './pages/SafeInvestmentEngine';
-import { ShieldCheck, Cpu } from 'lucide-react';
+import { ShieldCheck, Cpu, Loader2 } from 'lucide-react';
 
-import { ICICIQuickSubView } from './components/layout/ICICIQuickSubView';
 import { UserAuthModal } from './components/layout/UserAuthModal';
 import { FloatingHeatmapDrawer } from './components/layout/FloatingHeatmapDrawer';
-import { FloatingAIChatbot } from './components/layout/FloatingAIChatbot';
+
+// Lazy Loaded Page Components for Instant Initial Page Load Speed
+const ExecutiveDashboard = lazy(() => import('./pages/ExecutiveDashboard').then(m => ({ default: m.ExecutiveDashboard })));
+const PortfolioBuilder = lazy(() => import('./pages/PortfolioBuilder').then(m => ({ default: m.PortfolioBuilder })));
+const DualShieldSmartEngine = lazy(() => import('./pages/DualShieldSmartEngine').then(m => ({ default: m.DualShieldSmartEngine })));
+const SafeInvestmentEngine = lazy(() => import('./pages/SafeInvestmentEngine').then(m => ({ default: m.SafeInvestmentEngine })));
+const EfficientFrontierPage = lazy(() => import('./pages/EfficientFrontier').then(m => ({ default: m.EfficientFrontierPage })));
+const BacktesterPage = lazy(() => import('./pages/Backtester').then(m => ({ default: m.BacktesterPage })));
+const MarketExplorerPage = lazy(() => import('./pages/MarketExplorer').then(m => ({ default: m.MarketExplorerPage })));
+const DocumentationPage = lazy(() => import('./pages/Documentation').then(m => ({ default: m.DocumentationPage })));
+
+const ICICIQuickSubView = lazy(() => import('./components/layout/ICICIQuickSubView').then(m => ({ default: m.ICICIQuickSubView })));
+const FloatingAIChatbot = lazy(() => import('./components/layout/FloatingAIChatbot').then(m => ({ default: m.FloatingAIChatbot })));
+
+const PageLoaderFallback = () => (
+  <div className="w-full min-h-[400px] flex flex-col items-center justify-center space-y-3 text-[var(--text-secondary)]">
+    <Loader2 className="w-8 h-8 animate-spin text-[var(--icici-orange)]" />
+    <span className="text-xs font-bold font-mono">Loading ApexQuant Engine...</span>
+  </div>
+);
 
 const MainContent: React.FC = () => {
   const { activeTab, activeSubTab, setActiveSubTab } = usePortfolio();
 
   return (
     <main className="w-full max-w-[1700px] mx-auto min-h-[calc(100vh-140px)] relative">
-      {activeTab === 'dashboard' && <ExecutiveDashboard />}
-      {activeTab === 'builder' && <PortfolioBuilder />}
-      {activeTab === 'smart_engine' && <DualShieldSmartEngine />}
-      {activeTab === 'safe_investment' && <SafeInvestmentEngine />}
-      {activeTab === 'frontier' && <EfficientFrontierPage />}
-      {activeTab === 'backtest' && <BacktesterPage />}
-      {activeTab === 'explorer' && <MarketExplorerPage />}
-      {activeTab === 'docs' && <DocumentationPage />}
+      <Suspense fallback={<PageLoaderFallback />}>
+        {activeTab === 'dashboard' && <ExecutiveDashboard />}
+        {activeTab === 'builder' && <PortfolioBuilder />}
+        {activeTab === 'smart_engine' && <DualShieldSmartEngine />}
+        {activeTab === 'safe_investment' && <SafeInvestmentEngine />}
+        {activeTab === 'frontier' && <EfficientFrontierPage />}
+        {activeTab === 'backtest' && <BacktesterPage />}
+        {activeTab === 'explorer' && <MarketExplorerPage />}
+        {activeTab === 'docs' && <DocumentationPage />}
 
-      {/* ICICI Direct Responsive Trading Console Modal */}
-      {activeSubTab && (
-        <ICICIQuickSubView
-          subTab={activeSubTab}
-          onClose={() => setActiveSubTab(null)}
-        />
-      )}
+        {/* ICICI Direct Responsive Trading Console Modal */}
+        {activeSubTab && (
+          <ICICIQuickSubView
+            subTab={activeSubTab}
+            onClose={() => setActiveSubTab(null)}
+          />
+        )}
+
+        {/* Floating Free AI Chatbot Widget */}
+        <FloatingAIChatbot />
+      </Suspense>
 
       {/* User Login, Password Reset, Edit Profile & Switch User Modal */}
       <UserAuthModal />
 
       {/* Floating Global Market Heatmap Drawer (Accessible from all pages) */}
       <FloatingHeatmapDrawer />
-
-      {/* Floating Free AI Chatbot Widget (Bottom Left Corner, Accessible from all pages) */}
-      <FloatingAIChatbot />
     </main>
   );
 };

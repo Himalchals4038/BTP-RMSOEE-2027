@@ -1,9 +1,10 @@
-import stocksMasterJson from './stocksMasterDataset.json';
-import goldMasterJson from './goldMasterDataset.json';
-import bondsMasterJson from './bondsMasterDataset.json';
-import etfsSummaryJson from './etfsSummaryDataset.json';
-import etfsDailyJson from './etfsDailyDataset.json';
-import govPsuBondsJson from './govPsuBondsDataset.json';
+// Async Dataset Loaders (Lazy Loaded to minimize initial JS bundle size & maximize website load speed)
+const loadStocksMaster = async (): Promise<StockItemRecord[]> => (await import('./stocksMasterDataset.json')).default as StockItemRecord[];
+const loadGoldMaster = async (): Promise<GoldPriceRecord[]> => (await import('./goldMasterDataset.json')).default as GoldPriceRecord[];
+const loadBondsMaster = async (): Promise<BondItemRecord[]> => (await import('./bondsMasterDataset.json')).default as BondItemRecord[];
+const loadEtfsSummary = async (): Promise<ETFSummaryRecord[]> => (await import('./etfsSummaryDataset.json')).default as ETFSummaryRecord[];
+const loadEtfsDaily = async (): Promise<ETFDailyReturnRecord[]> => (await import('./etfsDailyDataset.json')).default as ETFDailyReturnRecord[];
+const loadGovPsuBonds = async (): Promise<GovPsuBondDailyRecord[]> => (await import('./govPsuBondsDataset.json')).default as GovPsuBondDailyRecord[];
 
 export interface MarketRateItem {
   key: string;
@@ -140,13 +141,6 @@ export const DEFAULT_MARKET_RATES: MarketRateItem[] = [
   { key: 'silver_etf', name: 'Nippon India Silver ETF', category: 'Equity ETF', ratePct: 11.80, rating: 'Physical Commodity ETF', lastUpdated: new Date().toLocaleTimeString() }
 ];
 
-export const DEFAULT_STOCKS_DATA: StockItemRecord[] = stocksMasterJson as StockItemRecord[];
-export const DEFAULT_GOLD_DATA: GoldPriceRecord[] = goldMasterJson as GoldPriceRecord[];
-export const DEFAULT_BONDS_DATA: BondItemRecord[] = bondsMasterJson as BondItemRecord[];
-export const DEFAULT_ETFS_SUMMARY_DATA: ETFSummaryRecord[] = etfsSummaryJson as ETFSummaryRecord[];
-export const DEFAULT_ETFS_DAILY_DATA: ETFDailyReturnRecord[] = etfsDailyJson as ETFDailyReturnRecord[];
-export const DEFAULT_GOV_PSU_BONDS_DATA: GovPsuBondDailyRecord[] = govPsuBondsJson as GovPsuBondDailyRecord[];
-
 export const initIndexedDB = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
     if (!window.indexedDB) {
@@ -243,6 +237,7 @@ export const saveStocksToIndexedDB = async (stocks: StockItemRecord[]): Promise<
 };
 
 export const getStocksFromIndexedDB = async (): Promise<StockItemRecord[]> => {
+  const fallbackData = await loadStocksMaster();
   try {
     const db = await initIndexedDB();
     const tx = db.transaction(STOCKS_STORE, 'readwrite');
@@ -250,22 +245,23 @@ export const getStocksFromIndexedDB = async (): Promise<StockItemRecord[]> => {
     const request = store.getAll();
     return new Promise((resolve, reject) => {
       request.onsuccess = () => {
-        if (request.result && request.result.length >= DEFAULT_STOCKS_DATA.length) {
+        if (request.result && request.result.length >= fallbackData.length) {
           resolve(request.result);
         } else {
-          DEFAULT_STOCKS_DATA.forEach(s => store.put(s));
-          resolve(DEFAULT_STOCKS_DATA);
+          fallbackData.forEach(s => store.put(s));
+          resolve(fallbackData);
         }
       };
       request.onerror = () => reject(request.error);
     });
   } catch (err) {
     console.warn('IndexedDB get stocks warning:', err);
-    return DEFAULT_STOCKS_DATA;
+    return fallbackData;
   }
 };
 
 export const getGoldPricesFromIndexedDB = async (): Promise<GoldPriceRecord[]> => {
+  const fallbackData = await loadGoldMaster();
   try {
     const db = await initIndexedDB();
     const tx = db.transaction(GOLD_STORE, 'readwrite');
@@ -273,22 +269,23 @@ export const getGoldPricesFromIndexedDB = async (): Promise<GoldPriceRecord[]> =
     const request = store.getAll();
     return new Promise((resolve, reject) => {
       request.onsuccess = () => {
-        if (request.result && request.result.length >= DEFAULT_GOLD_DATA.length) {
+        if (request.result && request.result.length >= fallbackData.length) {
           resolve(request.result);
         } else {
-          DEFAULT_GOLD_DATA.forEach(g => store.put(g));
-          resolve(DEFAULT_GOLD_DATA);
+          fallbackData.forEach(g => store.put(g));
+          resolve(fallbackData);
         }
       };
       request.onerror = () => reject(request.error);
     });
   } catch (err) {
     console.warn('IndexedDB get gold prices warning:', err);
-    return DEFAULT_GOLD_DATA;
+    return fallbackData;
   }
 };
 
 export const getBondsFromIndexedDB = async (): Promise<BondItemRecord[]> => {
+  const fallbackData = await loadBondsMaster();
   try {
     const db = await initIndexedDB();
     const tx = db.transaction(BONDS_STORE, 'readwrite');
@@ -296,22 +293,23 @@ export const getBondsFromIndexedDB = async (): Promise<BondItemRecord[]> => {
     const request = store.getAll();
     return new Promise((resolve, reject) => {
       request.onsuccess = () => {
-        if (request.result && request.result.length >= DEFAULT_BONDS_DATA.length) {
+        if (request.result && request.result.length >= fallbackData.length) {
           resolve(request.result);
         } else {
-          DEFAULT_BONDS_DATA.forEach(b => store.put(b));
-          resolve(DEFAULT_BONDS_DATA);
+          fallbackData.forEach(b => store.put(b));
+          resolve(fallbackData);
         }
       };
       request.onerror = () => reject(request.error);
     });
   } catch (err) {
     console.warn('IndexedDB get bonds warning:', err);
-    return DEFAULT_BONDS_DATA;
+    return fallbackData;
   }
 };
 
 export const getEtfsSummaryFromIndexedDB = async (): Promise<ETFSummaryRecord[]> => {
+  const fallbackData = await loadEtfsSummary();
   try {
     const db = await initIndexedDB();
     const tx = db.transaction(ETFS_SUMMARY_STORE, 'readwrite');
@@ -319,22 +317,23 @@ export const getEtfsSummaryFromIndexedDB = async (): Promise<ETFSummaryRecord[]>
     const request = store.getAll();
     return new Promise((resolve, reject) => {
       request.onsuccess = () => {
-        if (request.result && request.result.length >= DEFAULT_ETFS_SUMMARY_DATA.length) {
+        if (request.result && request.result.length >= fallbackData.length) {
           resolve(request.result);
         } else {
-          DEFAULT_ETFS_SUMMARY_DATA.forEach(e => store.put(e));
-          resolve(DEFAULT_ETFS_SUMMARY_DATA);
+          fallbackData.forEach(e => store.put(e));
+          resolve(fallbackData);
         }
       };
       request.onerror = () => reject(request.error);
     });
   } catch (err) {
     console.warn('IndexedDB get etfs summary warning:', err);
-    return DEFAULT_ETFS_SUMMARY_DATA;
+    return fallbackData;
   }
 };
 
 export const getEtfsDailyFromIndexedDB = async (): Promise<ETFDailyReturnRecord[]> => {
+  const fallbackData = await loadEtfsDaily();
   try {
     const db = await initIndexedDB();
     const tx = db.transaction(ETFS_DAILY_STORE, 'readwrite');
@@ -345,19 +344,20 @@ export const getEtfsDailyFromIndexedDB = async (): Promise<ETFDailyReturnRecord[
         if (request.result && request.result.length > 0) {
           resolve(request.result);
         } else {
-          DEFAULT_ETFS_DAILY_DATA.forEach(d => store.put(d));
-          resolve(DEFAULT_ETFS_DAILY_DATA);
+          fallbackData.forEach(d => store.put(d));
+          resolve(fallbackData);
         }
       };
       request.onerror = () => reject(request.error);
     });
   } catch (err) {
     console.warn('IndexedDB get etfs daily returns warning:', err);
-    return DEFAULT_ETFS_DAILY_DATA;
+    return fallbackData;
   }
 };
 
 export const getGovPsuBondsDailyFromIndexedDB = async (): Promise<GovPsuBondDailyRecord[]> => {
+  const fallbackData = await loadGovPsuBonds();
   try {
     const db = await initIndexedDB();
     const tx = db.transaction(GOV_PSU_BONDS_STORE, 'readwrite');
@@ -368,15 +368,15 @@ export const getGovPsuBondsDailyFromIndexedDB = async (): Promise<GovPsuBondDail
         if (request.result && request.result.length > 0) {
           resolve(request.result);
         } else {
-          DEFAULT_GOV_PSU_BONDS_DATA.forEach(b => store.put(b));
-          resolve(DEFAULT_GOV_PSU_BONDS_DATA);
+          fallbackData.forEach(b => store.put(b));
+          resolve(fallbackData);
         }
       };
       request.onerror = () => reject(request.error);
     });
   } catch (err) {
     console.warn('IndexedDB get Gov & PSU bonds daily warning:', err);
-    return DEFAULT_GOV_PSU_BONDS_DATA;
+    return fallbackData;
   }
 };
 

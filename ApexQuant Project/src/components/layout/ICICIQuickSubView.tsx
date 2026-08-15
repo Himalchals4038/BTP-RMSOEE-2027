@@ -8,6 +8,7 @@ import {
   Clock,
   CheckCircle2,
   Download,
+  FileSpreadsheet,
   Sliders,
   ShieldCheck,
   Zap,
@@ -25,7 +26,8 @@ import {
   FileCheck,
   Rocket,
   Landmark,
-  Shield
+  Shield,
+  Search
 } from 'lucide-react';
 
 interface Props {
@@ -34,18 +36,37 @@ interface Props {
 }
 
 export const ICICIQuickSubView: React.FC<Props> = ({ subTab, onClose }) => {
-  const { assets, currency } = usePortfolio();
+  const { assets, currency, exportReportCSV, exportReportPDF } = usePortfolio();
 
   // State for Place Order Form
   const [orderAction, setOrderAction] = useState<'BUY' | 'SELL'>('BUY');
   const [selectedAsset, setSelectedAsset] = useState<string>(assets[0]?.ticker || 'RELIANCE.NS');
-  const [exchange, setExchange] = useState<string>('NSE');
+  const [exchange, setExchange] = useState<string>('NSE — National Stock Exchange');
   const [productType, setProductType] = useState<string>('Delivery (CNC)');
   const [orderType, setOrderType] = useState<string>('Limit Order');
   const [quantity, setQuantity] = useState<number>(100);
   const [price, setPrice] = useState<number>(2450);
   const [triggerPrice, setTriggerPrice] = useState<number>(2420);
   const [orderPlacedSuccess, setOrderPlacedSuccess] = useState<boolean>(false);
+  const [orderSearchQuery, setOrderSearchQuery] = useState<string>('');
+  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState<boolean>(false);
+
+  // Helper to handle selecting asset and auto-routing appropriate Exchange
+  const handleSelectAsset = (assetTicker: string) => {
+    setSelectedAsset(assetTicker);
+    const found = assets.find(a => a.ticker === assetTicker);
+    if (found) {
+      setPrice(found.price);
+      if (found.category === 'Crypto') {
+        setExchange('Binance Exchange');
+      } else if (found.currency === '$' || found.market.includes('NASDAQ') || found.market.includes('NYSE')) {
+        setExchange('NYSE — New York Stock Exchange');
+      } else {
+        setExchange('NSE — National Stock Exchange');
+      }
+    }
+    setIsSearchDropdownOpen(false);
+  };
 
   // State for Add Funds Modal inside Funds section
   const [addFundsAmount, setAddFundsAmount] = useState<number>(50000);
@@ -254,6 +275,40 @@ export const ICICIQuickSubView: React.FC<Props> = ({ subTab, onClose }) => {
   const selectedAssetObj = assets.find(a => a.ticker === selectedAsset) || assets[0];
   const estOrderVal = quantity * price;
 
+  // Filter assets for live search input
+  const filteredAssets = assets.filter(a =>
+    a.ticker.toLowerCase().includes(orderSearchQuery.toLowerCase()) ||
+    a.name.toLowerCase().includes(orderSearchQuery.toLowerCase()) ||
+    a.category.toLowerCase().includes(orderSearchQuery.toLowerCase())
+  );
+
+  // Dynamic exchange options matching asset class
+  const getExchangeOptions = () => {
+    if (selectedAssetObj.category === 'Crypto') {
+      return [
+        { id: 'Binance Exchange', label: 'Binance Exchange (Crypto Spot & Derivatives)' },
+        { id: 'Binance Spot', label: 'Binance Spot Trading' },
+        { id: 'Binance Futures', label: 'Binance USDS-M Futures' },
+        { id: 'Coinbase Global', label: 'Coinbase Global Pro' }
+      ];
+    } else if (selectedAssetObj.currency === '$' || selectedAssetObj.market.includes('NASDAQ') || selectedAssetObj.market.includes('NYSE')) {
+      return [
+        { id: 'NYSE — New York Stock Exchange', label: 'NYSE — New York Stock Exchange' },
+        { id: 'NASDAQ — US Tech Market', label: 'NASDAQ — US Tech Market' },
+        { id: 'CBOE — US Options', label: 'CBOE — US Equity Options' }
+      ];
+    } else {
+      return [
+        { id: 'NSE — National Stock Exchange', label: 'NSE — National Stock Exchange' },
+        { id: 'BSE — Bombay Stock Exchange', label: 'BSE — Bombay Stock Exchange' },
+        { id: 'NFO — National Futures & Options', label: 'NFO — Derivatives (Futures & Options)' },
+        { id: 'MCX — Multi Commodity Exchange', label: 'MCX — Commodity Derivatives' }
+      ];
+    }
+  };
+
+  const exchangeOptions = getExchangeOptions();
+
   return (
     <div
       onClick={(e) => {
@@ -298,7 +353,7 @@ export const ICICIQuickSubView: React.FC<Props> = ({ subTab, onClose }) => {
               <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
                 <h3 className="text-base font-bold flex items-center gap-2 text-[var(--text-primary)]">
                   <ShoppingCart className="w-5 h-5 text-[var(--icici-orange)]" />
-                  Equity & F&O Order Entry Form
+                  Multi-Asset Order Entry Form
                 </h3>
                 <div className="flex items-center gap-1 bg-[var(--bg-tertiary)] p-1 rounded-lg border border-[var(--border-color)]">
                   <button
@@ -333,39 +388,93 @@ export const ICICIQuickSubView: React.FC<Props> = ({ subTab, onClose }) => {
 
               <form onSubmit={handlePlaceOrderSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Symbol Selector */}
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-[var(--text-primary)]">Select Security / Instrument</label>
-                    <select
-                      value={selectedAsset}
-                      onChange={(e) => {
-                        setSelectedAsset(e.target.value);
-                        const found = assets.find(a => a.ticker === e.target.value);
-                        if (found) setPrice(found.price);
-                      }}
-                      className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg p-2 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)]"
-                    >
-                      {assets.map(a => (
-                        <option key={a.ticker} value={a.ticker} className="bg-[var(--bg-card)]">
-                          {a.ticker} — {a.name} ({a.currency}{a.price})
-                        </option>
-                      ))}
-                    </select>
+                  {/* Searchable Security Selector */}
+                  <div className="space-y-1 relative">
+                    <label className="text-xs font-bold text-[var(--text-primary)]">Search & Select Security / Instrument</label>
+                    <div className="relative">
+                      <Search className="w-4 h-4 text-[var(--text-muted)] absolute left-3 top-2.5" />
+                      <input
+                        type="text"
+                        placeholder="Type ticker or name (e.g. BTC, RELIANCE, AAPL, SGB)..."
+                        value={isSearchDropdownOpen ? orderSearchQuery : `${selectedAssetObj.ticker} — ${selectedAssetObj.name}`}
+                        onFocus={() => {
+                          setOrderSearchQuery('');
+                          setIsSearchDropdownOpen(true);
+                        }}
+                        onChange={(e) => {
+                          setOrderSearchQuery(e.target.value);
+                          setIsSearchDropdownOpen(true);
+                        }}
+                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg pl-9 pr-8 py-2 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)]"
+                      />
+                      {isSearchDropdownOpen && (
+                        <button
+                          type="button"
+                          onClick={() => setIsSearchDropdownOpen(false)}
+                          className="absolute right-2.5 top-2.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Live Search Auto-Complete Results Dropdown */}
+                    {isSearchDropdownOpen && (
+                      <div className="absolute left-0 right-0 top-full mt-1 max-h-60 overflow-y-auto bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-2xl z-30 divide-y divide-[var(--border-subtle)]">
+                        {filteredAssets.length > 0 ? (
+                          filteredAssets.map(a => (
+                            <div
+                              key={a.ticker}
+                              onClick={() => handleSelectAsset(a.ticker)}
+                              className={`p-2.5 hover:bg-[var(--bg-tertiary)] cursor-pointer flex items-center justify-between transition-colors ${
+                                selectedAsset === a.ticker ? 'bg-[var(--bg-tertiary)] border-l-3 border-[var(--icici-orange)]' : ''
+                              }`}
+                            >
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono font-bold text-xs text-[var(--text-primary)]">{a.ticker}</span>
+                                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase ${
+                                    a.category === 'Crypto' ? 'bg-amber-500/20 text-amber-500' :
+                                    a.category === 'Equities' ? 'bg-blue-500/20 text-blue-500' :
+                                    a.category === 'Bonds' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-purple-500/20 text-purple-500'
+                                  }`}>
+                                    {a.category}
+                                  </span>
+                                </div>
+                                <span className="text-[11px] text-[var(--text-secondary)] block truncate max-w-[200px]">{a.name}</span>
+                              </div>
+                              <div className="text-right">
+                                <span className="font-mono font-bold text-xs text-[var(--text-primary)] block">
+                                  {a.currency}{a.price.toLocaleString()}
+                                </span>
+                                <span className={`text-[10px] font-bold ${a.change24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                  {a.change24h >= 0 ? '+' : ''}{a.change24h}%
+                                </span>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-4 text-center text-xs text-[var(--text-muted)] font-bold">
+                            No matching security found for "{orderSearchQuery}"
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Exchange */}
+                  {/* Exchange Segment */}
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-[var(--text-primary)]">Exchange Segment</label>
+                    <label className="text-xs font-bold text-[var(--text-primary)]">Exchange Platform</label>
                     <select
                       value={exchange}
                       onChange={(e) => setExchange(e.target.value)}
                       className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg p-2 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)]"
                     >
-                      <option value="NSE">NSE — National Stock Exchange</option>
-                      <option value="BSE">BSE — Bombay Stock Exchange</option>
-                      <option value="NFO">NFO — National Futures & Options</option>
-                      <option value="MCX">MCX — Multi Commodity Exchange</option>
-                      <option value="NASDAQ">NASDAQ — US Market</option>
+                      {exchangeOptions.map(ex => (
+                        <option key={ex.id} value={ex.id} className="bg-[var(--bg-card)]">
+                          {ex.label}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -1284,6 +1393,24 @@ export const ICICIQuickSubView: React.FC<Props> = ({ subTab, onClose }) => {
                   <FileText className="w-5 h-5 text-purple-500" />
                   Tax Statements & P&L Reports
                 </h3>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={exportReportCSV}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs border border-emerald-500/30 transition-all cursor-pointer shadow-xs"
+                    title="Download Portfolio Report in Excel (CSV) Format"
+                  >
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+                    <span>Download Excel (CSV)</span>
+                  </button>
+                  <button
+                    onClick={exportReportPDF}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600/15 hover:bg-rose-600/25 text-rose-600 dark:text-rose-400 font-extrabold text-xs border border-rose-500/30 transition-all cursor-pointer shadow-xs"
+                    title="Download Institutional PDF Report"
+                  >
+                    <Download className="w-4 h-4 text-rose-500" />
+                    <span>Download PDF Report</span>
+                  </button>
+                </div>
               </div>
 
               <div className="p-5 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] space-y-3">
@@ -1297,6 +1424,32 @@ export const ICICIQuickSubView: React.FC<Props> = ({ subTab, onClose }) => {
                     <span className="text-[var(--text-muted)] block text-[10px] font-bold uppercase">Long Term Capital Gains (LTCG @ 12.5%)</span>
                     <span className="font-mono font-bold text-base text-emerald-600 dark:text-emerald-400">+₹4,85,000.00</span>
                   </div>
+                </div>
+              </div>
+
+              {/* Quick Download Report Options Card */}
+              <div className="p-5 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-blue-500/10 border border-purple-500/30 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-extrabold text-sm text-[var(--text-primary)]">Download Instant Institutional Reports</h4>
+                    <p className="text-xs text-[var(--text-secondary)]">Export complete holdings, transaction history, and tax statements in Excel or PDF format.</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    onClick={exportReportCSV}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md transition-all cursor-pointer"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" />
+                    <span>Export Excel Spreadsheet (.csv)</span>
+                  </button>
+                  <button
+                    onClick={exportReportPDF}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs shadow-md transition-all cursor-pointer"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Export Institutional PDF Report (.pdf)</span>
+                  </button>
                 </div>
               </div>
             </div>
