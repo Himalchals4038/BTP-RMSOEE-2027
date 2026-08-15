@@ -7,7 +7,8 @@ import {
   LineChart,
   Globe,
   BookOpen,
-  Sparkles
+  Sparkles,
+  ShieldCheck
 } from 'lucide-react';
 
 export const Navigation: React.FC = () => {
@@ -16,7 +17,8 @@ export const Navigation: React.FC = () => {
   const mainNavItems = [
     { id: 'dashboard', label: 'Portfolio', icon: LayoutDashboard },
     { id: 'builder', label: 'Stocks & Allocation', icon: Sliders },
-    { id: 'smart_engine', label: '🎯 Dual-Shield Smart Engine', icon: Sparkles, isHighlighted: true },
+    { id: 'smart_engine', label: '🎯 Smart Investment Option', icon: Sparkles, isHighlighted: true, badge: 'SMART CORE', style: 'amber' },
+    { id: 'safe_investment', label: '🛡️ 100% Safe Investment', icon: ShieldCheck, isHighlighted: true, badge: '100% SAFE', style: 'emerald' },
     { id: 'frontier', label: 'Mutual Funds & MPT', icon: TrendingUp },
     { id: 'backtest', label: 'F&O Strategies', icon: LineChart },
     { id: 'explorer', label: 'Commodity & Markets', icon: Globe },
@@ -31,15 +33,12 @@ export const Navigation: React.FC = () => {
     { id: 'trade_book', label: 'Trade Book', targetTab: 'backtest' },
     { id: 'funds', label: 'Funds & Liquidity', targetTab: 'builder' },
     { id: 'demat_holdings', label: 'Demat Holdings', targetTab: 'builder' },
-    { id: 'gold', label: 'Sovereign Gold', badge: 'SGB', targetTab: 'explorer' },
+    { id: 'gold', label: 'Sovereign Gold', badge: 'SGB', targetTab: 'safe_investment' },
     { id: 'ipo', label: 'IPO & NFO', badge: 'Hot', targetTab: 'explorer' },
-    { id: 'loans', label: 'Loans', targetTab: 'builder' },
-    { id: 'fd_bonds', label: 'FD & Bonds', badge: '8.8%', targetTab: 'explorer' },
+    { id: 'fd_bonds', label: 'FD & Bonds', badge: '8.8%', targetTab: 'safe_investment' },
     { id: 'insurance', label: 'Insurance', targetTab: 'docs' },
     { id: 'nps', label: 'NPS Pension', targetTab: 'docs' },
-    { id: 'smart_tools', label: 'Smart Tools', badge: 'Beta', targetTab: 'frontier' },
-    { id: 'reports', label: 'Reports', targetTab: 'docs' },
-    { id: 'services', label: 'Services', targetTab: 'docs' }
+    { id: 'reports', label: 'Reports', targetTab: 'docs' }
   ];
 
   return (
@@ -53,7 +52,9 @@ export const Navigation: React.FC = () => {
               const isActive = activeTab === item.id && !activeSubTab;
 
               if (item.isHighlighted) {
-                const isSmartActive = activeTab === 'smart_engine';
+                const isItemActive = activeTab === item.id && !activeSubTab;
+                const isSafe = item.style === 'emerald';
+
                 return (
                   <button
                     key={item.id}
@@ -61,16 +62,22 @@ export const Navigation: React.FC = () => {
                       setActiveSubTab(null);
                       setActiveTab(item.id);
                     }}
-                    className={`flex items-center gap-1.5 px-4 py-1.5 my-1.5 mx-1.5 rounded-full text-xs font-black transition-all whitespace-nowrap cursor-pointer shadow-md ${
-                      isSmartActive
-                        ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-emerald-600 text-white ring-2 ring-amber-300 shadow-orange-500/40 scale-105'
-                        : 'bg-gradient-to-r from-amber-500/90 via-orange-500/90 to-emerald-600/90 hover:from-amber-500 hover:to-emerald-500 text-white border border-amber-300/50 hover:scale-105 animate-pulse'
+                    className={`flex items-center gap-1.5 px-3.5 py-1.5 my-1.5 mx-1 rounded-full text-xs font-black transition-all whitespace-nowrap cursor-pointer shadow-md ${
+                      isItemActive
+                        ? isSafe
+                          ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-green-700 text-white ring-2 ring-emerald-300 shadow-emerald-500/40 scale-105'
+                          : 'bg-gradient-to-r from-amber-500 via-orange-500 to-emerald-600 text-white ring-2 ring-amber-300 shadow-orange-500/40 scale-105'
+                        : isSafe
+                          ? 'bg-gradient-to-r from-emerald-700/90 via-teal-700/90 to-emerald-800/90 hover:from-emerald-600 hover:to-teal-600 text-white border border-emerald-300/50 hover:scale-105'
+                          : 'bg-gradient-to-r from-amber-500/90 via-orange-500/90 to-emerald-600/90 hover:from-amber-500 hover:to-emerald-500 text-white border border-amber-300/50 hover:scale-105'
                     }`}
                   >
-                    <Icon className="w-3.5 h-3.5 text-amber-200 animate-spin" />
+                    <Icon className={`w-3.5 h-3.5 ${isSafe ? 'text-emerald-200' : 'text-amber-200'} ${isItemActive ? 'animate-spin' : ''}`} />
                     <span>{item.label}</span>
-                    <span className="px-1.5 py-0.5 rounded-full bg-white text-orange-700 text-[9px] font-black uppercase tracking-wider shadow-2xs">
-                      NEW CORE
+                    <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider shadow-2xs ${
+                      isSafe ? 'bg-emerald-200 text-emerald-950' : 'bg-white text-orange-700'
+                    }`}>
+                      {item.badge}
                     </span>
                   </button>
                 );

@@ -114,7 +114,7 @@ export const MarketExplorerPage: React.FC = () => {
             </div>
             <div>
               <div className="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Markets Tracked</div>
-              <div className="text-xs font-mono font-bold text-[var(--text-primary)]">NSE Debt, RBI, US, Crypto, FX</div>
+              <div className="text-xs font-mono font-bold text-[var(--text-primary)]">NSE Equities, 20Y Gold DB, RBI G-Secs, Indian Bonds DB</div>
             </div>
           </div>
         </div>
@@ -142,7 +142,7 @@ export const MarketExplorerPage: React.FC = () => {
             </button>
 
             <div className="flex items-center gap-1 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg p-1 flex-wrap">
-              {['ALL', 'Crypto', 'Equities', 'Bonds', 'ETFs', 'Forex', 'Commodities'].map(cat => (
+              {['ALL', 'Equities', 'Bonds', 'Commodities', 'ETFs', 'Crypto', 'Forex'].map(cat => (
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}

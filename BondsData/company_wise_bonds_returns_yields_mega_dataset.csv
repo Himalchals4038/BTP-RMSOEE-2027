@@ -1,0 +1,40 @@
+Issuer_Entity,Issuer_Category,Listing_Exchange,ISIN,Bond_Symbol_Name,Bond_Category,Taxation_Status,Issue_Year,Maturity_Date,Tenor_Years,Coupon_Rate_Pct,Current_Market_Price_INR,Yield_To_Maturity_YTM_Pct,Current_Yield_Pct,Credit_Rating,Face_Value_INR
+Government of India (GOI),Central Government,NSE / BSE / NDS-OM,IN0020230085,7.18% GS 2033,Dated G-Sec,Taxable,2023,2033-08-14,10,7.18,100.25,7.14,7.16,Sovereign,100
+Government of India (GOI),Central Government,NSE / BSE / NDS-OM,IN0020240019,7.10% GS 2034,Dated G-Sec (Benchmark),Taxable,2024,2034-04-08,10,7.1,99.85,7.12,7.11,Sovereign,100
+Government of India (GOI),Central Government,NSE / BSE / NDS-OM,IN0020220037,7.26% GS 2032,Dated G-Sec,Taxable,2022,2032-08-22,10,7.26,100.6,7.15,7.22,Sovereign,100
+Government of India (GOI),Central Government,NSE / BSE / RBI Direct,IN0020230150,7.30% Sovereign Green Bond 2053,Sovereign Green Bond (SGrB),Taxable,2023,2053-11-20,30,7.3,100.5,7.26,7.26,Sovereign,100
+Government of India (GOI),Central Government,NSE / BSE,IN0020160026,Sovereign Gold Bond 2024-25 Tranche I,Sovereign Gold Bond (SGB),Capital Tax Free at Maturity,2024,2032-06-18,8,2.5,7250.0,11.2,2.5,Sovereign,6200
+Government of India (GOI),Central Government,NSE / BSE,IN0020240092,364-Day T-Bill (16-Jul-2027),Treasury Bill (T-Bill),Taxable (STCG),2026,2027-07-16,1,0.0,93.75,6.67,6.67,Sovereign,100
+State Government of Maharashtra,State Government,NSE / BSE,IN2220230058,7.45% Maharashtra SDL 2033,State Development Loan (SDL),Taxable,2023,2033-09-20,10,7.45,100.4,7.39,7.42,Sovereign State,100
+State Government of Tamil Nadu,State Government,NSE / BSE,IN3120230114,7.48% Tamil Nadu SDL 2034,State Development Loan (SDL),Taxable,2024,2034-01-10,10,7.48,100.3,7.43,7.45,Sovereign State,100
+National Highways Authority of India (NHAI),PSU / Infrastructure,NSE / BSE,INE906F07FD6,8.30% NHAI Tax Free Bonds 2027,PSU Tax Free Bond,100% Tax Free Interest,2012,2027-01-25,15,8.3,108.5,5.25,7.65,CRISIL AAA,1000
+Rural Electrification Corporation (REC Ltd),PSU / NBFC Finance,NSE / BSE,INE020B07HH0,8.46% REC Tax Free Bonds 2028,PSU Tax Free Bond,100% Tax Free Interest,2013,2028-09-24,15,8.46,110.2,5.3,7.68,CARE AAA,1000
+Power Finance Corporation (PFC),PSU / Power Finance,NSE / BSE,INE134E07530,8.20% PFC Tax Free Bonds 2029,PSU Tax Free Bond,100% Tax Free Interest,2014,2029-02-01,15,8.2,107.8,5.35,7.61,ICRA AAA,1000
+Indian Railway Finance Corporation (IRFC),PSU / Railways Finance,NSE / BSE,INE053F07863,8.65% IRFC Tax Free Bonds 2029,PSU Tax Free Bond,100% Tax Free Interest,2014,2029-03-26,15,8.65,111.4,5.28,7.76,CRISIL AAA,1000
+REC Ltd,PSU Finance,NSE / BSE / Private Placement,INE020B07KA4,5.25% REC Capital Gain Bond Sec 54EC,Capital Gain Bond 54EC,Tax Exempt for Capital Gains,2023,2028-04-30,5,5.25,10000.0,5.25,5.25,CRISIL AAA,10000
+State Bank of India (SBI),Public Sector Bank,NSE / BSE,INE062A08215,8.10% SBI Basel III AT1 Perpetual,AT1 Perpetual Bond,Taxable,2023,Perpetual (2028-09 Call),99,8.1,100.8,7.9,8.04,CRISIL AA+,1000000
+HDFC Bank Ltd,Private Sector Bank,NSE / BSE,INE040A08080,7.86% HDFC Bank Tier 2 Bonds 2033,Tier 2 Subordinated NCD,Taxable,2023,2033-08-25,10,7.86,100.5,7.78,7.82,CRISIL AAA,1000000
+ICICI Bank Ltd,Private Sector Bank,NSE / BSE,INE090A08U01,7.60% ICICI Bank Senior Unsecured 2031,Senior Unsecured NCD,Taxable,2021,2031-10-15,10,7.6,99.9,7.62,7.61,ICRA AAA,1000000
+Axis Bank Ltd,Private Sector Bank,NSE / BSE,INE238A08450,7.88% Axis Bank AT1 Perpetual,AT1 Perpetual Bond,Taxable,2022,Perpetual (2027-12 Call),99,7.88,99.5,8.05,7.92,CRISIL AA+,1000000
+Reliance Industries Ltd (RIL),Private Corporate (Conglomerate),NSE / BSE,INE002A08591,7.05% Reliance Industries NCD 2028,Senior Secured NCD,Taxable,2018,2028-11-20,10,7.05,98.2,7.42,7.18,CRISIL AAA,1000000
+Tata Capital Housing Finance Ltd,NBFC / Housing Finance,NSE / BSE,INE033L07GQ2,8.00% Tata Capital Retail NCD 2029,Senior Secured NCD (Retail),Taxable,2024,2029-01-15,5,8.0,1002.5,7.94,7.98,CRISIL AAA,1000
+Tata Steel Ltd,Private Corporate (Manufacturing),NSE / BSE,INE081A08249,7.85% Tata Steel NCD 2030,Senior Unsecured NCD,Taxable,2020,2030-05-18,10,7.85,100.1,7.83,7.84,CARE AA+,1000000
+Larsen & Toubro Ltd (L&T),Infrastructure & Engineering,NSE / BSE,INE018A08BE6,7.72% L&T NCD 2032,Senior Secured NCD,Taxable,2022,2032-04-28,10,7.72,100.4,7.65,7.69,CRISIL AAA,1000000
+Bajaj Finance Ltd,NBFC,NSE / BSE,INE296A07RO2,7.90% Bajaj Finance Retail NCD 2028,Senior Secured NCD,Taxable,2023,2028-10-10,5,7.9,1005.0,7.78,7.86,CRISIL AAA,1000
+Mahindra & Mahindra Financial Services,NBFC,NSE / BSE,INE774D07UQ1,8.05% M&M Finance NCD 2027,Senior Secured NCD,Taxable,2022,2027-06-15,5,8.05,1008.0,7.85,7.99,IND AAA,1000
+Muthoot Finance Ltd,Gold Loan NBFC,NSE / BSE,INE414G07HS2,8.75% Muthoot Finance Public NCD 2027,Senior Secured NCD (Retail),Taxable,2024,2027-04-12,3,8.75,1012.0,8.42,8.65,CRISIL AA+,1000
+Adani Ports and SEZ Ltd,Ports & Infrastructure,NSE / BSE,INE742H07360,8.20% Adani Ports NCD 2031,Senior Secured NCD,Taxable,2021,2031-02-18,10,8.2,99.8,8.24,8.22,ICRA AA+,1000000
+ReNew Power Pvt Ltd,Renewable Energy,NSE / Overseas (SGX),XS1953282928 / INE02BJ07010,7.95% ReNew Corporate Green Bond 2028,Corporate Green Bond,Taxable,2021,2028-07-14,7,7.95,99.2,8.15,8.01,Fitch BB- / CARE A+,1000000
+NHAI InvIT (National Highways Infra Trust),Infrastructure Investment Trust,NSE / BSE,INE0K7B07038,7.90% NHAI InvIT Non-Convertible Debentures 2047,InvIT Debt Security,Concessional / Pass-through,2022,2047-10-25,25,7.9,1004.0,7.86,7.87,CARE AAA,1000
+Embassy Office Parks REIT,Real Estate Investment Trust,NSE / BSE,INE041007076,7.35% Embassy REIT NCD 2026,REIT Debt Security,Pass-through under Sec 10(23FCA),2021,2026-11-10,5,7.35,99.6,7.55,7.38,CRISIL AAA,1000000
+HDFC Ltd (now merged into HDFC Bank),Cross-Border Corporate Debt,London Stock Exchange / SGX,XS1456488730,7.875% HDFC Masala Bond 2026,Masala Bond (Offshore INR),5% Withholding Tax for FPIs,2016,2026-08-01,10,7.875,100.15,7.8,7.86,S&P BBB-,10000000
+NTPC Ltd,PSU Power,NSE / BSE,INE733E07KA5,7.58% NTPC Bonds 2035,Senior Secured PSU NCD,Taxable,2020,2035-09-12,15,7.58,101.2,7.42,7.49,CRISIL AAA,1000000
+Pune Municipal Corporation,Municipal Local Authority,BSE Debt Market,INE014X07010,7.59% Pune Municipal Corp Bond 2027,Municipal Bond,Tax Exempt under Sec 10(15),2017,2027-06-22,10,7.59,102.5,6.35,7.4,CARE AA+,1000000
+InCred Financial Services Ltd,NBFC (Wint Wealth Asset),NSE / BSE / Wint Wealth,INE945W07464,InCred Secured NCD 2026 (Wint Marketable),Senior Secured NCD,Taxable,2023,2026-10-18,3,9.85,1000.0,10.25,9.85,CRISIL A+,1000
+Navi Finserv Ltd,Fintech NBFC (Wint Wealth Asset),NSE / BSE / Wint Wealth,INE342W07052,Navi Finserv Senior Secured NCD 2026,Senior Secured NCD,Taxable,2024,2026-06-25,2,10.4,1005.0,10.8,10.35,IND A,1000
+Spandana Spoorthy Financial Ltd,Microfinance NBFC (Wint Wealth Asset),NSE / BSE / Wint Wealth,INE572J07514,Spandana Senior Secured NCD 2027,Senior Secured NCD,Taxable,2024,2027-02-14,3,11.1,1010.0,11.45,10.99,ICRA A,1000
+CreditAccess Grameen Ltd,Microfinance NBFC (Wint Wealth Asset),NSE / BSE / Wint Wealth,INE741K07071,CreditAccess Grameen Secured NCD 2026,Senior Secured NCD,Taxable,2023,2026-11-28,3,9.7,1002.0,9.95,9.68,IND AA-,1000
+Ugro Capital Ltd,MSME Finance NBFC (Wint Wealth Asset),NSE / BSE / Wint Wealth,INE583D07372,Ugro Capital Senior Secured NCD 2026,Senior Secured NCD,Taxable,2023,2026-09-30,3,10.5,1000.0,10.9,10.5,IND A+,1000
+IIFL Samasta Finance Ltd,NBFC MFI (Wint Wealth Asset),NSE / BSE / Wint Wealth,INE413U07211,IIFL Samasta Public NCD 2027,Senior Secured NCD,Taxable,2024,2027-01-20,3,10.0,1005.0,10.35,9.95,CRISIL AA-,1000
+Northern Arc Capital Ltd,NBFC (Wint Wealth Asset),NSE / BSE / Wint Wealth,INE851D07323,Northern Arc Senior Secured NCD 2026,Senior Secured NCD,Taxable,2023,2026-05-15,3,9.65,1000.0,9.9,9.65,ICRA AA-,1000
+Auxilo Finserve Pvt Ltd,Education NBFC (Wint Wealth Asset),NSE / BSE / Wint Wealth,INE00L807020,Auxilo Finserve Senior Secured NCD 2026,Senior Secured NCD,Taxable,2023,2026-12-10,3,9.9,1002.0,10.15,9.88,CARE A+,1000

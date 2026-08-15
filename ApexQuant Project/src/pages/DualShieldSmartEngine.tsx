@@ -25,7 +25,8 @@ import {
   Building2,
   Flame,
   PiggyBank,
-  Zap
+  Zap,
+  ArrowRight
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -42,7 +43,7 @@ import {
 } from 'recharts';
 
 export const DualShieldSmartEngine: React.FC = () => {
-  const { currency } = usePortfolio();
+  const { currency, setActiveTab } = usePortfolio();
 
   // Controls State
   const [totalCapital, setTotalCapital] = useState<number>(1000000); // Default ₹10 Lakhs
@@ -271,6 +272,23 @@ export const DualShieldSmartEngine: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Quick Switch Banner to 100% Safe Investment Option */}
+      <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-950/60 via-teal-900/40 to-emerald-900/40 border border-emerald-500/30 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2.5">
+          <ShieldCheck className="w-5 h-5 text-emerald-400" />
+          <span className="text-xs text-emerald-100 font-semibold">
+            Looking for 100% Zero-Risk Capital Protection & Interest Auto-SIP?
+          </span>
+        </div>
+        <button
+          onClick={() => setActiveTab('safe_investment')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all cursor-pointer shadow-xs whitespace-nowrap"
+        >
+          <span>Open 100% Safe Investment Page</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {savedSuccessToast && (

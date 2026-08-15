@@ -224,7 +224,7 @@ export const PortfolioBuilder: React.FC = () => {
               </button>
 
               <div className="flex items-center gap-1 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg p-1 flex-wrap">
-                {['ALL', 'Crypto', 'Equities', 'Bonds', 'ETFs', 'Forex', 'Commodities'].map(cat => (
+                {['ALL', 'Equities', 'Bonds', 'Commodities', 'ETFs', 'Crypto', 'Forex'].map(cat => (
                   <button
                     key={cat}
                     onClick={() => {

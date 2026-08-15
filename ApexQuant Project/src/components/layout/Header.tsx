@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { usePortfolio } from '../../context/PortfolioContext';
-import { formatCompactCurrency, CURRENCY_MAP } from '../../utils/financialMath';
+import { CURRENCY_MAP } from '../../utils/financialMath';
 import type { CurrencyCode } from '../../utils/financialMath';
 import {
   TrendingUp,
@@ -31,7 +31,6 @@ import {
 
 export const Header: React.FC = () => {
   const {
-    kri,
     benchmark,
     setBenchmark,
     currency,
@@ -205,16 +204,6 @@ export const Header: React.FC = () => {
 
         {/* Right Controls & Quick Actions */}
         <div className="flex items-center flex-wrap gap-2">
-          {/* Total Value / Net Worth Pill */}
-          <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-md bg-white text-slate-900 shadow-sm border border-orange-200">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">NET WORTH</span>
-            <span className="text-xs font-mono font-bold text-slate-900">
-              {formatCompactCurrency(kri.totalValue, currency)}
-            </span>
-            <span className={`text-[11px] font-bold px-1 rounded ${kri.totalGainLoss24hPct >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-              {kri.totalGainLoss24hPct >= 0 ? '+' : ''}{kri.totalGainLoss24hPct}%
-            </span>
-          </div>
 
           {/* Currency Dropdown Pill */}
           <div className="flex items-center gap-1 px-2 py-1 rounded bg-black/20 border border-white/30 text-xs font-semibold text-white">

@@ -131,7 +131,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const [constraints, setConstraints] = useState<PortfolioConstraints>({
     volatilityCap: 15,
-    maxCryptoExposure: 20,
+    maxCryptoExposure: 0,
     minEquityExposure: 40,
     riskMode: 'Balanced'
   });

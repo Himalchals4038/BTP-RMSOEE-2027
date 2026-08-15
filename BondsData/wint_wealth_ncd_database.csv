@@ -1,0 +1,9 @@
+Issuer_Entity,Issuer_Category,Listing_Exchange,ISIN,Bond_Symbol_Name,Bond_Category,Taxation_Status,Issue_Year,Maturity_Date,Tenor_Years,Coupon_Rate_Pct,Current_Market_Price_INR,Yield_To_Maturity_YTM_Pct,Current_Yield_Pct,Credit_Rating,Face_Value_INR
+InCred Financial Services Ltd,NBFC (Wint Wealth Asset),NSE / BSE / Wint Wealth,INE945W07464,InCred Secured NCD 2026 (Wint Marketable),Senior Secured NCD,Taxable,2023,2026-10-18,3,9.85,1000.0,10.25,9.85,CRISIL A+,1000
+Navi Finserv Ltd,Fintech NBFC (Wint Wealth Asset),NSE / BSE / Wint Wealth,INE342W07052,Navi Finserv Senior Secured NCD 2026,Senior Secured NCD,Taxable,2024,2026-06-25,2,10.4,1005.0,10.8,10.35,IND A,1000
+Spandana Spoorthy Financial Ltd,Microfinance NBFC (Wint Wealth Asset),NSE / BSE / Wint Wealth,INE572J07514,Spandana Senior Secured NCD 2027,Senior Secured NCD,Taxable,2024,2027-02-14,3,11.1,1010.0,11.45,10.99,ICRA A,1000
+CreditAccess Grameen Ltd,Microfinance NBFC (Wint Wealth Asset),NSE / BSE / Wint Wealth,INE741K07071,CreditAccess Grameen Secured NCD 2026,Senior Secured NCD,Taxable,2023,2026-11-28,3,9.7,1002.0,9.95,9.68,IND AA-,1000
+Ugro Capital Ltd,MSME Finance NBFC (Wint Wealth Asset),NSE / BSE / Wint Wealth,INE583D07372,Ugro Capital Senior Secured NCD 2026,Senior Secured NCD,Taxable,2023,2026-09-30,3,10.5,1000.0,10.9,10.5,IND A+,1000
+IIFL Samasta Finance Ltd,NBFC MFI (Wint Wealth Asset),NSE / BSE / Wint Wealth,INE413U07211,IIFL Samasta Public NCD 2027,Senior Secured NCD,Taxable,2024,2027-01-20,3,10.0,1005.0,10.35,9.95,CRISIL AA-,1000
+Northern Arc Capital Ltd,NBFC (Wint Wealth Asset),NSE / BSE / Wint Wealth,INE851D07323,Northern Arc Senior Secured NCD 2026,Senior Secured NCD,Taxable,2023,2026-05-15,3,9.65,1000.0,9.9,9.65,ICRA AA-,1000
+Auxilo Finserve Pvt Ltd,Education NBFC (Wint Wealth Asset),NSE / BSE / Wint Wealth,INE00L807020,Auxilo Finserve Senior Secured NCD 2026,Senior Secured NCD,Taxable,2023,2026-12-10,3,9.9,1002.0,10.15,9.88,CARE A+,1000

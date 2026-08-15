@@ -16,7 +16,7 @@ export const INITIAL_ASSET_CATALOG: Asset[] = [
     annualizedReturn: 48.5,
     annualizedVol: 68.2,
     beta: 1.65,
-    weight: 10,
+    weight: 0,
     color: '#f59e0b',
     currency: '$'
   },
@@ -32,7 +32,7 @@ export const INITIAL_ASSET_CATALOG: Asset[] = [
     annualizedReturn: 54.2,
     annualizedVol: 74.5,
     beta: 1.82,
-    weight: 5,
+    weight: 0,
     color: '#6366f1',
     currency: '$'
   },
@@ -213,7 +213,7 @@ export const INITIAL_ASSET_CATALOG: Asset[] = [
     annualizedReturn: 78.4,
     annualizedVol: 45.2,
     beta: 1.95,
-    weight: 10,
+    weight: 0,
     color: '#16a34a',
     currency: '$'
   },
@@ -229,7 +229,7 @@ export const INITIAL_ASSET_CATALOG: Asset[] = [
     annualizedReturn: 22.4,
     annualizedVol: 24.1,
     beta: 1.15,
-    weight: 5,
+    weight: 0,
     color: '#3b82f6',
     currency: '$'
   },
@@ -245,7 +245,7 @@ export const INITIAL_ASSET_CATALOG: Asset[] = [
     annualizedReturn: 24.5,
     annualizedVol: 21.8,
     beta: 1.08,
-    weight: 5,
+    weight: 0,
     color: '#0284c7',
     currency: '$'
   },
@@ -375,7 +375,7 @@ export const INITIAL_ASSET_CATALOG: Asset[] = [
     annualizedReturn: 16.8,
     annualizedVol: 18.5,
     beta: 0.98,
-    weight: 10,
+    weight: 15,
     color: '#1e40af',
     currency: '₹'
   },
@@ -391,7 +391,7 @@ export const INITIAL_ASSET_CATALOG: Asset[] = [
     annualizedReturn: 18.2,
     annualizedVol: 21.3,
     beta: 0.92,
-    weight: 10,
+    weight: 15,
     color: '#10b981',
     currency: '₹'
   },
@@ -407,7 +407,7 @@ export const INITIAL_ASSET_CATALOG: Asset[] = [
     annualizedReturn: 24.5,
     annualizedVol: 22.1,
     beta: 1.10,
-    weight: 5,
+    weight: 10,
     color: '#c2410c',
     currency: '₹'
   },
@@ -539,7 +539,7 @@ export const INITIAL_ASSET_CATALOG: Asset[] = [
     annualizedReturn: 8.85,
     annualizedVol: 11.2,
     beta: 0.42,
-    weight: 10,
+    weight: 0,
     color: '#dc2626',
     currency: '$'
   },
@@ -555,7 +555,7 @@ export const INITIAL_ASSET_CATALOG: Asset[] = [
     annualizedReturn: 11.50,
     annualizedVol: 14.8,
     beta: 0.58,
-    weight: 5,
+    weight: 0,
     color: '#b91c1c',
     currency: '$'
   },
@@ -619,7 +619,7 @@ export const INITIAL_ASSET_CATALOG: Asset[] = [
     annualizedReturn: 7.18,
     annualizedVol: 4.5,
     beta: -0.28,
-    weight: 10,
+    weight: 15,
     color: '#059669',
     currency: '₹'
   },
@@ -635,14 +635,46 @@ export const INITIAL_ASSET_CATALOG: Asset[] = [
     annualizedReturn: 7.85,
     annualizedVol: 5.2,
     beta: -0.15,
-    weight: 5,
+    weight: 10,
     color: '#0284c7',
     currency: '₹'
   },
 
   // ==========================================
-  // 4. ETFs
+  // 4. ETFs & MUTUAL FUNDS
   // ==========================================
+  {
+    id: 'niftybees',
+    ticker: 'NIFTYBEES.NS',
+    name: 'Nippon India ETF Nifty BeES',
+    category: 'ETFs',
+    market: 'NSE India',
+    price: 275.60,
+    change24h: 0.45,
+    change24hAmount: 1.23,
+    annualizedReturn: 13.9,
+    annualizedVol: 14.8,
+    beta: 0.95,
+    weight: 10,
+    color: '#4f46e5',
+    currency: '₹'
+  },
+  {
+    id: 'flexi_mf',
+    ticker: 'PPFAS.MF',
+    name: 'Parag Parikh Flexi Cap Mutual Fund',
+    category: 'ETFs',
+    market: 'Indian Mutual Funds',
+    price: 78.40,
+    change24h: 0.65,
+    change24hAmount: 0.51,
+    annualizedReturn: 18.5,
+    annualizedVol: 15.2,
+    beta: 0.88,
+    weight: 10,
+    color: '#059669',
+    currency: '₹'
+  },
   {
     id: 'soxx',
     ticker: 'SOXX',
@@ -655,7 +687,7 @@ export const INITIAL_ASSET_CATALOG: Asset[] = [
     annualizedReturn: 31.4,
     annualizedVol: 28.5,
     beta: 1.55,
-    weight: 5,
+    weight: 0,
     color: '#3b82f6',
     currency: '$'
   },
@@ -735,30 +767,30 @@ export const INITIAL_ASSET_CATALOG: Asset[] = [
     annualizedReturn: 14.8,
     annualizedVol: 15.2,
     beta: 1.00,
-    weight: 5,
+    weight: 0,
     color: '#8b5cf6',
     currency: '$'
   },
-  {
-    id: 'niftybees',
-    ticker: 'NIFTYBEES.NS',
-    name: 'Nippon India ETF Nifty BeES',
-    category: 'ETFs',
-    market: 'NSE India',
-    price: 275.60,
-    change24h: 0.45,
-    change24hAmount: 1.23,
-    annualizedReturn: 13.9,
-    annualizedVol: 14.8,
-    beta: 0.95,
-    weight: 0,
-    color: '#4f46e5',
-    currency: '₹'
-  },
 
   // ==========================================
-  // 5. COMMODITIES
+  // 5. COMMODITIES & GOLD
   // ==========================================
+  {
+    id: 'gold_inr',
+    ticker: 'SGB-GOLD.NS',
+    name: 'Sovereign Gold Bond (20-Year Indian Gold)',
+    category: 'Commodities',
+    market: 'NSE / RBI Gold',
+    price: 7654.20,
+    change24h: 0.85,
+    change24hAmount: 64.50,
+    annualizedReturn: 12.4,
+    annualizedVol: 11.8,
+    beta: -0.05,
+    weight: 15,
+    color: '#eab308',
+    currency: '₹'
+  },
   {
     id: 'uso',
     ticker: 'USO',
@@ -771,7 +803,7 @@ export const INITIAL_ASSET_CATALOG: Asset[] = [
     annualizedReturn: 24.5,
     annualizedVol: 38.5,
     beta: 0.88,
-    weight: 5,
+    weight: 0,
     color: '#ea580c',
     currency: '$'
   },
@@ -855,7 +887,7 @@ export const INITIAL_ASSET_CATALOG: Asset[] = [
     annualizedReturn: 2.4,
     annualizedVol: 8.5,
     beta: 0.18,
-    weight: 5,
+    weight: 0,
     color: '#0284c7',
     currency: '$'
   },

@@ -9,6 +9,7 @@ import { BacktesterPage } from './pages/Backtester';
 import { MarketExplorerPage } from './pages/MarketExplorer';
 import { DocumentationPage } from './pages/Documentation';
 import { DualShieldSmartEngine } from './pages/DualShieldSmartEngine';
+import { SafeInvestmentEngine } from './pages/SafeInvestmentEngine';
 import { ShieldCheck, Cpu } from 'lucide-react';
 
 import { ICICIQuickSubView } from './components/layout/ICICIQuickSubView';
@@ -24,6 +25,7 @@ const MainContent: React.FC = () => {
       {activeTab === 'dashboard' && <ExecutiveDashboard />}
       {activeTab === 'builder' && <PortfolioBuilder />}
       {activeTab === 'smart_engine' && <DualShieldSmartEngine />}
+      {activeTab === 'safe_investment' && <SafeInvestmentEngine />}
       {activeTab === 'frontier' && <EfficientFrontierPage />}
       {activeTab === 'backtest' && <BacktesterPage />}
       {activeTab === 'explorer' && <MarketExplorerPage />}
