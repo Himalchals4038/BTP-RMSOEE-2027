@@ -23,7 +23,7 @@ import {
   TrendingUp,
   TrendingDown,
   Filter,
-  BookOpen,
+  Bot,
   X
 } from 'lucide-react';
 
@@ -329,10 +329,10 @@ export const PortfolioBuilder: React.FC = () => {
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] font-semibold">{asset.category}</span>
                           <button
                             onClick={() => openDocForAsset(asset.name)}
-                            className="text-[var(--text-muted)] hover:text-[var(--icici-orange)] transition-colors p-0.5"
-                            title={`Read Financial Theory Docs for ${asset.name}`}
+                            className="text-[var(--text-muted)] hover:text-emerald-500 transition-colors p-0.5"
+                            title={`Ask AI Chatbot about ${asset.name}`}
                           >
-                            <BookOpen className="w-3.5 h-3.5" />
+                            <Bot className="w-3.5 h-3.5" />
                           </button>
                         </div>
                         <div className="text-[11px] text-[var(--text-secondary)] line-clamp-1">{asset.name}</div>

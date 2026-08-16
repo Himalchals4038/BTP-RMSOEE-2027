@@ -23,6 +23,9 @@ interface PortfolioContextType {
   benchmark: 'SP500' | 'NIFTY50';
   currency: CurrencyCode;
   selectedDocTerm: string;
+  chatbotQuery: string | null;
+  askChatbot: (query: string) => void;
+  clearChatbotQuery: () => void;
   isLiveApi: boolean;
   isLoading: boolean;
   backtestResult: BacktestResult | null;
@@ -78,6 +81,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [benchmark, setBenchmark] = useState<'SP500' | 'NIFTY50'>('NIFTY50');
   const [currency, setCurrency] = useState<CurrencyCode>('INR');
   const [selectedDocTerm, setSelectedDocTerm] = useState<string>('Modern Portfolio Theory');
+  const [chatbotQuery, setChatbotQuery] = useState<string | null>(null);
   const [isLiveApi, setIsLiveApi] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [backtestResult, setBacktestResult] = useState<BacktestResult | null>(null);
@@ -171,9 +175,17 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }).then(res => setBacktestResult(res));
   }, []);
 
+  const askChatbot = (query: string) => {
+    setChatbotQuery(query);
+  };
+
+  const clearChatbotQuery = () => {
+    setChatbotQuery(null);
+  };
+
   const openDocForAsset = (term: string) => {
     setSelectedDocTerm(term);
-    setActiveTab('docs');
+    askChatbot(`Tell me more about ${term} stock & financial terminology`);
   };
 
   const toggleApiMode = () => {
@@ -271,6 +283,9 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         benchmark,
         currency,
         selectedDocTerm,
+        chatbotQuery,
+        askChatbot,
+        clearChatbotQuery,
         isLiveApi,
         isLoading,
         backtestResult,

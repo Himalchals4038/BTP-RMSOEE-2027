@@ -12,7 +12,7 @@ import {
   Zap,
   Clock,
   Filter,
-  BookOpen
+  Bot
 } from 'lucide-react';
 
 export const MarketExplorerPage: React.FC = () => {
@@ -199,11 +199,11 @@ export const MarketExplorerPage: React.FC = () => {
                   <td>
                     <button
                       onClick={() => openDocForAsset(asset.name)}
-                      className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-[var(--bg-tertiary)] border border-[var(--border-color)] text-[var(--icici-orange)] hover:bg-[var(--bg-card-hover)] transition-colors cursor-pointer"
-                      title={`Read Wikipedia documentation profile for ${asset.name}`}
+                      className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-colors cursor-pointer font-bold"
+                      title={`Ask AI Chatbot about ${asset.name}`}
                     >
-                      <BookOpen className="w-3 h-3 text-[var(--icici-orange)]" />
-                      Read Wiki
+                      <Bot className="w-3 h-3 text-emerald-500" />
+                      Ask AI
                     </button>
                   </td>
                 </tr>

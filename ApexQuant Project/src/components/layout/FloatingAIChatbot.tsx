@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { usePortfolio } from '../../context/PortfolioContext';
 import {
   Bot,
   X,
@@ -297,6 +298,8 @@ ApexQuant Quantitative Systems recommend:
 }
 
 export const FloatingAIChatbot: React.FC = () => {
+  const { chatbotQuery, clearChatbotQuery } = usePortfolio();
+
   // Chat Window State
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [showSettings, setShowSettings] = useState<boolean>(false);
@@ -558,6 +561,15 @@ export const FloatingAIChatbot: React.FC = () => {
       streamBotResponse(getLocalQuantResponse(prompt), 'ApexQuant Resilient Engine');
     }
   };
+
+  // Auto-open chatbot and trigger query when askChatbot / chatbotQuery is invoked
+  useEffect(() => {
+    if (chatbotQuery) {
+      setIsOpen(true);
+      handleSendMessage(chatbotQuery);
+      clearChatbotQuery();
+    }
+  }, [chatbotQuery]);
 
   return (
     <div ref={widgetRef}>

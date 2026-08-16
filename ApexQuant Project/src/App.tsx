@@ -15,9 +15,8 @@ const SafeInvestmentEngine = lazy(() => import('./pages/SafeInvestmentEngine').t
 const EfficientFrontierPage = lazy(() => import('./pages/EfficientFrontier').then(m => ({ default: m.EfficientFrontierPage })));
 const BacktesterPage = lazy(() => import('./pages/Backtester').then(m => ({ default: m.BacktesterPage })));
 const MarketExplorerPage = lazy(() => import('./pages/MarketExplorer').then(m => ({ default: m.MarketExplorerPage })));
-const DocumentationPage = lazy(() => import('./pages/Documentation').then(m => ({ default: m.DocumentationPage })));
 
-const ICICIQuickSubView = lazy(() => import('./components/layout/ICICIQuickSubView').then(m => ({ default: m.ICICIQuickSubView })));
+const TradingConsolePage = lazy(() => import('./pages/TradingConsolePage').then(m => ({ default: m.TradingConsolePage })));
 const FloatingAIChatbot = lazy(() => import('./components/layout/FloatingAIChatbot').then(m => ({ default: m.FloatingAIChatbot })));
 
 const PageLoaderFallback = () => (
@@ -28,26 +27,24 @@ const PageLoaderFallback = () => (
 );
 
 const MainContent: React.FC = () => {
-  const { activeTab, activeSubTab, setActiveSubTab } = usePortfolio();
+  const { activeTab, activeSubTab } = usePortfolio();
 
   return (
     <main className="w-full max-w-[1700px] mx-auto min-h-[calc(100vh-140px)] relative">
       <Suspense fallback={<PageLoaderFallback />}>
-        {activeTab === 'dashboard' && <ExecutiveDashboard />}
-        {activeTab === 'builder' && <PortfolioBuilder />}
-        {activeTab === 'smart_engine' && <DualShieldSmartEngine />}
-        {activeTab === 'safe_investment' && <SafeInvestmentEngine />}
-        {activeTab === 'frontier' && <EfficientFrontierPage />}
-        {activeTab === 'backtest' && <BacktesterPage />}
-        {activeTab === 'explorer' && <MarketExplorerPage />}
-        {activeTab === 'docs' && <DocumentationPage />}
-
-        {/* ICICI Direct Responsive Trading Console Modal */}
-        {activeSubTab && (
-          <ICICIQuickSubView
-            subTab={activeSubTab}
-            onClose={() => setActiveSubTab(null)}
-          />
+        {/* If a dedicated sub-tab option (e.g. Place Order, Open Positions, Order Book, Funds, Holdings, Gold, IPO, FD/Bonds) is selected, render dedicated Trading Console Page */}
+        {activeSubTab ? (
+          <TradingConsolePage />
+        ) : (
+          <>
+            {activeTab === 'dashboard' && <ExecutiveDashboard />}
+            {activeTab === 'builder' && <PortfolioBuilder />}
+            {activeTab === 'smart_engine' && <DualShieldSmartEngine />}
+            {activeTab === 'safe_investment' && <SafeInvestmentEngine />}
+            {activeTab === 'frontier' && <EfficientFrontierPage />}
+            {activeTab === 'backtest' && <BacktesterPage />}
+            {activeTab === 'explorer' && <MarketExplorerPage />}
+          </>
         )}
 
         {/* Floating Free AI Chatbot Widget */}

@@ -38,6 +38,7 @@ export const Header: React.FC = () => {
     toggleTheme,
     setActiveTab,
     setActiveSubTab,
+    askChatbot,
     currentUser,
     setActiveUserModal,
     logoutUser
@@ -266,9 +267,9 @@ export const Header: React.FC = () => {
           {/* User Profile Badge & Dropdown (ICICI Direct Style) */}
           <div className="relative flex items-center gap-1.5 pl-1">
             <button 
-              onClick={() => setActiveTab('docs')}
+              onClick={() => askChatbot('Help & Platform Usage Guide')}
               className="p-1 rounded-full bg-white/20 hover:bg-white/30 text-white cursor-pointer"
-              title="Help & Wiki"
+              title="Ask AI Assistant for Help"
             >
               <HelpCircle className="w-3.5 h-3.5" />
             </button>

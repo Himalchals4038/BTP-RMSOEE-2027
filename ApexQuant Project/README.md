@@ -17,7 +17,7 @@ ApexQuant OS is an institutional-grade quantitative portfolio optimization, risk
   2. **Minimum Variance**: Solves weights to minimize portfolio variance.
   3. **Risk Parity Weighting**: Equalizes risk contribution from each asset class.
   4. **Equal Weight (1/N)**: Uniform capital allocation.
-- **Interactive Asset Cards**: Weight sliders (0–100%), asset locking toggle (excludes locked assets from auto-normalization), deletion controls, embedded 30-day price sparklines, and direct Wikipedia documentation links.
+- **Interactive Asset Cards**: Weight sliders (0–100%), asset locking toggle (excludes locked assets from auto-normalization), deletion controls, embedded 30-day price sparklines, and direct AI Chatbot queries.
 - **Exposure Boundary Constraints**: Volatility caps, maximum crypto exposure limits, and minimum equity thresholds.
 
 ### 3. Efficient Frontier & Correlation Matrix (`EfficientFrontier.tsx`)
@@ -33,9 +33,9 @@ ApexQuant OS is an institutional-grade quantitative portfolio optimization, risk
 - **Multi-Asset Securities Catalog**: Displays prices, 24h change %, annualized volatility, beta, and weights.
 - **REST API Connection Monitor**: Tracks endpoint latency and toggles between Live API feeds and Offline Sandbox data.
 
-### 6. Financial Knowledge Hub & Wikipedia REST API (`Documentation.tsx`)
-- **Wikipedia REST API Integration**: Live encyclopedic search fetching summaries, thumbnails, and direct Wikipedia article links for any stock, crypto, bond, or financial term.
-- **Quantitative Finance Reference Manual**: Detailed explanations of MPT, Sharpe, Sortino, VaR, High-Yield Debt, Beta, and Alpha.
+### 6. AI Financial Assistant & Intelligent Chatbot (`FloatingAIChatbot.tsx`)
+- **Direct Stock & Terminology Querying**: Instantly directs users to the AI Chatbot when clicking to learn more about any specific stock, crypto, bond, or quantitative financial terminology.
+- **Multi-LLM Engine Mesh**: Integrated with Pollinations AI (GPT-4o), Groq (Llama 3.3 70B), Google Gemini 1.5 Flash, and ApexQuant Resilient Offline Quant Engine.
 
 ---
 
