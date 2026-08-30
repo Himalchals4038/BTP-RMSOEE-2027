@@ -41,7 +41,9 @@ export const Header: React.FC = () => {
     askChatbot,
     currentUser,
     setActiveUserModal,
-    logoutUser
+    logoutUser,
+    marketHours,
+    liveMarketQuotes
   } = usePortfolio();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -102,26 +104,40 @@ export const Header: React.FC = () => {
           {/* 2-Line Block Layout for Index Tickers (NIFTY 50 & S&P 500) */}
           <div className="hidden xl:flex items-center gap-2.5 ml-3 border-l border-white/20 pl-3">
             {/* NIFTY 50 2-Line Block Pill */}
-            <div className="bg-white/95 dark:bg-slate-900 rounded-lg px-3 py-1 text-slate-900 dark:text-white shadow-md border border-white/40 flex flex-col justify-center leading-tight min-w-[140px]">
+            <div className="bg-white/95 dark:bg-slate-900 rounded-lg px-3 py-1 text-slate-900 dark:text-white shadow-md border border-white/40 flex flex-col justify-center leading-tight min-w-[145px]">
               <div className="flex items-center justify-between gap-2 text-xs font-black">
-                <span className="text-[10px] text-slate-600 dark:text-slate-300 font-bold uppercase tracking-wider">NIFTY 50</span>
-                <span className="font-mono text-xs font-extrabold text-slate-900 dark:text-white">24,520.40</span>
+                <div className="flex items-center gap-1">
+                  <span className={`w-1.5 h-1.5 rounded-full ${marketHours?.india?.isOpen ? 'bg-emerald-500 animate-ping' : 'bg-rose-500'}`}></span>
+                  <span className="text-[10px] text-slate-600 dark:text-slate-300 font-bold uppercase tracking-wider">NIFTY 50</span>
+                </div>
+                <span className="font-mono text-xs font-extrabold text-slate-900 dark:text-white">
+                  {(liveMarketQuotes?.NIFTY_50?.price ?? 24520.40).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </span>
               </div>
-              <div className="flex items-center justify-end gap-1 font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                <TrendingUp className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                <span>+185.30 (+0.76%)</span>
+              <div className="flex items-center justify-between gap-1 font-mono text-[9px] font-bold mt-0.5">
+                <span className="text-[8px] text-slate-400 font-sans uppercase">{marketHours?.india?.isOpen ? 'LIVE' : 'CLOSED'}</span>
+                <span className="text-emerald-600 dark:text-emerald-400 flex items-center">
+                  <TrendingUp className="w-2.5 h-2.5 mr-0.5" />+{(liveMarketQuotes?.NIFTY_50?.change ?? 185.30)} (+{(liveMarketQuotes?.NIFTY_50?.changePct ?? 0.76)}%)
+                </span>
               </div>
             </div>
 
             {/* S&P 500 2-Line Block Pill */}
-            <div className="bg-white/95 dark:bg-slate-900 rounded-lg px-3 py-1 text-slate-900 dark:text-white shadow-md border border-white/40 flex flex-col justify-center leading-tight min-w-[140px]">
+            <div className="bg-white/95 dark:bg-slate-900 rounded-lg px-3 py-1 text-slate-900 dark:text-white shadow-md border border-white/40 flex flex-col justify-center leading-tight min-w-[145px]">
               <div className="flex items-center justify-between gap-2 text-xs font-black">
-                <span className="text-[10px] text-slate-600 dark:text-slate-300 font-bold uppercase tracking-wider">S&P 500</span>
-                <span className="font-mono text-xs font-extrabold text-slate-900 dark:text-white">5,540.20</span>
+                <div className="flex items-center gap-1">
+                  <span className={`w-1.5 h-1.5 rounded-full ${marketHours?.us?.isOpen ? 'bg-emerald-500 animate-ping' : 'bg-rose-500'}`}></span>
+                  <span className="text-[10px] text-slate-600 dark:text-slate-300 font-bold uppercase tracking-wider">S&P 500</span>
+                </div>
+                <span className="font-mono text-xs font-extrabold text-slate-900 dark:text-white">
+                  ${(liveMarketQuotes?.SP_500?.price ?? 5540.20).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </span>
               </div>
-              <div className="flex items-center justify-end gap-1 font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                <TrendingUp className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                <span>+32.10 (+0.58%)</span>
+              <div className="flex items-center justify-between gap-1 font-mono text-[9px] font-bold mt-0.5">
+                <span className="text-[8px] text-slate-400 font-sans uppercase">{marketHours?.us?.isOpen ? 'LIVE' : 'CLOSED'}</span>
+                <span className="text-emerald-600 dark:text-emerald-400 flex items-center">
+                  <TrendingUp className="w-2.5 h-2.5 mr-0.5" />+{(liveMarketQuotes?.SP_500?.change ?? 32.10)} (+{(liveMarketQuotes?.SP_500?.changePct ?? 0.58)}%)
+                </span>
               </div>
             </div>
           </div>

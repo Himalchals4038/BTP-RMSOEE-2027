@@ -285,3 +285,95 @@ input[type=range]::-webkit-slider-thumb:hover {
 .num-mono {
   font-family: 'JetBrains Mono', monospace;
 }
+
+/* Groww-Inspired Innovative Design Utilities */
+:root {
+  --groww-emerald: #00d09c;
+  --groww-emerald-hover: #00b386;
+  --groww-emerald-glow: rgba(0, 208, 156, 0.25);
+  --groww-blue: #5367ff;
+  --groww-card-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+}
+
+.dark {
+  --groww-emerald: #00e0a9;
+  --groww-emerald-hover: #00c997;
+  --groww-emerald-glow: rgba(0, 224, 169, 0.35);
+  --groww-blue: #6376ff;
+  --groww-card-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+.groww-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  box-shadow: var(--groww-card-shadow);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
+}
+
+.groww-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--groww-emerald);
+  box-shadow: 0 14px 36px rgba(0, 208, 156, 0.12);
+}
+
+.groww-glow {
+  box-shadow: 0 0 24px var(--groww-emerald-glow);
+}
+
+.groww-pill {
+  border-radius: 9999px;
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.groww-pill:hover {
+  transform: translateY(-1px);
+}
+
+.groww-pill-active {
+  background: var(--groww-emerald);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 208, 156, 0.35);
+}
+
+.groww-gradient-text {
+  background: linear-gradient(135deg, #00d09c 0%, #3b82f6 50%, #f26522 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Continuous Sliding Ticker & Indices Marquee */
+@keyframes continuousMarquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-container {
+  overflow: hidden;
+  position: relative;
+}
+
+.animate-marquee-infinite {
+  display: flex;
+  width: max-content;
+  animation: continuousMarquee 36s linear infinite;
+  will-change: transform;
+}
+
+.marquee-container:hover .animate-marquee-infinite,
+.animate-marquee-infinite:hover,
+.animate-marquee-infinite:hover * {
+  /* Pause marquee on hover — inline JS state also controls animationPlayState */
+  animation-play-state: paused !important;
+  -webkit-animation-play-state: paused !important; /* Safari support */
+}

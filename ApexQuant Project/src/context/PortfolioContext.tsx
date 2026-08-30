@@ -4,10 +4,19 @@ import type { CurrencyCode } from '../utils/financialMath';
 import { INITIAL_ASSET_CATALOG } from '../services/mockData';
 import { PortfolioApiService, setApiMode } from '../services/api';
 
+import {
+  getMarketHoursStatus,
+  getLiveMarketQuotes,
+  fetchLatestQuotes,
+  type LiveMarketQuote,
+  type MarketSessionStatus
+} from '../services/liveMarketService';
+
 export interface UserProfile {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   accountType: 'Institutional Prime' | 'Retail HNI' | 'Sandbox Demo';
   kycStatus: 'Verified' | 'Pending' | 'Not Verified';
   dpId: string;
@@ -33,7 +42,9 @@ interface PortfolioContextType {
   currentUser: UserProfile;
   activeUserModal: 'login' | 'reset_password' | 'edit_profile' | 'switch_user' | null;
   setActiveUserModal: (modal: 'login' | 'reset_password' | 'edit_profile' | 'switch_user' | null) => void;
-  loginUser: (userId: string, pass: string) => void;
+  loginUser: (userId: string, pass?: string, customName?: string) => void;
+  loginDemoUser: (accountType: 'Institutional Prime' | 'Retail HNI' | 'Sandbox Demo') => void;
+  signUpUser: (data: { name: string; email: string; phone?: string; accountType?: 'Institutional Prime' | 'Retail HNI' | 'Sandbox Demo' }) => void;
   logoutUser: () => void;
   updateUserProfile: (profile: Partial<UserProfile>) => void;
   switchUserAccount: (accountType: 'Institutional Prime' | 'Retail HNI' | 'Sandbox Demo') => void;
@@ -54,6 +65,16 @@ interface PortfolioContextType {
   runBacktest: (config: BacktestConfig) => Promise<void>;
   exportReportPDF: () => void;
   exportReportCSV: () => void;
+  // Live Market & Exchange Hours API
+  marketHours: {
+    india: MarketSessionStatus;
+    us: MarketSessionStatus;
+    commodity: MarketSessionStatus;
+    crypto: MarketSessionStatus;
+  };
+  liveMarketQuotes: Record<string, LiveMarketQuote>;
+  isMarketDataLoading: boolean;
+  refreshMarketData: () => Promise<void>;
 }
 
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined);
@@ -64,14 +85,30 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return (saved === 'dark' || saved === 'light') ? saved : 'light';
   });
 
-  const [currentUser, setCurrentUser] = useState<UserProfile>({
-    id: '8512437145',
-    name: 'ApexQuant Trader',
-    email: 'trader@apexquant.io',
-    accountType: 'Institutional Prime',
-    kycStatus: 'Verified',
-    dpId: '1208160009482100',
-    isLoggedIn: true
+  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
+    const savedSession = localStorage.getItem('apexquant_is_logged_in');
+    const savedProfile = localStorage.getItem('apexquant_user_profile');
+    if (savedProfile) {
+      try {
+        const parsed = JSON.parse(savedProfile);
+        return {
+          ...parsed,
+          isLoggedIn: savedSession === 'true'
+        };
+      } catch {
+        // fallback
+      }
+    }
+    return {
+      id: '8512437145',
+      name: 'ApexQuant Trader',
+      email: 'trader@apexquant.io',
+      phone: '+91 98765 43210',
+      accountType: 'Institutional Prime',
+      kycStatus: 'Verified',
+      dpId: '1208160009482100',
+      isLoggedIn: savedSession === 'true'
+    };
   });
 
   const [activeUserModal, setActiveUserModal] = useState<'login' | 'reset_password' | 'edit_profile' | 'switch_user' | null>(null);
@@ -85,6 +122,31 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [isLiveApi, setIsLiveApi] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [backtestResult, setBacktestResult] = useState<BacktestResult | null>(null);
+  
+  // Real Market Hours & Live Market Quotes State
+  const [marketHours, setMarketHours] = useState(getMarketHoursStatus);
+  const [liveMarketQuotes, setLiveMarketQuotes] = useState<Record<string, LiveMarketQuote>>(getLiveMarketQuotes);
+  const [isMarketDataLoading, setIsMarketDataLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    // Keep market hours status and live rates synchronized every 10 seconds
+    const interval = setInterval(() => {
+      setMarketHours(getMarketHoursStatus());
+      setLiveMarketQuotes(getLiveMarketQuotes());
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const refreshMarketData = async () => {
+    setIsMarketDataLoading(true);
+    try {
+      const latest = await fetchLatestQuotes();
+      setLiveMarketQuotes(latest);
+      setMarketHours(getMarketHoursStatus());
+    } finally {
+      setIsMarketDataLoading(false);
+    }
+  };
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -100,12 +162,79 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
-  const loginUser = (userId: string) => {
-    setCurrentUser(prev => ({
-      ...prev,
-      id: userId || '8512437145',
+  const loginUser = (userId: string, _pass?: string, customName?: string) => {
+    setCurrentUser(prev => {
+      const updated: UserProfile = {
+        ...prev,
+        id: userId || prev.id || '8512437145',
+        name: customName || prev.name || 'ApexQuant Trader',
+        isLoggedIn: true
+      };
+      localStorage.setItem('apexquant_is_logged_in', 'true');
+      localStorage.setItem('apexquant_user_profile', JSON.stringify(updated));
+      return updated;
+    });
+    setActiveUserModal(null);
+  };
+
+  const loginDemoUser = (accountType: 'Institutional Prime' | 'Retail HNI' | 'Sandbox Demo') => {
+    let profile: UserProfile;
+    if (accountType === 'Institutional Prime') {
+      profile = {
+        id: 'INST-994821',
+        name: 'Apex Institutional Alpha',
+        email: 'alpha@apexquant.io',
+        phone: '+91 98111 22334',
+        accountType: 'Institutional Prime',
+        kycStatus: 'Verified',
+        dpId: '1208160009482100',
+        isLoggedIn: true
+      };
+    } else if (accountType === 'Retail HNI') {
+      profile = {
+        id: 'HNI-772154',
+        name: 'Suresh Mehta (HNI)',
+        email: 'suresh.mehta@investor.in',
+        phone: '+91 98222 33445',
+        accountType: 'Retail HNI',
+        kycStatus: 'Verified',
+        dpId: '1208160007721540',
+        isLoggedIn: true
+      };
+    } else {
+      profile = {
+        id: 'SBX-104928',
+        name: 'Beginner Quant Sandbox',
+        email: 'sandbox@apexquant.io',
+        phone: '+91 98333 44556',
+        accountType: 'Sandbox Demo',
+        kycStatus: 'Verified',
+        dpId: '1208160001049280',
+        isLoggedIn: true
+      };
+    }
+    setCurrentUser(profile);
+    localStorage.setItem('apexquant_is_logged_in', 'true');
+    localStorage.setItem('apexquant_user_profile', JSON.stringify(profile));
+    setActiveUserModal(null);
+  };
+
+  const signUpUser = (data: { name: string; email: string; phone?: string; accountType?: 'Institutional Prime' | 'Retail HNI' | 'Sandbox Demo' }) => {
+    const randomId = 'AQ' + Math.floor(100000 + Math.random() * 900000);
+    const randomDp = '12081600' + Math.floor(10000000 + Math.random() * 90000000);
+    const newProfile: UserProfile = {
+      id: randomId,
+      name: data.name || 'New Quant Trader',
+      email: data.email || 'trader@apexquant.io',
+      phone: data.phone || '+91 99999 88888',
+      accountType: data.accountType || 'Retail HNI',
+      kycStatus: 'Verified',
+      dpId: randomDp,
       isLoggedIn: true
-    }));
+    };
+    setCurrentUser(newProfile);
+    localStorage.setItem('apexquant_is_logged_in', 'true');
+    localStorage.setItem('apexquant_user_profile', JSON.stringify(newProfile));
     setActiveUserModal(null);
   };
 
@@ -114,22 +243,25 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       ...prev,
       isLoggedIn: false
     }));
+    localStorage.setItem('apexquant_is_logged_in', 'false');
     setActiveUserModal(null);
   };
 
   const updateUserProfile = (profileUpdate: Partial<UserProfile>) => {
-    setCurrentUser(prev => ({
-      ...prev,
-      ...profileUpdate
-    }));
+    setCurrentUser(prev => {
+      const updated = { ...prev, ...profileUpdate };
+      localStorage.setItem('apexquant_user_profile', JSON.stringify(updated));
+      return updated;
+    });
     setActiveUserModal(null);
   };
 
   const switchUserAccount = (accountType: 'Institutional Prime' | 'Retail HNI' | 'Sandbox Demo') => {
-    setCurrentUser(prev => ({
-      ...prev,
-      accountType
-    }));
+    setCurrentUser(prev => {
+      const updated = { ...prev, accountType };
+      localStorage.setItem('apexquant_user_profile', JSON.stringify(updated));
+      return updated;
+    });
     setActiveUserModal(null);
   };
 
@@ -164,6 +296,10 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return () => { isMounted = false; };
   }, [assets, benchmark]);
 
+  // Run the initial backtest once on mount using default assets and benchmark.
+  // This is intentionally run only once — subsequent changes are handled by
+  // the asset/benchmark-aware useEffect above (line 297).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     PortfolioApiService.runBacktest(assets, {
       startDate: '2020-01-01',
@@ -173,7 +309,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       rebalanceStrategy: 'quarterly',
       benchmark
     }).then(res => setBacktestResult(res));
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const askChatbot = (query: string) => {
     setChatbotQuery(query);
@@ -294,6 +430,8 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         activeUserModal,
         setActiveUserModal,
         loginUser,
+        loginDemoUser,
+        signUpUser,
         logoutUser,
         updateUserProfile,
         switchUserAccount,
@@ -313,7 +451,11 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         updateConstraints,
         runBacktest,
         exportReportPDF,
-        exportReportCSV
+        exportReportCSV,
+        marketHours,
+        liveMarketQuotes,
+        isMarketDataLoading,
+        refreshMarketData
       }}
     >
       {children}
@@ -321,6 +463,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   );
 };
 
+// oxlint-disable-next-line only-export-components -- usePortfolio is intentionally co-located with PortfolioProvider in a single-file context pattern.
 export const usePortfolio = () => {
   const context = useContext(PortfolioContext);
   if (!context) throw new Error('usePortfolio must be used within PortfolioProvider');

@@ -556,20 +556,24 @@ export const FloatingAIChatbot: React.FC = () => {
 
       // Progressive Typewriter Streaming Response
       streamBotResponse(botResponseText, engineName, sourceUrl);
-    } catch (err) {
-      // Emergency Resilience Fallback
+    } catch {
+      // Emergency Resilience Fallback — all external AI tiers unavailable
       streamBotResponse(getLocalQuantResponse(prompt), 'ApexQuant Resilient Engine');
     }
   };
 
   // Auto-open chatbot and trigger query when askChatbot / chatbotQuery is invoked
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (chatbotQuery) {
       setIsOpen(true);
       handleSendMessage(chatbotQuery);
       clearChatbotQuery();
     }
-  }, [chatbotQuery]);
+    // We intentionally only re-run when chatbotQuery changes.
+    // handleSendMessage and clearChatbotQuery are stable per render and
+    // adding them would create infinite re-trigger loops.
+  }, [chatbotQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div ref={widgetRef}>

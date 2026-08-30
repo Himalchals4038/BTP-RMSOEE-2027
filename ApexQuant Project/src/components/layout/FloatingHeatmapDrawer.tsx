@@ -116,12 +116,13 @@ export const FloatingHeatmapDrawer: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Live Ticker Flashing Simulation
+  // Live Ticker Flashing Simulation (Only when the selected market is actively open)
   useEffect(() => {
-    if (!isLiveFeedActive || !isOpen) return;
+    const isRegionOpen = marketRegion === 'INDIA' ? indiaMarketOpen : usMarketOpen;
+    if (!isLiveFeedActive || !isOpen || !isRegionOpen) return;
 
     const interval = setInterval(() => {
-      if (marketRegion === 'INDIA') {
+      if (marketRegion === 'INDIA' && indiaMarketOpen) {
         setIndianTiles(prev =>
           prev.map(tile => {
             if (Math.random() > 0.6) {
@@ -135,7 +136,7 @@ export const FloatingHeatmapDrawer: React.FC = () => {
             return tile;
           })
         );
-      } else {
+      } else if (marketRegion === 'US' && usMarketOpen) {
         setUsTiles(prev =>
           prev.map(tile => {
             if (Math.random() > 0.6) {
@@ -153,7 +154,7 @@ export const FloatingHeatmapDrawer: React.FC = () => {
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [isLiveFeedActive, isOpen, marketRegion]);
+  }, [isLiveFeedActive, isOpen, marketRegion, indiaMarketOpen, usMarketOpen]);
 
   // Outside Click Close Handler
   useEffect(() => {

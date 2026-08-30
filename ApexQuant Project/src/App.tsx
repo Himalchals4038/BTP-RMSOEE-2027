@@ -7,6 +7,8 @@ import { ShieldCheck, Cpu, Loader2 } from 'lucide-react';
 import { UserAuthModal } from './components/layout/UserAuthModal';
 import { FloatingHeatmapDrawer } from './components/layout/FloatingHeatmapDrawer';
 
+import { ZerodhaAuthPortal } from './pages/ZerodhaAuthPortal';
+
 // Lazy Loaded Page Components for Instant Initial Page Load Speed
 const ExecutiveDashboard = lazy(() => import('./pages/ExecutiveDashboard').then(m => ({ default: m.ExecutiveDashboard })));
 const PortfolioBuilder = lazy(() => import('./pages/PortfolioBuilder').then(m => ({ default: m.PortfolioBuilder })));
@@ -60,41 +62,55 @@ const MainContent: React.FC = () => {
   );
 };
 
+const AppShell: React.FC = () => {
+  const { currentUser } = usePortfolio();
+
+  // If user is not logged in, show the Zerodha-inspired Landing and Sign In / Sign Up portal
+  if (!currentUser.isLoggedIn) {
+    return <ZerodhaAuthPortal />;
+  }
+
+  // Once authenticated, render the full ApexQuant Quantitative Terminal
+  return (
+    <div className="w-full min-h-screen bg-[var(--bg-main)] text-[var(--text-primary)] flex flex-col font-sans transition-colors duration-200">
+      {/* ICICI Direct Style Top Header */}
+      <Header />
+
+      {/* Dual-Ribbon Navigation Bar */}
+      <Navigation />
+
+      {/* Module Content */}
+      <div className="flex-1 w-full max-w-[1750px] mx-auto">
+        <MainContent />
+      </div>
+
+      {/* Institutional Office Footer */}
+      <footer className="border-t border-[var(--border-color)] bg-[var(--bg-card)] px-6 py-4 mt-8 text-xs text-[var(--text-secondary)] w-full">
+        <div className="max-w-[1750px] mx-auto flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Cpu className="w-4 h-4 text-[var(--icici-orange)]" />
+            <span className="font-semibold text-[var(--text-primary)]">ApexQuant Direct OS</span>
+            <span>— Institutional Portfolio & Quantitative Trading Platform</span>
+          </div>
+          <div className="flex items-center gap-4 text-[var(--text-muted)]">
+            <span className="flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-[var(--accent-emerald)]" /> Markowitz MPT & Risk Engine
+            </span>
+            <span>•</span>
+            <span>NSE India / US Equity / Crypto / Commodities / Forex</span>
+            <span>•</span>
+            <span className="font-mono">v2.5 Office Edition</span>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
 export function App() {
   return (
     <PortfolioProvider>
-      <div className="w-full min-h-screen bg-[var(--bg-main)] text-[var(--text-primary)] flex flex-col font-sans transition-colors duration-200">
-        {/* ICICI Direct Style Top Header */}
-        <Header />
-
-        {/* Dual-Ribbon Navigation Bar */}
-        <Navigation />
-
-        {/* Module Content */}
-        <div className="flex-1 w-full max-w-[1750px] mx-auto">
-          <MainContent />
-        </div>
-
-        {/* Institutional Office Footer */}
-        <footer className="border-t border-[var(--border-color)] bg-[var(--bg-card)] px-6 py-4 mt-8 text-xs text-[var(--text-secondary)] w-full">
-          <div className="max-w-[1750px] mx-auto flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-[var(--icici-orange)]" />
-              <span className="font-semibold text-[var(--text-primary)]">ApexQuant Direct OS</span>
-              <span>— Institutional Portfolio & Quantitative Trading Platform</span>
-            </div>
-            <div className="flex items-center gap-4 text-[var(--text-muted)]">
-              <span className="flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-[var(--accent-emerald)]" /> Markowitz MPT & Risk Engine
-              </span>
-              <span>•</span>
-              <span>NSE India / US Equity / Crypto / Commodities / Forex</span>
-              <span>•</span>
-              <span className="font-mono">v2.5 Office Edition</span>
-            </div>
-          </div>
-        </footer>
-      </div>
+      <AppShell />
     </PortfolioProvider>
   );
 }
