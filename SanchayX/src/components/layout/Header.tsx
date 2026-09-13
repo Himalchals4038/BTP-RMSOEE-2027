@@ -91,7 +91,7 @@ export const Header: React.FC = () => {
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="text-xl font-extrabold tracking-tight text-white italic drop-shadow-sm">
-                  Apex<span className="text-amber-200 font-normal">Quant</span>
+                  Sanchay<span className="text-amber-200 font-normal">X</span>
                 </span>
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/20 text-white border border-white/30 tracking-wider">
                   DIRECT

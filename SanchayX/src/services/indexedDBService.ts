@@ -136,7 +136,7 @@ export interface IPONFORecord {
   lastUpdated: string;
 }
 
-const DB_NAME = 'ApexQuantSmartEngineDB';
+const DB_NAME = 'SanchayXSmartEngineDB';
 const DB_VERSION = 8;
 const RATE_STORE = 'market_rates';
 const PORTFOLIO_STORE = 'user_portfolios';

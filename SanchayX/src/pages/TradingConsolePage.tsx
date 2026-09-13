@@ -514,7 +514,7 @@ export const TradingConsolePage: React.FC = () => {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] font-medium">
-              <span>ApexQuant OS</span>
+              <span>SanchayX OS</span>
               <ChevronRight className="w-3.5 h-3.5" />
               <span>Trading Console</span>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -524,7 +524,7 @@ export const TradingConsolePage: React.FC = () => {
             </div>
             <h1 className="text-2xl font-extrabold text-[var(--text-primary)] flex items-center gap-2.5">
               <BarChart3 className="w-7 h-7 text-[var(--icici-orange)]" />
-              ApexQuant Institutional Trading Console
+              SanchayX Institutional Trading Console
             </h1>
             <p className="text-xs text-[var(--text-secondary)] font-medium">
               Multi-asset order execution, real-time portfolio positions, exchange order audit logs, and wealth management services.
@@ -2881,7 +2881,7 @@ export const TradingConsolePage: React.FC = () => {
             <div className="border-b border-[var(--border-color)] pb-4">
               <h3 className="text-lg font-extrabold flex items-center gap-2 text-[var(--text-primary)]">
                 <Zap className="w-5 h-5 text-amber-500" />
-                ApexQuant Pro Smart Trading Tools
+                SanchayX Pro Smart Trading Tools
               </h3>
               <p className="text-xs text-[var(--text-secondary)]">Option chain Greeks calculator, stock basket algorithms, and multi-asset quantitative tools</p>
             </div>

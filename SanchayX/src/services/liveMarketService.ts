@@ -1,5 +1,5 @@
 /**
- * ApexQuant Live Market Data & Exchange Hours Service
+ * SanchayX Live Market Data & Exchange Hours Service
  * Handles accurate market open/closed status for Indian (NSE/BSE, MCX) and US (NYSE/NASDAQ) markets,
  * real-time quotes, official closing prices, and 24/7 crypto assets.
  */

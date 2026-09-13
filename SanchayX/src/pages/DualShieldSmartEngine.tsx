@@ -893,7 +893,7 @@ export const DualShieldSmartEngine: React.FC = () => {
             <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
               <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
                 <Scale className="w-5 h-5 text-emerald-600" />
-                ApexQuant Smart Tax Optimization & TDS Waiver Strategies
+                SanchayX Smart Tax Optimization & TDS Waiver Strategies
               </h3>
               <span className="text-xs font-mono font-bold text-purple-600 bg-purple-500/15 px-2.5 py-1 rounded-full">
                 Estimated Tax Saved: ₹62,500 / Year

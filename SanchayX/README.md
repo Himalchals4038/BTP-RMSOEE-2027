@@ -1,6 +1,6 @@
-# ApexQuant OS — Multi-Asset Portfolio Engineering & Risk Intelligence Engine
+# SanchayX OS — Multi-Asset Portfolio Engineering & Risk Intelligence Engine
 
-ApexQuant OS is an institutional-grade quantitative portfolio optimization, risk analytics, and strategy backtesting web platform built with React 19, TypeScript, Vite, Recharts, and TailwindCSS.
+SanchayX OS is an institutional-grade quantitative portfolio optimization, risk analytics, and strategy backtesting web platform built with React 19, TypeScript, Vite, Recharts, and TailwindCSS.
 
 ---
 
@@ -35,7 +35,7 @@ ApexQuant OS is an institutional-grade quantitative portfolio optimization, risk
 
 ### 6. AI Financial Assistant & Intelligent Chatbot (`FloatingAIChatbot.tsx`)
 - **Direct Stock & Terminology Querying**: Instantly directs users to the AI Chatbot when clicking to learn more about any specific stock, crypto, bond, or quantitative financial terminology.
-- **Multi-LLM Engine Mesh**: Integrated with Pollinations AI (GPT-4o), Groq (Llama 3.3 70B), Google Gemini 1.5 Flash, and ApexQuant Resilient Offline Quant Engine.
+- **Multi-LLM Engine Mesh**: Integrated with Pollinations AI (GPT-4o), Groq (Llama 3.3 70B), Google Gemini 1.5 Flash, and SanchayX Resilient Offline Quant Engine.
 
 ---
 
@@ -81,7 +81,7 @@ Supports 8 major global currencies:
 
 ```bash
 # Clone or navigate to directory
-cd "d:\IIT Kharagpur\4th Year\BTP\ApexQuant Project"
+cd "d:\IIT Kharagpur\4th Year\BTP\SanchayX"
 
 # Install dependencies
 npm install

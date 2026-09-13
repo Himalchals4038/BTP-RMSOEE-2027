@@ -214,7 +214,7 @@ const TESTIMONIALS: Testimonial[] = [
     rating: 5,
     badge: 'Institutional Member',
     metric: '+31.4% Sharpe 1.85',
-    content: 'ApexQuant replaced our costly Bloomberg terminal scripts. The client-side Markowitz optimizer computes 1,000 asset permutations in under 200ms. The DualShield engine seamlessly protects our clients during high-volatility events.'
+    content: 'SanchayX replaced our costly Bloomberg terminal scripts. The client-side Markowitz optimizer computes 1,000 asset permutations in under 200ms. The DualShield engine seamlessly protects our clients during high-volatility events.'
   },
   {
     id: 2,
@@ -420,7 +420,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
   // Login flow states: 1 = Credentials (User ID / Pass), 2 = Kite 6-Digit 2FA PIN
   const [loginStep, setLoginStep] = useState<1 | 2>(1);
   const [userId, setUserId] = useState('8512437145');
-  const [password, setPassword] = useState('ApexQuant@2026');
+  const [password, setPassword] = useState('SanchayX@2026');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [pinDigits, setPinDigits] = useState(['1', '2', '3', '4', '5', '6']);
@@ -531,7 +531,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
     setIsAuthenticating(true);
     setTimeout(() => {
       setIsAuthenticating(false);
-      loginUser(userId, password, 'ApexQuant Trader');
+      loginUser(userId, password, 'SanchayX Trader');
     }, 600);
   };
 
@@ -591,8 +591,8 @@ export const ZerodhaAuthPortal: React.FC = () => {
 
   const faqs = [
     {
-      q: 'How does ApexQuant work and how is it inspired by Zerodha & Groww?',
-      a: 'ApexQuant combines Zerodha’s zero-brokerage pricing with Groww’s intuitive, beginner-friendly UI and hedge-fund grade Markowitz Modern Portfolio Theory (MPT). It offers full access to algorithmic rebalancing, money market instruments, and 100% safe guaranteed yields.'
+      q: 'How does SanchayX work and how is it inspired by Zerodha & Groww?',
+      a: 'SanchayX combines Zerodha’s zero-brokerage pricing with Groww’s intuitive, beginner-friendly UI and hedge-fund grade Markowitz Modern Portfolio Theory (MPT). It offers full access to algorithmic rebalancing, money market instruments, and 100% safe guaranteed yields.'
     },
     {
       q: 'What is the Markowitz Modern Portfolio Theory (MPT) and Sharpe Ratio?',
@@ -627,12 +627,12 @@ export const ZerodhaAuthPortal: React.FC = () => {
           {/* Brand Logo & Tagline */}
           <div className="flex items-center gap-3.5 cursor-pointer" onClick={() => { setAuthMode('login'); setLoginStep(1); }}>
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#00d09c] via-[#00b386] to-[#0284c7] text-white flex items-center justify-center font-black text-xl shadow-lg shadow-emerald-500/20 ring-2 ring-emerald-500/30">
-              <span className="italic font-serif">AQ</span>
+              <span className="italic font-serif">SX</span>
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xl font-black tracking-tight text-[var(--text-primary)]">
-                  Apex<span className="text-[var(--groww-emerald)]">Quant</span>
+                  Sanchay<span className="text-[var(--groww-emerald)]">X</span>
                 </span>
                 <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-[var(--groww-emerald)] border border-emerald-500/20 tracking-wider">
                   DIRECT OS
@@ -1223,7 +1223,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-xl bg-[var(--groww-emerald)] text-slate-950 flex items-center justify-center font-black text-sm shadow-md">
-                      AQ
+                      SX
                     </div>
                     <span className="font-extrabold text-sm tracking-tight text-[var(--text-primary)]">
                       Kite Login Gateway
@@ -1268,7 +1268,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                   {loginStep === 1 && (
                     <form onSubmit={handleLoginStep1Submit} className="space-y-4 animate-in fade-in duration-150">
                       <div>
-                        <h2 className="text-xl font-black text-[var(--text-primary)]">Login to ApexQuant</h2>
+                        <h2 className="text-xl font-black text-[var(--text-primary)]">Login to SanchayX</h2>
                         <p className="text-xs text-[var(--text-muted)] mt-1">Enter your Client User ID or Registered Mobile number</p>
                       </div>
 
@@ -1293,7 +1293,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => {
-                              alert("Password reset OTP sent to registered email trader@apexquant.io. Use default password 'ApexQuant@2026' or 1-Click Demo.");
+                              alert("Password reset OTP sent to registered email trader@sanchayx.io. Use default password 'SanchayX@2026' or 1-Click Demo.");
                             }}
                             className="text-emerald-600 font-bold hover:underline"
                           >
@@ -1360,10 +1360,10 @@ export const ZerodhaAuthPortal: React.FC = () => {
 
                       <div className="flex items-center gap-3 p-3 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
                         <div className="w-8 h-8 rounded-full bg-[var(--groww-emerald)] text-slate-950 font-black text-xs flex items-center justify-center">
-                          AQ
+                          SX
                         </div>
                         <div>
-                          <div className="text-xs font-extrabold text-[var(--text-primary)]">ApexQuant Trader</div>
+                          <div className="text-xs font-extrabold text-[var(--text-primary)]">SanchayX Trader</div>
                           <div className="text-[11px] font-mono text-[var(--text-muted)]">Client ID: {userId}</div>
                         </div>
                       </div>
@@ -1773,13 +1773,13 @@ export const ZerodhaAuthPortal: React.FC = () => {
         <div className="text-center space-y-3 max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-wider">
             <Award className="w-3.5 h-3.5" />
-            <span>Why Choose ApexQuant Direct</span>
+            <span>Why Choose SanchayX Direct</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-black text-[var(--text-primary)]">
             Built with Mathematical Edge & Capital Safety
           </h2>
           <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-            Discover why retail investors and institutional traders trust ApexQuant for their quantitative wealth management.
+            Discover why retail investors and institutional traders trust SanchayX for their quantitative wealth management.
           </p>
         </div>
 
@@ -1975,17 +1975,17 @@ export const ZerodhaAuthPortal: React.FC = () => {
             <div className="col-span-2 space-y-3">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-[var(--groww-emerald)] text-slate-950 flex items-center justify-center font-black text-xs">
-                  AQ
+                  SX
                 </div>
                 <span className="font-extrabold text-base text-[var(--text-primary)]">
-                  Apex<span className="text-[var(--groww-emerald)]">Quant</span> Direct
+                  Sanchay<span className="text-[var(--groww-emerald)]">X</span> Direct
                 </span>
               </div>
               <p className="text-[11px] leading-relaxed max-w-sm">
-                ApexQuant Direct is an institutional quantitative research, Markowitz portfolio optimization, and money market simulated trading platform.
+                SanchayX Direct is an institutional quantitative research, Markowitz portfolio optimization, and money market simulated trading platform.
               </p>
               <div className="text-[11px]">
-                © 2026 ApexQuant Direct OS. All rights reserved.
+                © 2026 SanchayX Direct OS. All rights reserved.
               </div>
             </div>
 
@@ -2022,7 +2022,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
 
           <div className="pt-6 border-t border-[var(--border-color)] text-[10px] leading-relaxed text-[var(--text-muted)] space-y-2">
             <p>
-              ApexQuant Direct: Quantitative simulated execution platform. Securities and investments in securities market are subject to market risks; read all the related documents carefully before investing.
+              SanchayX Direct: Quantitative simulated execution platform. Securities and investments in securities market are subject to market risks; read all the related documents carefully before investing.
             </p>
           </div>
         </div>
@@ -2128,10 +2128,10 @@ export const ZerodhaAuthPortal: React.FC = () => {
             <div className="p-6 border-b border-[var(--border-color)] flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-[var(--groww-emerald)] text-slate-950 flex items-center justify-center font-bold">
-                  AQ
+                  SX
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-[var(--text-primary)]">About ApexQuant Direct</h3>
+                  <h3 className="text-base font-extrabold text-[var(--text-primary)]">About SanchayX Direct</h3>
                   <p className="text-xs text-[var(--text-muted)]">Democratizing hedge-fund quantitative finance</p>
                 </div>
               </div>
@@ -2147,7 +2147,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
               <div>
                 <h4 className="font-extrabold text-sm text-[var(--text-primary)] mb-2">Our Vision</h4>
                 <p>
-                  ApexQuant was built to bridge the gap between complex quantitative hedge fund mathematics and retail everyday investors. Just as Zerodha revolutionized discount brokerage and Groww simplified investing in India, ApexQuant revolutionizes mathematical portfolio optimization.
+                  SanchayX was built to bridge the gap between complex quantitative hedge fund mathematics and retail everyday investors. Just as Zerodha revolutionized discount brokerage and Groww simplified investing in India, SanchayX revolutionizes mathematical portfolio optimization.
                 </p>
               </div>
 
@@ -2183,7 +2183,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
           <div className="bg-[var(--bg-card)] text-[var(--text-primary)] border border-[var(--border-color)] rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div className="p-6 border-b border-[var(--border-color)] flex items-center justify-between">
               <div>
-                <h3 className="text-base font-extrabold text-[var(--text-primary)]">ApexQuant Products & Platforms</h3>
+                <h3 className="text-base font-extrabold text-[var(--text-primary)]">SanchayX Products & Platforms</h3>
                 <p className="text-xs text-[var(--text-muted)]">Flagship modules available in the terminal</p>
               </div>
               <button
@@ -2316,7 +2316,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                       </div>
                     </div>
                     <span className="text-[10px] font-black px-2 py-1 rounded bg-emerald-500/10 text-emerald-600">
-                      SAVED WITH APEXQUANT
+                      SAVED WITH SANCHAYX
                     </span>
                   </div>
                 </div>
@@ -2343,7 +2343,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
           <div className="bg-[var(--bg-card)] text-[var(--text-primary)] border border-[var(--border-color)] rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div className="p-6 border-b border-[var(--border-color)] flex items-center justify-between">
               <div>
-                <h3 className="text-base font-extrabold text-[var(--text-primary)]">ApexQuant Support & FAQs</h3>
+                <h3 className="text-base font-extrabold text-[var(--text-primary)]">SanchayX Support & FAQs</h3>
                 <p className="text-xs text-[var(--text-muted)]">Search answers or explore trading guides</p>
               </div>
               <button
@@ -2445,7 +2445,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                   <span>ℹ️ Authentic Market Pricing Policy:</span>
                 </div>
                 <p className="text-[11px] leading-relaxed">
-                  When equity exchanges are closed (weekends, holidays, or after-hours), ApexQuant displays frozen official closing benchmark prices. Real-time tick fluctuations occur exclusively during active trading sessions or 24/7 crypto markets.
+                  When equity exchanges are closed (weekends, holidays, or after-hours), SanchayX displays frozen official closing benchmark prices. Real-time tick fluctuations occur exclusively during active trading sessions or 24/7 crypto markets.
                 </p>
               </div>
 

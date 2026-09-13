@@ -24,7 +24,7 @@ interface ChatMessage {
   isStreaming?: boolean;
 }
 
-type AIEngineType = 'auto' | 'pollinations' | 'groq' | 'gemini' | 'openai' | 'duckduckgo' | 'wikipedia' | 'apexquant';
+type AIEngineType = 'auto' | 'pollinations' | 'groq' | 'gemini' | 'openai' | 'duckduckgo' | 'wikipedia' | 'sanchayx';
 
 const QUICK_SUGGESTIONS = [
   '🛡️ 100% Safe Investment Option details',
@@ -38,7 +38,7 @@ const QUICK_SUGGESTIONS = [
 
 // Tier 1: Pollinations AI (100% Free, No Key Required, GET Method for CORS Compatibility)
 async function callPollinationsAI(prompt: string): Promise<string> {
-  const sys = encodeURIComponent("System: You are ApexQuant AI, an expert quantitative financial analyst, stock market advisor, tax consultant, and wealth strategist. Answer precisely with structured financial insights, bullet points, and markdown.");
+  const sys = encodeURIComponent("System: You are SanchayX AI, an expert quantitative financial analyst, stock market advisor, tax consultant, and wealth strategist. Answer precisely with structured financial insights, bullet points, and markdown.");
   const q = encodeURIComponent(prompt);
   const url = `https://text.pollinations.ai/${q}?system=${sys}&model=openai`;
 
@@ -67,7 +67,7 @@ async function callGroqAPI(prompt: string, apiKey: string): Promise<string> {
       messages: [
         {
           role: 'system',
-          content: 'You are ApexQuant AI, an expert financial analyst and quantitative portfolio strategist. Provide structured, accurate, and professional advice.'
+          content: 'You are SanchayX AI, an expert financial analyst and quantitative portfolio strategist. Provide structured, accurate, and professional advice.'
         },
         { role: 'user', content: prompt }
       ],
@@ -88,7 +88,7 @@ async function callGeminiAPI(prompt: string, apiKey: string): Promise<string> {
     body: JSON.stringify({
       contents: [{
         parts: [{
-          text: `System: You are ApexQuant AI, an expert quantitative financial analyst and stock market advisor.\nUser Query: ${prompt}`
+          text: `System: You are SanchayX AI, an expert quantitative financial analyst and stock market advisor.\nUser Query: ${prompt}`
         }]
       }]
     })
@@ -109,7 +109,7 @@ async function callOpenAI(prompt: string, apiKey: string): Promise<string> {
     body: JSON.stringify({
       model: 'gpt-4o-mini',
       messages: [
-        { role: 'system', content: 'You are ApexQuant AI, an expert quantitative financial analyst and stock market advisor.' },
+        { role: 'system', content: 'You are SanchayX AI, an expert quantitative financial analyst and stock market advisor.' },
         { role: 'user', content: prompt }
       ]
     })
@@ -125,7 +125,7 @@ async function callHuggingFaceAPI(prompt: string): Promise<string> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      inputs: `<|system|>\nYou are ApexQuant AI, a helpful financial assistant.</s>\n<|user|>\n${prompt}</s>\n<|assistant|>`
+      inputs: `<|system|>\nYou are SanchayX AI, a helpful financial assistant.</s>\n<|user|>\n${prompt}</s>\n<|assistant|>`
     })
   });
   if (!response.ok) throw new Error(`HuggingFace HTTP ${response.status}`);
@@ -200,7 +200,7 @@ function getLocalQuantResponse(prompt: string): string {
    • Coupon Rate: **10.25% p.a.** | Payout: Monthly
    • Credit Rating: **BWR AA- / Stable** | Exchange: BSE Listed
 
-💡 *Note: High-yield NCDs (>10%) carry credit rating profiles between AA- to AA+. You can track and buy secondary market NCDs on BSE directly under the **FD & Bonds** tab in ApexQuant!*`;
+💡 *Note: High-yield NCDs (>10%) carry credit rating profiles between AA- to AA+. You can track and buy secondary market NCDs on BSE directly under the **FD & Bonds** tab in SanchayX!*`;
   }
 
   // IPOs & NFOs (Do NOT trigger on standalone 'bse'!)
@@ -226,7 +226,7 @@ function getLocalQuantResponse(prompt: string): string {
    • Price Band: ₹102 – ₹108 | Lot Size: 138 Shares
    • Expected Issue Size: ₹10,000 Cr | Live GMP: **+₹18 (+16.6%)**
 
-💡 *Tip: You can place 100% online ASBA UPI bids for these IPOs directly under the **IPO & NFO** tab in the ApexQuant trading console!*`;
+💡 *Tip: You can place 100% online ASBA UPI bids for these IPOs directly under the **IPO & NFO** tab in the SanchayX trading console!*`;
   }
 
   if (lower.includes('100% safe') || lower.includes('zero risk') || lower.includes('capital protection')) {
@@ -244,7 +244,7 @@ function getLocalQuantResponse(prompt: string): string {
   }
 
   if (lower.includes('smart') || lower.includes('dual sleeve') || lower.includes('allocation') || lower.includes('smart engine')) {
-    return `🎯 **ApexQuant Smart Dual-Sleeve Allocation Engine**:
+    return `🎯 **SanchayX Smart Dual-Sleeve Allocation Engine**:
 
 • **Fixed Income Sleeve**: Secures your exact target yearly guaranteed return (up to 10% p.a.) in Sovereign Gold Bonds & AAA FDs.
 • **Volatile Growth Sleeve**: Deploys remaining funds into NIFTY 50 Bluechips, Flexi-Cap MFs, and Precious Metal ETFs (100% F&O Free).
@@ -252,7 +252,7 @@ function getLocalQuantResponse(prompt: string): string {
   }
 
   if (lower.includes('tax') || lower.includes('80c') || lower.includes('tds') || lower.includes('15g') || lower.includes('15h') || lower.includes('112a')) {
-    return `💡 **ApexQuant Smart Tax Optimization Guide**:
+    return `💡 **SanchayX Smart Tax Optimization Guide**:
 
 1. **Section 80C**: Claim up to ₹1,50,000 tax deduction via ELSS Mutual Funds, PPF, or EPF.
 2. **Section 80CCD(1B)**: Claim an extra ₹50,000 deduction for NPS Pension contributions.
@@ -261,7 +261,7 @@ function getLocalQuantResponse(prompt: string): string {
   }
 
   if (lower.includes('stock') || lower.includes('share') || lower.includes('nifty') || lower.includes('sensex') || lower.includes('bluechip') || lower.includes('company')) {
-    return `📈 **ApexQuant Curated Top NIFTY 50 Bluechip Picks**:
+    return `📈 **SanchayX Curated Top NIFTY 50 Bluechip Picks**:
 
 1. **Reliance Industries Ltd (RELIANCE)** – CMP: ₹2,980.50 | Energy & Digital Monopoly
 2. **HDFC Bank Ltd (HDFCBANK)** – CMP: ₹1,610.20 | Banking Leader
@@ -291,7 +291,7 @@ function getLocalQuantResponse(prompt: string): string {
 
   return `I have processed your query regarding **"${prompt}"**. 
 
-ApexQuant Quantitative Systems recommend:
+SanchayX Quantitative Systems recommend:
 1. Maintaining a core allocation in Sovereign Fixed Income Assets (8.50% avg yield) for capital safety.
 2. Allocating growth funds into NIFTY 50 Bluechip ETFs and Flexi-Cap Mutual Funds for optimum Sharpe ratio.
 3. Reviewing Section 112A LTCG tax harvesting to maximize net post-tax portfolio returns.`;
@@ -309,9 +309,9 @@ export const FloatingAIChatbot: React.FC = () => {
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
 
   // Custom API Keys State (stored in localStorage)
-  const [groqKey, setGroqKey] = useState<string>(() => localStorage.getItem('apexquant_groq_key') || '');
-  const [geminiKey, setGeminiKey] = useState<string>(() => localStorage.getItem('apexquant_gemini_key') || '');
-  const [openaiKey, setOpenaiKey] = useState<string>(() => localStorage.getItem('apexquant_openai_key') || '');
+  const [groqKey, setGroqKey] = useState<string>(() => localStorage.getItem('sanchayx_groq_key') || localStorage.getItem('apexquant_groq_key') || '');
+  const [geminiKey, setGeminiKey] = useState<string>(() => localStorage.getItem('sanchayx_gemini_key') || localStorage.getItem('apexquant_gemini_key') || '');
+  const [openaiKey, setOpenaiKey] = useState<string>(() => localStorage.getItem('sanchayx_openai_key') || localStorage.getItem('apexquant_openai_key') || '');
   const [saveKeySuccess, setSaveKeySuccess] = useState<boolean>(false);
 
   // Chat History
@@ -319,7 +319,7 @@ export const FloatingAIChatbot: React.FC = () => {
     {
       id: 'init-1',
       sender: 'bot',
-      text: 'Hello! I am your ApexQuant AI Financial Assistant. I am connected to live internet AI models (Pollinations AI, Groq, Gemini, DuckDuckGo & Wikipedia) to give you instant financial & market answers.',
+      text: 'Hello! I am your SanchayX AI Financial Assistant. I am connected to live internet AI models (Pollinations AI, Groq, Gemini, DuckDuckGo & Wikipedia) to give you instant financial & market answers.',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       engineUsed: 'Auto-Fallback Multi-AI Mesh'
     }
@@ -398,9 +398,9 @@ export const FloatingAIChatbot: React.FC = () => {
 
   // Save Custom API Keys to localStorage
   const handleSaveApiKeys = () => {
-    localStorage.setItem('apexquant_groq_key', groqKey.trim());
-    localStorage.setItem('apexquant_gemini_key', geminiKey.trim());
-    localStorage.setItem('apexquant_openai_key', openaiKey.trim());
+    localStorage.setItem('sanchayx_groq_key', groqKey.trim());
+    localStorage.setItem('sanchayx_gemini_key', geminiKey.trim());
+    localStorage.setItem('sanchayx_openai_key', openaiKey.trim());
     setSaveKeySuccess(true);
     setTimeout(() => setSaveKeySuccess(false), 2500);
   };
@@ -429,7 +429,7 @@ export const FloatingAIChatbot: React.FC = () => {
     setIsTyping(true);
 
     let botResponseText = '';
-    let engineName = 'ApexQuant Core AI';
+    let engineName = 'SanchayX Core AI';
     let sourceUrl = '';
 
     try {
@@ -471,8 +471,8 @@ export const FloatingAIChatbot: React.FC = () => {
         const wikiRes = await callWikipedia(prompt);
         botResponseText = wikiRes.text;
         sourceUrl = wikiRes.url || '';
-      } else if (selectedEngine === 'apexquant') {
-        engineName = 'ApexQuant Financial KB';
+      } else if (selectedEngine === 'sanchayx') {
+        engineName = 'SanchayX Financial KB';
         botResponseText = getLocalQuantResponse(prompt);
       } else {
         // AUTO-FALLBACK MULTI-TIERED AI MESH (100% Guaranteed All-Time Availability)
@@ -541,24 +541,24 @@ export const FloatingAIChatbot: React.FC = () => {
           }
         }
 
-        // Tier 5: ApexQuant Local Financial Quant KB (Guaranteed 100% Offline Resilience)
+        // Tier 5: SanchayX Local Financial Quant KB (Guaranteed 100% Offline Resilience)
         if (!botResponseText) {
           botResponseText = getLocalQuantResponse(prompt);
-          engineName = 'ApexQuant Financial Engine (Local KB)';
+          engineName = 'SanchayX Financial Engine (Local KB)';
         }
       }
 
       // If response text is still empty, invoke local KB fallback
       if (!botResponseText) {
         botResponseText = getLocalQuantResponse(prompt);
-        engineName = 'ApexQuant Financial Engine';
+        engineName = 'SanchayX Financial Engine';
       }
 
       // Progressive Typewriter Streaming Response
       streamBotResponse(botResponseText, engineName, sourceUrl);
     } catch {
       // Emergency Resilience Fallback — all external AI tiers unavailable
-      streamBotResponse(getLocalQuantResponse(prompt), 'ApexQuant Resilient Engine');
+      streamBotResponse(getLocalQuantResponse(prompt), 'SanchayX Resilient Engine');
     }
   };
 
@@ -582,7 +582,7 @@ export const FloatingAIChatbot: React.FC = () => {
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-black text-xs shadow-2xl transition-all cursor-pointer ring-4 ring-emerald-500/30 hover:scale-105 active:scale-95 animate-bounce"
-          title="Open ApexQuant Free AI Chatbot"
+          title="Open SanchayX Free AI Chatbot"
         >
           <Bot className="w-5 h-5 text-emerald-200 fill-emerald-200" />
           <span className="tracking-wide uppercase font-mono hidden sm:inline">AI Financial Bot</span>
@@ -602,7 +602,7 @@ export const FloatingAIChatbot: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-[var(--text-primary)]">
-                    ApexQuant Multi-AI Assistant
+                    SanchayX Multi-AI Assistant
                   </h3>
                   <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-bold flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
@@ -662,7 +662,7 @@ export const FloatingAIChatbot: React.FC = () => {
                 <option value="gemini">♊ Google Gemini (API Key)</option>
                 <option value="duckduckgo">🦆 DuckDuckGo Search AI</option>
                 <option value="wikipedia">📚 Wikipedia Knowledge</option>
-                <option value="apexquant">🛡️ ApexQuant Offline Engine</option>
+                <option value="sanchayx">🛡️ SanchayX Offline Engine</option>
               </select>
             </div>
           </div>

@@ -327,7 +327,7 @@ export const ICICIQuickSubView: React.FC<Props> = ({ subTab, onClose }) => {
             </span>
             <div>
               <h2 className="text-base font-extrabold uppercase tracking-wide italic text-white drop-shadow-xs">
-                ApexQuant Trading Console
+                SanchayX Trading Console
               </h2>
               <p className="text-xs text-amber-200 font-bold tracking-wide mt-0.5 drop-shadow-xs">
                 Institutional Order Execution & Account Services
@@ -1353,7 +1353,7 @@ export const ICICIQuickSubView: React.FC<Props> = ({ subTab, onClose }) => {
               <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
                 <h3 className="text-base font-bold flex items-center gap-2 text-[var(--text-primary)]">
                   <Zap className="w-5 h-5 text-amber-500" />
-                  ApexQuant Pro Smart Trading Tools
+                  SanchayX Pro Smart Trading Tools
                 </h3>
               </div>
 

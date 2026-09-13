@@ -360,7 +360,7 @@ export const FloatingHeatmapDrawer: React.FC = () => {
                 <Info className="w-4 h-4 text-[var(--icici-orange)]" />
                 <span>Tap any stock tile to inspect depth • Click outside to dismiss</span>
               </div>
-              <span className="font-bold text-[var(--icici-orange)] uppercase">ApexQuant Heatmap v2.4</span>
+              <span className="font-bold text-[var(--icici-orange)] uppercase">SanchayX Heatmap v2.4</span>
             </div>
           </div>
         </div>

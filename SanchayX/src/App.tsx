@@ -24,7 +24,7 @@ const FloatingAIChatbot = lazy(() => import('./components/layout/FloatingAIChatb
 const PageLoaderFallback = () => (
   <div className="w-full min-h-[400px] flex flex-col items-center justify-center space-y-3 text-[var(--text-secondary)]">
     <Loader2 className="w-8 h-8 animate-spin text-[var(--icici-orange)]" />
-    <span className="text-xs font-bold font-mono">Loading ApexQuant Engine...</span>
+    <span className="text-xs font-bold font-mono">Loading SanchayX Engine...</span>
   </div>
 );
 
@@ -70,7 +70,7 @@ const AppShell: React.FC = () => {
     return <ZerodhaAuthPortal />;
   }
 
-  // Once authenticated, render the full ApexQuant Quantitative Terminal
+  // Once authenticated, render the full SanchayX Quantitative Terminal
   return (
     <div className="w-full min-h-screen bg-[var(--bg-main)] text-[var(--text-primary)] flex flex-col font-sans transition-colors duration-200">
       {/* ICICI Direct Style Top Header */}
@@ -89,7 +89,7 @@ const AppShell: React.FC = () => {
         <div className="max-w-[1750px] mx-auto flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Cpu className="w-4 h-4 text-[var(--icici-orange)]" />
-            <span className="font-semibold text-[var(--text-primary)]">ApexQuant Direct OS</span>
+            <span className="font-semibold text-[var(--text-primary)]">SanchayX Direct OS</span>
             <span>— Institutional Portfolio & Quantitative Trading Platform</span>
           </div>
           <div className="flex items-center gap-4 text-[var(--text-muted)]">

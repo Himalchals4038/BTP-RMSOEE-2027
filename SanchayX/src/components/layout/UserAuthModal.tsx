@@ -101,7 +101,7 @@ export const UserAuthModal: React.FC = () => {
                 {activeUserModal === 'edit_profile' && 'Edit User Profile & KYC'}
                 {activeUserModal === 'switch_user' && 'Switch Trading Account'}
               </h3>
-              <p className="text-xs text-amber-200 font-bold tracking-wide mt-0.5 drop-shadow-xs">ApexQuant Direct Gateway</p>
+              <p className="text-xs text-amber-200 font-bold tracking-wide mt-0.5 drop-shadow-xs">SanchayX Direct Gateway</p>
             </div>
           </div>
 
@@ -123,7 +123,7 @@ export const UserAuthModal: React.FC = () => {
               {loginSuccessMsg && (
                 <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-300 text-xs font-bold flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                  Authenticated Successfully! Logging into ApexQuant Terminal.
+                  Authenticated Successfully! Logging into SanchayX Terminal.
                 </div>
               )}
 

@@ -81,13 +81,13 @@ const PortfolioContext = createContext<PortfolioContextType | undefined>(undefin
 
 export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    const saved = localStorage.getItem('apexquant_theme');
+    const saved = localStorage.getItem('sanchayx_theme') || localStorage.getItem('apexquant_theme');
     return (saved === 'dark' || saved === 'light') ? saved : 'light';
   });
 
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
-    const savedSession = localStorage.getItem('apexquant_is_logged_in');
-    const savedProfile = localStorage.getItem('apexquant_user_profile');
+    const savedSession = localStorage.getItem('sanchayx_is_logged_in') || localStorage.getItem('apexquant_is_logged_in');
+    const savedProfile = localStorage.getItem('sanchayx_user_profile') || localStorage.getItem('apexquant_user_profile');
     if (savedProfile) {
       try {
         const parsed = JSON.parse(savedProfile);
@@ -101,8 +101,8 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
     return {
       id: '8512437145',
-      name: 'ApexQuant Trader',
-      email: 'trader@apexquant.io',
+      name: 'SanchayX Trader',
+      email: 'trader@sanchayx.io',
       phone: '+91 98765 43210',
       accountType: 'Institutional Prime',
       kycStatus: 'Verified',
@@ -155,7 +155,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } else {
       document.documentElement.classList.remove('dark');
     }
-    localStorage.setItem('apexquant_theme', theme);
+    localStorage.setItem('sanchayx_theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {
@@ -167,11 +167,11 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const updated: UserProfile = {
         ...prev,
         id: userId || prev.id || '8512437145',
-        name: customName || prev.name || 'ApexQuant Trader',
+        name: customName || prev.name || 'SanchayX Trader',
         isLoggedIn: true
       };
-      localStorage.setItem('apexquant_is_logged_in', 'true');
-      localStorage.setItem('apexquant_user_profile', JSON.stringify(updated));
+      localStorage.setItem('sanchayx_is_logged_in', 'true');
+      localStorage.setItem('sanchayx_user_profile', JSON.stringify(updated));
       return updated;
     });
     setActiveUserModal(null);
@@ -182,8 +182,8 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (accountType === 'Institutional Prime') {
       profile = {
         id: 'INST-994821',
-        name: 'Apex Institutional Alpha',
-        email: 'alpha@apexquant.io',
+        name: 'SanchayX Institutional Alpha',
+        email: 'alpha@sanchayx.io',
         phone: '+91 98111 22334',
         accountType: 'Institutional Prime',
         kycStatus: 'Verified',
@@ -205,7 +205,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       profile = {
         id: 'SBX-104928',
         name: 'Beginner Quant Sandbox',
-        email: 'sandbox@apexquant.io',
+        email: 'sandbox@sanchayx.io',
         phone: '+91 98333 44556',
         accountType: 'Sandbox Demo',
         kycStatus: 'Verified',
@@ -214,18 +214,18 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       };
     }
     setCurrentUser(profile);
-    localStorage.setItem('apexquant_is_logged_in', 'true');
-    localStorage.setItem('apexquant_user_profile', JSON.stringify(profile));
+    localStorage.setItem('sanchayx_is_logged_in', 'true');
+    localStorage.setItem('sanchayx_user_profile', JSON.stringify(profile));
     setActiveUserModal(null);
   };
 
   const signUpUser = (data: { name: string; email: string; phone?: string; accountType?: 'Institutional Prime' | 'Retail HNI' | 'Sandbox Demo' }) => {
-    const randomId = 'AQ' + Math.floor(100000 + Math.random() * 900000);
+    const randomId = 'SX' + Math.floor(100000 + Math.random() * 900000);
     const randomDp = '12081600' + Math.floor(10000000 + Math.random() * 90000000);
     const newProfile: UserProfile = {
       id: randomId,
       name: data.name || 'New Quant Trader',
-      email: data.email || 'trader@apexquant.io',
+      email: data.email || 'trader@sanchayx.io',
       phone: data.phone || '+91 99999 88888',
       accountType: data.accountType || 'Retail HNI',
       kycStatus: 'Verified',
@@ -233,8 +233,8 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       isLoggedIn: true
     };
     setCurrentUser(newProfile);
-    localStorage.setItem('apexquant_is_logged_in', 'true');
-    localStorage.setItem('apexquant_user_profile', JSON.stringify(newProfile));
+    localStorage.setItem('sanchayx_is_logged_in', 'true');
+    localStorage.setItem('sanchayx_user_profile', JSON.stringify(newProfile));
     setActiveUserModal(null);
   };
 
@@ -243,14 +243,14 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       ...prev,
       isLoggedIn: false
     }));
-    localStorage.setItem('apexquant_is_logged_in', 'false');
+    localStorage.setItem('sanchayx_is_logged_in', 'false');
     setActiveUserModal(null);
   };
 
   const updateUserProfile = (profileUpdate: Partial<UserProfile>) => {
     setCurrentUser(prev => {
       const updated = { ...prev, ...profileUpdate };
-      localStorage.setItem('apexquant_user_profile', JSON.stringify(updated));
+      localStorage.setItem('sanchayx_user_profile', JSON.stringify(updated));
       return updated;
     });
     setActiveUserModal(null);
@@ -259,7 +259,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const switchUserAccount = (accountType: 'Institutional Prime' | 'Retail HNI' | 'Sandbox Demo') => {
     setCurrentUser(prev => {
       const updated = { ...prev, accountType };
-      localStorage.setItem('apexquant_user_profile', JSON.stringify(updated));
+      localStorage.setItem('sanchayx_user_profile', JSON.stringify(updated));
       return updated;
     });
     setActiveUserModal(null);
