@@ -1,5 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import { PortfolioProvider, usePortfolio } from './context/PortfolioContext';
+import { TradingSimulationProvider } from './context/TradingSimulationContext';
 import { Header } from './components/layout/Header';
 import { Navigation } from './components/layout/Navigation';
 import { ShieldCheck, Cpu, Loader2 } from 'lucide-react';
@@ -110,7 +111,9 @@ const AppShell: React.FC = () => {
 export function App() {
   return (
     <PortfolioProvider>
-      <AppShell />
+      <TradingSimulationProvider>
+        <AppShell />
+      </TradingSimulationProvider>
     </PortfolioProvider>
   );
 }

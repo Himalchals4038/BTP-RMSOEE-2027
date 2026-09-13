@@ -484,3 +484,558 @@ export async function fetchLatestQuotes(): Promise<Record<string, LiveMarketQuot
 
   return quotes;
 }
+
+/**
+ * ====================================================================
+ * SANCHAYX REAL-TIME LIVE TICK & PRICING ENGINE (1-SEC INTERVAL TICKS)
+ * Broadcasts ticks: { ticker, ltp, change, changePct, bid, ask, ... }
+ * Drives real-time MTM P&L calculations for positions & demat holdings.
+ * ====================================================================
+ */
+
+export interface LiveTick {
+  ticker: string;
+  name: string;
+  category: 'Equity' | 'Option' | 'SGB' | 'Bond' | 'Crypto' | 'Commodity';
+  ltp: number;
+  change: number;
+  changePct: number;
+  previousClose: number;
+  high: number;
+  low: number;
+  volume: number;
+  bid: number;
+  ask: number;
+  timestamp: string;
+}
+
+export const MASTER_TICK_CATALOG: Record<string, LiveTick> = {
+  // Equities
+  'RELIANCE.NS': {
+    ticker: 'RELIANCE.NS',
+    name: 'Reliance Industries Limited',
+    category: 'Equity',
+    ltp: 2450.50,
+    change: 30.50,
+    changePct: 1.26,
+    previousClose: 2420.00,
+    high: 2465.00,
+    low: 2415.00,
+    volume: 3840120,
+    bid: 2450.00,
+    ask: 2450.50,
+    timestamp: 'Live'
+  },
+  'TCS.NS': {
+    ticker: 'TCS.NS',
+    name: 'Tata Consultancy Services',
+    category: 'Equity',
+    ltp: 4150.00,
+    change: 50.00,
+    changePct: 1.22,
+    previousClose: 4100.00,
+    high: 4175.00,
+    low: 4095.00,
+    volume: 1420500,
+    bid: 4149.50,
+    ask: 4150.00,
+    timestamp: 'Live'
+  },
+  'INFY.NS': {
+    ticker: 'INFY.NS',
+    name: 'Infosys Limited',
+    category: 'Equity',
+    ltp: 1810.00,
+    change: -10.00,
+    changePct: -0.55,
+    previousClose: 1820.00,
+    high: 1832.00,
+    low: 1805.00,
+    volume: 2980400,
+    bid: 1809.50,
+    ask: 1810.00,
+    timestamp: 'Live'
+  },
+  'HDFCBANK.NS': {
+    ticker: 'HDFCBANK.NS',
+    name: 'HDFC Bank Ltd',
+    category: 'Equity',
+    ltp: 1625.00,
+    change: 15.00,
+    changePct: 0.93,
+    previousClose: 1610.00,
+    high: 1634.00,
+    low: 1608.00,
+    volume: 5410200,
+    bid: 1624.50,
+    ask: 1625.00,
+    timestamp: 'Live'
+  },
+  'ICICIBANK.NS': {
+    ticker: 'ICICIBANK.NS',
+    name: 'ICICI Bank Ltd',
+    category: 'Equity',
+    ltp: 1180.00,
+    change: 15.00,
+    changePct: 1.29,
+    previousClose: 1165.00,
+    high: 1188.00,
+    low: 1162.00,
+    volume: 4120900,
+    bid: 1179.50,
+    ask: 1180.00,
+    timestamp: 'Live'
+  },
+  'TATAMOTORS.NS': {
+    ticker: 'TATAMOTORS.NS',
+    name: 'Tata Motors Limited',
+    category: 'Equity',
+    ltp: 980.50,
+    change: 5.50,
+    changePct: 0.56,
+    previousClose: 975.00,
+    high: 992.00,
+    low: 972.00,
+    volume: 3840200,
+    bid: 980.00,
+    ask: 980.50,
+    timestamp: 'Live'
+  },
+  'ITC.NS': {
+    ticker: 'ITC.NS',
+    name: 'ITC Limited',
+    category: 'Equity',
+    ltp: 485.20,
+    change: 5.20,
+    changePct: 1.08,
+    previousClose: 480.00,
+    high: 488.50,
+    low: 479.00,
+    volume: 6240100,
+    bid: 485.00,
+    ask: 485.20,
+    timestamp: 'Live'
+  },
+  'SBIN.NS': {
+    ticker: 'SBIN.NS',
+    name: 'State Bank of India',
+    category: 'Equity',
+    ltp: 820.40,
+    change: 5.40,
+    changePct: 0.66,
+    previousClose: 815.00,
+    high: 825.00,
+    low: 812.00,
+    volume: 4820100,
+    bid: 820.00,
+    ask: 820.40,
+    timestamp: 'Live'
+  },
+  'LT.NS': {
+    ticker: 'LT.NS',
+    name: 'Larsen & Toubro Ltd',
+    category: 'Equity',
+    ltp: 3650.00,
+    change: 30.00,
+    changePct: 0.83,
+    previousClose: 3620.00,
+    high: 3670.00,
+    low: 3610.00,
+    volume: 980400,
+    bid: 3649.00,
+    ask: 3650.00,
+    timestamp: 'Live'
+  },
+  'TRENT.NS': {
+    ticker: 'TRENT.NS',
+    name: 'Trent Limited',
+    category: 'Equity',
+    ltp: 6850.00,
+    change: 130.00,
+    changePct: 1.93,
+    previousClose: 6720.00,
+    high: 6890.00,
+    low: 6700.00,
+    volume: 720100,
+    bid: 6848.00,
+    ask: 6850.00,
+    timestamp: 'Live'
+  },
+  'BHARTIARTL.NS': {
+    ticker: 'BHARTIARTL.NS',
+    name: 'Bharti Airtel Ltd',
+    category: 'Equity',
+    ltp: 1560.00,
+    change: 15.00,
+    changePct: 0.97,
+    previousClose: 1545.00,
+    high: 1572.00,
+    low: 1540.00,
+    volume: 2410800,
+    bid: 1559.50,
+    ask: 1560.00,
+    timestamp: 'Live'
+  },
+
+  // F&O Options
+  'NIFTY 24500 CE': {
+    ticker: 'NIFTY 24500 CE',
+    name: 'NIFTY 28 Aug 24500 Call Option',
+    category: 'Option',
+    ltp: 135.00,
+    change: 15.00,
+    changePct: 12.50,
+    previousClose: 120.00,
+    high: 148.00,
+    low: 110.00,
+    volume: 850400,
+    bid: 134.50,
+    ask: 135.00,
+    timestamp: 'Live'
+  },
+  'NIFTY 24500 PE': {
+    ticker: 'NIFTY 24500 PE',
+    name: 'NIFTY 28 Aug 24500 Put Option',
+    category: 'Option',
+    ltp: 95.00,
+    change: -15.00,
+    changePct: -13.64,
+    previousClose: 110.00,
+    high: 125.00,
+    low: 88.00,
+    volume: 642000,
+    bid: 94.50,
+    ask: 95.00,
+    timestamp: 'Live'
+  },
+
+  // Sovereign Gold Bonds (SGBs)
+  'SGB2708': {
+    ticker: 'SGB2708',
+    name: 'SGB 2019-20 Series V',
+    category: 'SGB',
+    ltp: 7245.00,
+    change: 45.00,
+    changePct: 0.62,
+    previousClose: 7200.00,
+    high: 7260.00,
+    low: 7190.00,
+    volume: 12400,
+    bid: 7240.00,
+    ask: 7245.00,
+    timestamp: 'Live'
+  },
+  'SGB2807': {
+    ticker: 'SGB2807',
+    name: 'SGB 2020-21 Series IV',
+    category: 'SGB',
+    ltp: 7280.00,
+    change: 40.00,
+    changePct: 0.55,
+    previousClose: 7240.00,
+    high: 7295.00,
+    low: 7235.00,
+    volume: 8500,
+    bid: 7275.00,
+    ask: 7280.00,
+    timestamp: 'Live'
+  },
+  'SGB2910': {
+    ticker: 'SGB2910',
+    name: 'SGB 2021-22 Series V',
+    category: 'SGB',
+    ltp: 7310.00,
+    change: 35.00,
+    changePct: 0.48,
+    previousClose: 7275.00,
+    high: 7320.00,
+    low: 7260.00,
+    volume: 9100,
+    bid: 7305.00,
+    ask: 7310.00,
+    timestamp: 'Live'
+  },
+  'SGB3012': {
+    ticker: 'SGB3012',
+    name: 'SGB 2022-23 Series III',
+    category: 'SGB',
+    ltp: 7350.00,
+    change: 40.00,
+    changePct: 0.55,
+    previousClose: 7310.00,
+    high: 7365.00,
+    low: 7300.00,
+    volume: 6800,
+    bid: 7345.00,
+    ask: 7350.00,
+    timestamp: 'Live'
+  },
+  'SGB3202': {
+    ticker: 'SGB3202',
+    name: 'SGB 2023-24 Series IV',
+    category: 'SGB',
+    ltp: 7420.00,
+    change: 50.00,
+    changePct: 0.68,
+    previousClose: 7370.00,
+    high: 7435.00,
+    low: 7360.00,
+    volume: 14200,
+    bid: 7415.00,
+    ask: 7420.00,
+    timestamp: 'Live'
+  },
+
+  // Corporate Bonds (NCDs)
+  'Shriram Finance 8.80%': {
+    ticker: 'Shriram Finance 8.80%',
+    name: 'Shriram Finance Senior Secured NCD',
+    category: 'Bond',
+    ltp: 1000.00,
+    change: 0.00,
+    changePct: 0.00,
+    previousClose: 1000.00,
+    high: 1002.00,
+    low: 998.00,
+    volume: 4200,
+    bid: 999.50,
+    ask: 1000.00,
+    timestamp: 'Live'
+  },
+  'L&T Finance 9.15%': {
+    ticker: 'L&T Finance 9.15%',
+    name: 'L&T Finance Secured Corporate NCD',
+    category: 'Bond',
+    ltp: 1015.00,
+    change: 5.00,
+    changePct: 0.50,
+    previousClose: 1010.00,
+    high: 1018.00,
+    low: 1008.00,
+    volume: 3800,
+    bid: 1014.50,
+    ask: 1015.00,
+    timestamp: 'Live'
+  },
+  'HDFC Bank 7.75%': {
+    ticker: 'HDFC Bank 7.75%',
+    name: 'HDFC Bank Cumulative Fixed Deposit / Bond',
+    category: 'Bond',
+    ltp: 1000.00,
+    change: 0.00,
+    changePct: 0.00,
+    previousClose: 1000.00,
+    high: 1001.00,
+    low: 999.00,
+    volume: 6100,
+    bid: 999.80,
+    ask: 1000.00,
+    timestamp: 'Live'
+  },
+
+  // 24/7 Global Assets
+  'BTC': {
+    ticker: 'BTC',
+    name: 'Bitcoin (Global 24/7)',
+    category: 'Crypto',
+    ltp: 64250.00,
+    change: 1250.00,
+    changePct: 1.98,
+    previousClose: 63000.00,
+    high: 64800.00,
+    low: 62850.00,
+    volume: 18240,
+    bid: 64245.00,
+    ask: 64250.00,
+    timestamp: 'Live'
+  },
+  'ETH': {
+    ticker: 'ETH',
+    name: 'Ethereum (Global 24/7)',
+    category: 'Crypto',
+    ltp: 3420.00,
+    change: 85.00,
+    changePct: 2.55,
+    previousClose: 3335.00,
+    high: 3460.00,
+    low: 3310.00,
+    volume: 94800,
+    bid: 3419.50,
+    ask: 3420.00,
+    timestamp: 'Live'
+  },
+  'GOLD 24K': {
+    ticker: 'GOLD 24K',
+    name: 'MCX Gold (10g / 24K)',
+    category: 'Commodity',
+    ltp: 71850.00,
+    change: 250.00,
+    changePct: 0.35,
+    previousClose: 71600.00,
+    high: 72100.00,
+    low: 71550.00,
+    volume: 14200,
+    bid: 71840.00,
+    ask: 71850.00,
+    timestamp: 'Live'
+  }
+};
+
+// Current dynamic state of ticks
+let activeTicksState: Record<string, LiveTick> = { ...MASTER_TICK_CATALOG };
+const tickListeners: Set<(ticks: Record<string, LiveTick>) => void> = new Set();
+let tickIntervalId: ReturnType<typeof setInterval> | null = null;
+
+function broadcastTickUpdates() {
+  const updatedTicks: Record<string, LiveTick> = {};
+
+  Object.keys(activeTicksState).forEach(ticker => {
+    const current = activeTicksState[ticker];
+    // Apply realistic micro-fluctuation (-0.15% to +0.15%)
+    const pctDelta = (Math.random() - 0.495) * 0.002;
+    const newLtp = Number(Math.max(1, current.ltp * (1 + pctDelta)).toFixed(2));
+    const newChange = Number((newLtp - current.previousClose).toFixed(2));
+    const newChangePct = Number(((newChange / current.previousClose) * 100).toFixed(2));
+    const newHigh = Math.max(current.high, newLtp);
+    const newLow = Math.min(current.low, newLtp);
+
+    // Micro spread
+    const spread = Math.max(0.05, Number((newLtp * 0.0002).toFixed(2)));
+    const newBid = Number((newLtp - spread / 2).toFixed(2));
+    const newAsk = Number((newLtp + spread / 2).toFixed(2));
+
+    updatedTicks[ticker] = {
+      ...current,
+      ltp: newLtp,
+      change: newChange,
+      changePct: newChangePct,
+      high: newHigh,
+      low: newLow,
+      bid: newBid,
+      ask: newAsk,
+      volume: current.volume + Math.floor(Math.random() * 50),
+      timestamp: new Date().toLocaleTimeString()
+    };
+  });
+
+  activeTicksState = updatedTicks;
+  tickListeners.forEach(listener => listener(updatedTicks));
+}
+
+export function subscribeToLiveTicks(listener: (ticks: Record<string, LiveTick>) => void): () => void {
+  tickListeners.add(listener);
+  // Send current state immediately
+  listener(activeTicksState);
+
+  if (!tickIntervalId) {
+    // 1000ms tick interval
+    tickIntervalId = setInterval(broadcastTickUpdates, 1000);
+  }
+
+  return () => {
+    tickListeners.delete(listener);
+    if (tickListeners.size === 0 && tickIntervalId) {
+      clearInterval(tickIntervalId);
+      tickIntervalId = null;
+    }
+  };
+}
+
+export function getLatestTick(ticker: string): LiveTick | undefined {
+  return activeTicksState[ticker] || MASTER_TICK_CATALOG[ticker];
+}
+
+export function getAllLatestTicks(): Record<string, LiveTick> {
+  return activeTicksState;
+}
+
+/**
+ * ====================================================================
+ * INNOVATION 1: REAL-TIME LEVEL-2 MARKET DEPTH & VIRTUAL ORDER LADDER
+ * 5-Depth Bid/Ask Order Book with Virtual Queue Priority Advancing
+ * ====================================================================
+ */
+
+export interface MarketDepthRow {
+  price: number;
+  orders: number;
+  qty: number;
+  isUserOrder?: boolean;
+}
+
+export interface Level2MarketDepth {
+  symbol: string;
+  bids: MarketDepthRow[];
+  asks: MarketDepthRow[];
+  totalBidQty: number;
+  totalAskQty: number;
+  ltp: number;
+}
+
+export function getLevel2MarketDepth(
+  symbol: string,
+  currentLtp?: number,
+  userOrders?: { price: number; qty: number; action: 'BUY' | 'SELL' }[]
+): Level2MarketDepth {
+  const tick = getLatestTick(symbol);
+  const baseLtp = currentLtp || tick?.ltp || 2450.00;
+  const tickSize = baseLtp > 1000 ? 0.50 : 0.05;
+
+  const bids: MarketDepthRow[] = [];
+  const asks: MarketDepthRow[] = [];
+
+  let totalBidQty = 0;
+  let totalAskQty = 0;
+
+  for (let i = 1; i <= 5; i++) {
+    const bidPrice = Number((baseLtp - i * tickSize).toFixed(2));
+    const askPrice = Number((baseLtp + i * tickSize).toFixed(2));
+
+    const bidOrders = Math.floor(8 + Math.random() * 25);
+    const askOrders = Math.floor(6 + Math.random() * 22);
+
+    const bidQty = Math.floor(350 + Math.random() * 1200);
+    const askQty = Math.floor(300 + Math.random() * 1100);
+
+    bids.push({ price: bidPrice, orders: bidOrders, qty: bidQty });
+    asks.push({ price: askPrice, orders: askOrders, qty: askQty });
+
+    totalBidQty += bidQty;
+    totalAskQty += askQty;
+  }
+
+  // Inject user simulated limit orders into the virtual queue ladder
+  if (userOrders && userOrders.length > 0) {
+    userOrders.forEach(uo => {
+      if (uo.action === 'BUY') {
+        const found = bids.find(b => Math.abs(b.price - uo.price) < tickSize);
+        if (found) {
+          found.isUserOrder = true;
+          found.orders += 1;
+          found.qty += uo.qty;
+        } else if (uo.price < baseLtp) {
+          bids[0] = { price: uo.price, orders: 1, qty: uo.qty, isUserOrder: true };
+        }
+      } else {
+        const found = asks.find(a => Math.abs(a.price - uo.price) < tickSize);
+        if (found) {
+          found.isUserOrder = true;
+          found.orders += 1;
+          found.qty += uo.qty;
+        } else if (uo.price > baseLtp) {
+          asks[0] = { price: uo.price, orders: 1, qty: uo.qty, isUserOrder: true };
+        }
+      }
+    });
+  }
+
+  return {
+    symbol,
+    bids,
+    asks,
+    totalBidQty,
+    totalAskQty,
+    ltp: baseLtp
+  };
+}
+

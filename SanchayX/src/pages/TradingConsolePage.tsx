@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { usePortfolio } from '../context/PortfolioContext';
+import { useTradingSimulation } from '../context/TradingSimulationContext';
+import { exportContractNotePDF, exportForm15DeclarationPDF } from '../utils/exportUtils';
+import type { ProductType, OrderType, OrderAction, PreTradeImpactAnalysis } from '../types/tradingSimulation';
 import { formatCompactCurrency } from '../utils/financialMath';
 import type { IPONFORecord } from '../services/indexedDBService';
 import { getIposFromIndexedDB, DEFAULT_IPO_CATALOG } from '../services/indexedDBService';
@@ -38,11 +41,45 @@ import {
   Calendar,
   Percent,
   X,
-  Filter
+  Filter,
+  Layers,
+  Smartphone,
+  Monitor,
+  AlertTriangle
 } from 'lucide-react';
 
 export const TradingConsolePage: React.FC = () => {
-  const { assets, currency, activeSubTab, exportReportCSV, exportReportPDF } = usePortfolio();
+  const { assets, currency, activeSubTab, exportReportCSV, exportReportPDF, currentUser } = usePortfolio();
+  const {
+    wallet,
+    orders,
+    trades,
+    positions,
+    dematHoldings,
+    ipoApplications,
+    familyTaxProfiles,
+    totalHoldingsValue,
+    totalInvestedValue,
+    totalUnrealizedPnl,
+    totalRealizedPnl,
+    totalMtmPnl,
+    hasMarginCall,
+    marketDepth,
+    placeOrder,
+    squareOffPosition,
+    cancelOrder,
+    addFunds,
+    pledgeShares,
+    unpledgeShares,
+    buySgbTranche,
+    investCorporateBond,
+    applyIpoAsba,
+    runIpoAllotmentLottery,
+    preTradeAnalyze,
+    updateFamilyProfile,
+    executeRebalanceBasket,
+    triggerCorporateAction
+  } = useTradingSimulation();
 
   // Active sub-section on the dedicated page (defaults to 'place_order' if activeSubTab is null)
   const activeTabId = activeSubTab || 'place_order';
@@ -74,7 +111,6 @@ export const TradingConsolePage: React.FC = () => {
   const [quantity, setQuantity] = useState<number>(100);
   const [price, setPrice] = useState<number>(2450);
   const [triggerPrice, setTriggerPrice] = useState<number>(2420);
-  const [orderPlacedSuccess, setOrderPlacedSuccess] = useState<boolean>(false);
   const [orderSearchQuery, setOrderSearchQuery] = useState<string>('');
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState<boolean>(false);
 
@@ -98,7 +134,18 @@ export const TradingConsolePage: React.FC = () => {
   // State for Add Funds
   const [addFundsAmount, setAddFundsAmount] = useState<number>(50000);
   const [fundSuccessMsg, setFundSuccessMsg] = useState<boolean>(false);
-  const [availableMargin, setAvailableMargin] = useState<number>(485000);
+
+  // Innovation 8: Dual Viewport Terminal Mode (Desktop Bloomberg vs Mobile Native)
+  const [viewportMode, setViewportMode] = useState<'desktop' | 'mobile'>('desktop');
+
+  // Innovation 2: Pre-Trade "What-If" Impact & Risk Delta Modal State
+  const [showPreTradeModal, setShowPreTradeModal] = useState<boolean>(false);
+  const [preTradeResult, setPreTradeResult] = useState<PreTradeImpactAnalysis | null>(null);
+  const [orderFeedback, setOrderFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Innovation 7: Autonomous Quant Rebalancing Sentinel State
+  const [rebalanceSuccessMsg, setRebalanceSuccessMsg] = useState<string | null>(null);
+  const [isRebalancing, setIsRebalancing] = useState<boolean>(false);
 
   // State for Live Refreshing IPOs & Market Selector (Strictly Separate Indian vs US Tabs)
   const [selectedIpoMarket, setSelectedIpoMarket] = useState<'Indian' | 'US'>('Indian');
@@ -395,61 +442,90 @@ export const TradingConsolePage: React.FC = () => {
   // State for Loan Against Shares Calculator
   const [pledgeVal, setPledgeVal] = useState<number>(500000);
 
-  // Mock Position Data
-  const [positions, setPositions] = useState([
-    { ticker: 'RELIANCE.NS', name: 'Reliance Industries', product: 'MIS Intraday', qty: 200, buyPrice: 2420, ltp: 2450.5, pnl: 6100, pnlPct: 1.26 },
-    { ticker: 'NIFTY 24500 CE', name: 'NIFTY 28 Aug Call Option', product: 'F&O Options', qty: 150, buyPrice: 120, ltp: 165.5, pnl: 6825, pnlPct: 37.9 },
-    { ticker: 'HDFCBANK.NS', name: 'HDFC Bank Ltd', product: 'MTF Margin', qty: 300, buyPrice: 1610, ltp: 1625, pnl: 4500, pnlPct: 0.93 },
-    { ticker: 'INFY.NS', name: 'Infosys Limited', product: 'Delivery (CNC)', qty: 100, buyPrice: 1820, ltp: 1810, pnl: -1000, pnlPct: -0.55 }
-  ]);
+  // Innovation 1: Level-2 Market Depth Ladder
+  const l2Depth = useMemo(() => {
+    return marketDepth(selectedAsset, price);
+  }, [marketDepth, selectedAsset, price]);
 
-  // Mock Order Book Data
-  const [orderBook, setOrderBook] = useState([
-    { id: 'ORD-89210', time: '14:22:05', ticker: 'RELIANCE.NS', action: 'BUY', product: 'Delivery (CNC)', qty: 100, price: 2450.00, status: 'EXECUTED' },
-    { id: 'ORD-89209', time: '14:10:12', ticker: 'TATAMOTORS.NS', action: 'BUY', product: 'MIS Intraday', qty: 250, price: 980.50, status: 'PENDING' },
-    { id: 'ORD-89208', time: '12:45:30', ticker: 'NIFTY 24500 CE', action: 'BUY', product: 'F&O Options', qty: 150, price: 120.00, status: 'EXECUTED' },
-    { id: 'ORD-89207', time: '11:15:00', ticker: 'HDFCBANK.NS', action: 'SELL', product: 'MTF Margin', qty: 100, price: 1630.00, status: 'CANCELLED' }
-  ]);
-
-  // Mock Trade Book Data
-  const tradeBook = [
-    { id: 'TRD-55102', time: '14:22:05', ticker: 'RELIANCE.NS', action: 'BUY', qty: 100, price: 2450.00, brokerage: 45.20, netValue: 245045.20 },
-    { id: 'TRD-55101', time: '12:45:30', ticker: 'NIFTY 24500 CE', action: 'BUY', qty: 150, price: 120.00, brokerage: 20.00, netValue: 18020.00 },
-    { id: 'TRD-55099', time: '10:05:15', ticker: 'INFY.NS', action: 'BUY', qty: 100, price: 1820.00, brokerage: 36.40, netValue: 182036.40 }
-  ];
-
-  // Mock Demat Holdings
-  const dematHoldings = [
-    { ticker: 'RELIANCE.NS', name: 'Reliance Industries', qty: 150, avgCost: 2100, ltp: 2450.50, val: 367575, pnl: 52575, pnlPct: 16.69, pledged: 'Unpledged' },
-    { ticker: 'HDFCBANK.NS', name: 'HDFC Bank Ltd', qty: 250, avgCost: 1450, ltp: 1625.00, val: 406250, pnl: 43750, pnlPct: 12.07, pledged: 'Pledged (₹3L)' },
-    { ticker: 'TCS.NS', name: 'Tata Consultancy Services', qty: 80, avgCost: 3600, ltp: 4150.00, val: 332000, pnl: 44000, pnlPct: 15.28, pledged: 'Unpledged' },
-    { ticker: 'ICICIBANK.NS', name: 'ICICI Bank Ltd', qty: 350, avgCost: 920, ltp: 1180.00, val: 413000, pnl: 91000, pnlPct: 28.26, pledged: 'Unpledged' }
-  ];
+  // Innovation 2: Pre-Trade What-If Audit
+  const handlePreTradeAudit = () => {
+    const analysis = preTradeAnalyze({
+      ticker: selectedAsset,
+      action: orderAction,
+      product: productType as ProductType,
+      orderType: orderType as OrderType,
+      qty: quantity,
+      price,
+      triggerPrice
+    });
+    setPreTradeResult(analysis);
+    setShowPreTradeModal(true);
+  };
 
   const handlePlaceOrderSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setOrderPlacedSuccess(true);
-    const newOrder = {
-      id: `ORD-${Math.floor(10000 + Math.random() * 90000)}`,
-      time: new Date().toLocaleTimeString(),
+    const result = placeOrder({
       ticker: selectedAsset,
       action: orderAction,
-      product: productType,
+      product: productType as ProductType,
+      orderType: orderType as OrderType,
       qty: quantity,
-      price: price,
-      status: 'EXECUTED'
-    };
-    setOrderBook([newOrder, ...orderBook]);
-    setTimeout(() => setOrderPlacedSuccess(false), 4000);
+      price,
+      triggerPrice
+    });
+    if (result.success) {
+      setOrderFeedback({
+        type: 'success',
+        message: `Order for ${quantity}x ${selectedAsset} successfully sent to ${exchange} matching engine!`
+      });
+      setTimeout(() => {
+        setOrderFeedback(null);
+      }, 4500);
+    } else {
+      setOrderFeedback({
+        type: 'error',
+        message: result.message || 'Execution halted: Upfront margin check failed or invalid input'
+      });
+      setTimeout(() => setOrderFeedback(null), 5000);
+    }
+  };
+
+  const handleConfirmPreTradeExecution = () => {
+    const result = placeOrder({
+      ticker: selectedAsset,
+      action: orderAction,
+      product: productType as ProductType,
+      orderType: orderType as OrderType,
+      qty: quantity,
+      price,
+      triggerPrice
+    });
+    setShowPreTradeModal(false);
+    if (result.success) {
+      setOrderFeedback({
+        type: 'success',
+        message: `DMA Order for ${quantity}x ${selectedAsset} filled at exchange!`
+      });
+      setTimeout(() => {
+        setOrderFeedback(null);
+      }, 4500);
+    } else {
+      setOrderFeedback({
+        type: 'error',
+        message: result.message || 'Execution halted: Risk validator rejected order'
+      });
+      setTimeout(() => setOrderFeedback(null), 5000);
+    }
   };
 
   const handleSquareOff = (ticker: string) => {
-    setPositions(positions.filter(p => p.ticker !== ticker));
+    squareOffPosition(ticker);
   };
 
   const handleAddFundsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setAvailableMargin(prev => prev + Number(addFundsAmount));
+    if (addFundsAmount <= 0) return;
+    addFunds(Number(addFundsAmount));
     setFundSuccessMsg(true);
     setTimeout(() => setFundSuccessMsg(false), 3000);
   };
@@ -462,9 +538,26 @@ export const TradingConsolePage: React.FC = () => {
     }, 1000);
   };
 
-  const handleApplyIpo = (ipoName: string) => {
-    setIpoAppliedMsg(`ASBA Bid Submitted for ${ipoName}! Application Ref: ASBA-${Math.floor(100000 + Math.random() * 900000)}`);
-    setTimeout(() => setIpoAppliedMsg(null), 4000);
+  const handleApplyIpoAsba = (ipo: IPONFORecord) => {
+    const numericPrice = typeof ipo.priceBand === 'string'
+      ? Number(ipo.priceBand.replace(/[^0-9.]/g, '').split('-')[0]) || 450
+      : 450;
+    const lotSize = Number(ipo.lotSize) || 30;
+    const res = applyIpoAsba({
+      id: ipo.id || `IPO-${Date.now()}`,
+      name: ipo.name,
+      category: ipo.category || 'Mainboard IPO',
+      price: numericPrice,
+      lotSize: lotSize,
+      gmp: typeof ipo.gmp === 'string' ? ipo.gmp : '+₹50',
+      subMultiple: ipo.subMultiple || '12.4x'
+    });
+    if (res.success) {
+      setIpoAppliedMsg(`ASBA Bid Submitted for ${ipo.name}! ₹${(lotSize * numericPrice).toLocaleString()} lien-blocked in Demat.`);
+    } else {
+      setIpoAppliedMsg(`ASBA Application Rejected: ${res.message}`);
+    }
+    setTimeout(() => setIpoAppliedMsg(null), 4500);
   };
 
   const handleInvestFd = (issuer: string) => {
@@ -507,6 +600,50 @@ export const TradingConsolePage: React.FC = () => {
 
   const exchangeOptions = getExchangeOptions();
 
+  // Innovation 7: Compute live allocation vs target for Sentinel
+  const currentAllocation = useMemo(() => {
+    let eq = 0, debt = 0, gold = 0;
+    dematHoldings.forEach(h => {
+      if (h.category === 'Equity') eq += h.currentValue;
+      else if (h.category === 'Corporate Bond' || h.category === 'NCD') debt += h.currentValue;
+      else if (h.category === 'SGB') gold += h.currentValue;
+    });
+    debt += wallet.cashBalance + wallet.autoSweepBalance;
+    const total = Math.max(1, eq + debt + gold);
+    return {
+      equityPct: Math.round((eq / total) * 100),
+      debtPct: Math.round((debt / total) * 100),
+      goldPct: Math.round((gold / total) * 100)
+    };
+  }, [dematHoldings, wallet]);
+
+  const targetAllocation = { equityPct: 55, debtPct: 30, goldPct: 15 };
+  const equityDrift = currentAllocation.equityPct - targetAllocation.equityPct;
+  const debtDrift = currentAllocation.debtPct - targetAllocation.debtPct;
+  const goldDrift = currentAllocation.goldPct - targetAllocation.goldPct;
+  const maxAbsDrift = Math.max(Math.abs(equityDrift), Math.abs(debtDrift), Math.abs(goldDrift));
+  const hasAllocationDrift = maxAbsDrift > 5;
+
+  const totalFamilyTaxSaved = useMemo(() => {
+    return familyTaxProfiles.reduce((acc, member) => acc + member.tdsSaved, 0);
+  }, [familyTaxProfiles]);
+
+  const handleExecuteRebalance = () => {
+    setIsRebalancing(true);
+    setTimeout(() => {
+      const rebalanceOrders = [
+        { ticker: 'RELIANCE.NS', name: 'Reliance Industries', action: (equityDrift > 0 ? 'SELL' : 'BUY') as OrderAction, qty: 10, price: 2450 },
+        { ticker: 'SGB-2026-I', name: 'Sovereign Gold Bond 2026', action: (goldDrift > 0 ? 'SELL' : 'BUY') as OrderAction, qty: 5, price: 7200 }
+      ];
+      const res = executeRebalanceBasket(rebalanceOrders);
+      setIsRebalancing(false);
+      if (res.executedCount > 0) {
+        setRebalanceSuccessMsg(res.message);
+        setTimeout(() => setRebalanceSuccessMsg(null), 5000);
+      }
+    }, 1000);
+  };
+
   return (
     <div className="w-full space-y-6 pb-12 animate-in fade-in duration-200">
       {/* Top Page Header Banner */}
@@ -532,6 +669,36 @@ export const TradingConsolePage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Innovation 8: Dual Viewport Mode Switcher */}
+            <div className="flex items-center gap-1 bg-[var(--bg-tertiary)] p-1 rounded-xl border border-[var(--border-color)]">
+              <button
+                type="button"
+                onClick={() => setViewportMode('desktop')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  viewportMode === 'desktop'
+                    ? 'bg-[var(--icici-orange)] text-white shadow-xs'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
+                title="Desktop Bloomberg Terminal Layout"
+              >
+                <Monitor className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Bloomberg View</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewportMode('mobile')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  viewportMode === 'mobile'
+                    ? 'bg-[var(--icici-orange)] text-white shadow-xs'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
+                title="Mobile Native Smartphone Terminal"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Mobile View</span>
+              </button>
+            </div>
+
             <button
               onClick={exportReportCSV}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs border border-emerald-500/30 transition-all cursor-pointer shadow-xs"
@@ -551,6 +718,18 @@ export const TradingConsolePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* SEBI Margin Call Warning Banner */}
+      {hasMarginCall && (
+        <div className="p-4 rounded-2xl bg-rose-500/15 border-2 border-rose-500/40 text-rose-700 dark:text-rose-300 text-xs font-bold flex items-center justify-between gap-3 shadow-md animate-pulse">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
+            <div>
+              <span className="font-black text-sm">SEBI REGULATORY MARGIN CALL:</span> Cumulative MTM position losses have exceeded 80% of blocked margin. Please deposit additional funds or square off open derivative positions immediately to avert mandatory exchange liquidation.
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Page Card Body */}
       <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-xl">
@@ -590,198 +769,522 @@ export const TradingConsolePage: React.FC = () => {
               </div>
             </div>
 
-            {orderPlacedSuccess && (
-              <div className="p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-2.5 animate-bounce">
-                <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                Order Placed Successfully! Sent to Exchange ({exchange}) matching engine. View in Order Book.
+            {/* Dynamic Order Feedback Banner */}
+            {orderFeedback && (
+              <div className={`p-4 rounded-xl border text-xs font-bold flex items-center gap-2.5 animate-bounce ${
+                orderFeedback.type === 'success'
+                  ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+                  : 'bg-rose-500/15 border-rose-500/30 text-rose-700 dark:text-rose-300'
+              }`}>
+                {orderFeedback.type === 'success' ? (
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                ) : (
+                  <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
+                )}
+                {orderFeedback.message}
               </div>
             )}
 
-            <form onSubmit={handlePlaceOrderSubmit} className="space-y-5">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                {/* Searchable Security Selector */}
-                <div className="space-y-1.5 relative">
-                  <label className="text-xs font-bold text-[var(--text-primary)]">Search & Select Security / Instrument</label>
-                  <div className="relative">
-                    <Search className="w-4 h-4 text-[var(--text-muted)] absolute left-3 top-3" />
-                    <input
-                      type="text"
-                      placeholder="Type ticker or name (e.g. BTC, RELIANCE, AAPL, SGB)..."
-                      value={isSearchDropdownOpen ? orderSearchQuery : `${selectedAssetObj.ticker} — ${selectedAssetObj.name}`}
-                      onFocus={() => {
-                        setOrderSearchQuery('');
-                        setIsSearchDropdownOpen(true);
-                      }}
-                      onChange={(e) => {
-                        setOrderSearchQuery(e.target.value);
-                        setIsSearchDropdownOpen(true);
-                      }}
-                      className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl pl-9 pr-8 py-2.5 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)]"
-                    />
-                  </div>
+            {/* Layout: Order Entry Form + Innovation 1 Level-2 Market Depth */}
+            <div className={`grid gap-6 ${viewportMode === 'mobile' ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'}`}>
+              <div className={viewportMode === 'mobile' ? 'w-full' : 'lg:col-span-2'}>
+                <form onSubmit={handlePlaceOrderSubmit} className="space-y-5">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    {/* Searchable Security Selector */}
+                    <div className="space-y-1.5 relative">
+                      <label className="text-xs font-bold text-[var(--text-primary)]">Search & Select Security / Instrument</label>
+                      <div className="relative">
+                        <Search className="w-4 h-4 text-[var(--text-muted)] absolute left-3 top-3" />
+                        <input
+                          type="text"
+                          placeholder="Type ticker or name (e.g. BTC, RELIANCE, AAPL, SGB)..."
+                          value={isSearchDropdownOpen ? orderSearchQuery : `${selectedAssetObj.ticker} — ${selectedAssetObj.name}`}
+                          onFocus={() => {
+                            setOrderSearchQuery('');
+                            setIsSearchDropdownOpen(true);
+                          }}
+                          onChange={(e) => {
+                            setOrderSearchQuery(e.target.value);
+                            setIsSearchDropdownOpen(true);
+                          }}
+                          className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl pl-9 pr-8 py-2.5 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)]"
+                        />
+                      </div>
 
-                  {isSearchDropdownOpen && (
-                    <div className="absolute left-0 right-0 top-full mt-1 max-h-64 overflow-y-auto bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-2xl z-30 divide-y divide-[var(--border-subtle)]">
-                      {filteredAssets.length > 0 ? (
-                        filteredAssets.map(a => (
-                          <div
-                            key={a.ticker}
-                            onClick={() => handleSelectAsset(a.ticker)}
-                            className={`p-3 hover:bg-[var(--bg-tertiary)] cursor-pointer flex items-center justify-between transition-colors ${
-                              selectedAsset === a.ticker ? 'bg-[var(--bg-tertiary)] border-l-4 border-[var(--icici-orange)]' : ''
-                            }`}
-                          >
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono font-bold text-xs text-[var(--text-primary)]">{a.ticker}</span>
-                                <span className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${
-                                  a.category === 'Crypto' ? 'bg-amber-500/20 text-amber-500' :
-                                  a.category === 'Equities' ? 'bg-blue-500/20 text-blue-500' :
-                                  a.category === 'Bonds' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-purple-500/20 text-purple-500'
-                                }`}>
-                                  {a.category}
-                                </span>
+                      {isSearchDropdownOpen && (
+                        <div className="absolute left-0 right-0 top-full mt-1 max-h-64 overflow-y-auto bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-2xl z-30 divide-y divide-[var(--border-subtle)]">
+                          {filteredAssets.length > 0 ? (
+                            filteredAssets.map(a => (
+                              <div
+                                key={a.ticker}
+                                onClick={() => handleSelectAsset(a.ticker)}
+                                className={`p-3 hover:bg-[var(--bg-tertiary)] cursor-pointer flex items-center justify-between transition-colors ${
+                                  selectedAsset === a.ticker ? 'bg-[var(--bg-tertiary)] border-l-4 border-[var(--icici-orange)]' : ''
+                                }`}
+                              >
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono font-bold text-xs text-[var(--text-primary)]">{a.ticker}</span>
+                                    <span className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${
+                                      a.category === 'Crypto' ? 'bg-amber-500/20 text-amber-500' :
+                                      a.category === 'Equities' ? 'bg-blue-500/20 text-blue-500' :
+                                      a.category === 'Bonds' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-purple-500/20 text-purple-500'
+                                    }`}>
+                                      {a.category}
+                                    </span>
+                                  </div>
+                                  <span className="text-[11px] text-[var(--text-secondary)] block truncate max-w-[220px]">{a.name}</span>
+                                </div>
+                                <div className="text-right">
+                                  <span className="font-mono font-bold text-xs text-[var(--text-primary)] block">
+                                    {a.currency}{a.price.toLocaleString()}
+                                  </span>
+                                  <span className={`text-[10px] font-bold ${a.change24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                    {a.change24h >= 0 ? '+' : ''}{a.change24h}%
+                                  </span>
+                                </div>
                               </div>
-                              <span className="text-[11px] text-[var(--text-secondary)] block truncate max-w-[220px]">{a.name}</span>
+                            ))
+                          ) : (
+                            <div className="p-4 text-center text-xs text-[var(--text-muted)] font-bold">
+                              No matching security found for "{orderSearchQuery}"
                             </div>
-                            <div className="text-right">
-                              <span className="font-mono font-bold text-xs text-[var(--text-primary)] block">
-                                {a.currency}{a.price.toLocaleString()}
-                              </span>
-                              <span className={`text-[10px] font-bold ${a.change24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                {a.change24h >= 0 ? '+' : ''}{a.change24h}%
-                              </span>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="p-4 text-center text-xs text-[var(--text-muted)] font-bold">
-                          No matching security found for "{orderSearchQuery}"
+                          )}
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
 
-                {/* Exchange Segment */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-[var(--text-primary)]">Exchange Platform</label>
-                  <select
-                    value={exchange}
-                    onChange={(e) => setExchange(e.target.value)}
-                    className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl p-2.5 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)]"
-                  >
-                    {exchangeOptions.map(ex => (
-                      <option key={ex.id} value={ex.id} className="bg-[var(--bg-card)]">
-                        {ex.label}
-                      </option>
+                    {/* Exchange Segment */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-[var(--text-primary)]">Exchange Platform</label>
+                      <select
+                        value={exchange}
+                        onChange={(e) => setExchange(e.target.value)}
+                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl p-2.5 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)]"
+                      >
+                        {exchangeOptions.map(ex => (
+                          <option key={ex.id} value={ex.id} className="bg-[var(--bg-card)]">
+                            {ex.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Product Type */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-[var(--text-primary)]">Product Type</label>
+                      <select
+                        value={productType}
+                        onChange={(e) => setProductType(e.target.value)}
+                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl p-2.5 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)]"
+                      >
+                        <option value="Delivery (CNC)">Delivery (CNC) — Cash & Carry</option>
+                        <option value="Intraday (MIS)">Intraday (MIS) — Margin Intraday</option>
+                        <option value="MTF (Margin)">MTF — Margin Trading Facility (4x Leverage)</option>
+                        <option value="F&O Carry">F&O Derivatives Carry-Forward</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+                    {/* Order Type */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-[var(--text-primary)]">Order Type</label>
+                      <select
+                        value={orderType}
+                        onChange={(e) => setOrderType(e.target.value)}
+                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl p-2.5 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)]"
+                      >
+                        <option value="Limit Order">Limit Order</option>
+                        <option value="Market Order">Market Order (LTP)</option>
+                        <option value="Stop-Loss (SL)">Stop-Loss Limit (SL)</option>
+                        <option value="SL-Market (SL-M)">Stop-Loss Market (SL-M)</option>
+                      </select>
+                    </div>
+
+                    {/* Quantity */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-[var(--text-primary)]">Quantity (Shares/Lots)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={quantity}
+                        onChange={(e) => setQuantity(Number(e.target.value))}
+                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl p-2.5 text-xs font-mono font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)]"
+                      />
+                    </div>
+
+                    {/* Price */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-[var(--text-primary)]">Order Price ({selectedAssetObj.currency})</label>
+                      <input
+                        type="number"
+                        disabled={orderType === 'Market Order'}
+                        value={price}
+                        onChange={(e) => setPrice(Number(e.target.value))}
+                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl p-2.5 text-xs font-mono font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)] disabled:opacity-50"
+                      />
+                    </div>
+
+                    {/* Trigger Price */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-[var(--text-primary)]">Trigger Price (for SL)</label>
+                      <input
+                        type="number"
+                        disabled={!orderType.includes('SL')}
+                        value={triggerPrice}
+                        onChange={(e) => setTriggerPrice(Number(e.target.value))}
+                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl p-2.5 text-xs font-mono font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)] disabled:opacity-50"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Quick Quantity Presets for Fast Ordering */}
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-[11px] font-bold text-[var(--text-muted)]">Quick Qty:</span>
+                    {[25, 50, 100, 250, 500].map(q => (
+                      <button
+                        key={q}
+                        type="button"
+                        onClick={() => setQuantity(q)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+                          quantity === q
+                            ? 'bg-[var(--icici-orange)] text-white'
+                            : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-card-hover)] text-[var(--text-secondary)] border border-[var(--border-color)]'
+                        }`}
+                      >
+                        +{q}
+                      </button>
                     ))}
-                  </select>
-                </div>
+                  </div>
 
-                {/* Product Type */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-[var(--text-primary)]">Product Type</label>
-                  <select
-                    value={productType}
-                    onChange={(e) => setProductType(e.target.value)}
-                    className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl p-2.5 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)]"
-                  >
-                    <option value="Delivery (CNC)">Delivery (CNC) — Cash & Carry</option>
-                    <option value="Intraday (MIS)">Intraday (MIS) — Margin Intraday</option>
-                    <option value="MTF (Margin)">MTF — Margin Trading Facility (4x Leverage)</option>
-                    <option value="F&O Carry">F&O Derivatives Carry-Forward</option>
-                  </select>
-                </div>
+                  {/* Margin Summary */}
+                  <div className="p-5 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                    <div>
+                      <span className="text-[var(--text-muted)] block text-[10px] font-bold uppercase">Estimated Order Value</span>
+                      <span className="font-mono font-extrabold text-lg text-[var(--text-primary)]">
+                        {formatCompactCurrency(estOrderVal, currency)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[var(--text-muted)] block text-[10px] font-bold uppercase">Required Margin</span>
+                      <span className="font-mono font-extrabold text-lg text-[var(--icici-orange)]">
+                        {formatCompactCurrency(productType.includes('Intraday') ? estOrderVal * 0.2 : estOrderVal, currency)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[var(--text-muted)] block text-[10px] font-bold uppercase">Available Margin Balance</span>
+                      <span className="font-mono font-extrabold text-lg text-emerald-600 dark:text-emerald-400">
+                        {formatCompactCurrency(wallet.availableMargin, currency)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons: Pre-Trade Audit & Submit Order */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={handlePreTradeAudit}
+                      className="py-3.5 px-4 rounded-xl font-black text-xs bg-[var(--bg-tertiary)] hover:bg-[var(--bg-card-hover)] border-2 border-[var(--icici-orange)]/40 hover:border-[var(--icici-orange)] text-[var(--icici-orange)] shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                      PRE-TRADE "WHAT-IF" AUDIT
+                    </button>
+
+                    <button
+                      type="submit"
+                      className={`py-3.5 px-4 rounded-xl font-black text-xs text-white shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                        orderAction === 'BUY'
+                          ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20'
+                          : 'bg-rose-600 hover:bg-rose-500 shadow-rose-500/20'
+                      }`}
+                    >
+                      <ShoppingCart className="w-4 h-4" />
+                      SUBMIT {orderAction} ORDER FOR {selectedAsset}
+                    </button>
+                  </div>
+                </form>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
-                {/* Order Type */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-[var(--text-primary)]">Order Type</label>
-                  <select
-                    value={orderType}
-                    onChange={(e) => setOrderType(e.target.value)}
-                    className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl p-2.5 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)]"
-                  >
-                    <option value="Limit Order">Limit Order</option>
-                    <option value="Market Order">Market Order (LTP)</option>
-                    <option value="Stop-Loss (SL)">Stop-Loss Limit (SL)</option>
-                    <option value="SL-Market (SL-M)">Stop-Loss Market (SL-M)</option>
-                  </select>
-                </div>
+              {/* Innovation 1: Level-2 Market Depth & Virtual Order Ladder */}
+              <div className="space-y-4">
+                <div className="bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-2.5">
+                    <div>
+                      <div className="text-xs font-black text-[var(--text-primary)] flex items-center gap-1.5">
+                        <Layers className="w-4 h-4 text-[var(--icici-orange)]" />
+                        <span>Level-2 Market Depth Ladder</span>
+                      </div>
+                      <div className="text-[10px] text-[var(--text-secondary)]">Click bid/ask to autofill price & qty</div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] font-mono font-bold text-[var(--text-muted)] block">Spread</span>
+                      <div className="text-xs font-mono font-bold text-amber-500">
+                        ₹{Math.max(0.05, ((l2Depth.asks[0]?.price || price) - (l2Depth.bids[0]?.price || price))).toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
 
-                {/* Quantity */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-[var(--text-primary)]">Quantity (Shares/Lots)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={quantity}
-                    onChange={(e) => setQuantity(Number(e.target.value))}
-                    className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl p-2.5 text-xs font-mono font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)]"
-                  />
-                </div>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    {/* BIDS (BUYERS) */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-[10px] font-bold text-emerald-600 dark:text-emerald-400 pb-1 border-b border-emerald-500/20">
+                        <span>BUYERS</span>
+                        <span>ORDERS / QTY</span>
+                      </div>
+                      <div className="space-y-1">
+                        {l2Depth.bids.map((b, idx) => {
+                          const depthPct = Math.min(100, Math.round((b.qty / (l2Depth.totalBidQty || 1)) * 100));
+                          return (
+                            <div
+                              key={`bid-${idx}`}
+                              onClick={() => {
+                                setPrice(b.price);
+                                setQuantity(b.qty);
+                              }}
+                              className="relative p-1.5 rounded-lg hover:bg-emerald-500/15 cursor-pointer transition-colors overflow-hidden flex items-center justify-between font-mono text-[11px]"
+                              title="Click to fill price and quantity"
+                            >
+                              <div
+                                className="absolute inset-y-0 left-0 bg-emerald-500/15 pointer-events-none transition-all duration-300"
+                                style={{ width: `${depthPct}%` }}
+                              />
+                              <span className="font-bold text-emerald-600 dark:text-emerald-400 relative z-10">₹{b.price.toFixed(2)}</span>
+                              <span className="text-[var(--text-primary)] relative z-10">{b.orders} / {b.qty.toLocaleString()}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] font-mono font-bold text-[var(--text-muted)] pt-1 border-t border-[var(--border-subtle)]">
+                        <span>Total Bids:</span>
+                        <span className="text-emerald-500">{l2Depth.totalBidQty.toLocaleString()}</span>
+                      </div>
+                    </div>
 
-                {/* Price */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-[var(--text-primary)]">Order Price ({selectedAssetObj.currency})</label>
-                  <input
-                    type="number"
-                    disabled={orderType === 'Market Order'}
-                    value={price}
-                    onChange={(e) => setPrice(Number(e.target.value))}
-                    className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl p-2.5 text-xs font-mono font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)] disabled:opacity-50"
-                  />
-                </div>
+                    {/* ASKS (SELLERS) */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-[10px] font-bold text-rose-600 dark:text-rose-400 pb-1 border-b border-rose-500/20">
+                        <span>SELLERS</span>
+                        <span>QTY / ORDERS</span>
+                      </div>
+                      <div className="space-y-1">
+                        {l2Depth.asks.map((a, idx) => {
+                          const depthPct = Math.min(100, Math.round((a.qty / (l2Depth.totalAskQty || 1)) * 100));
+                          return (
+                            <div
+                              key={`ask-${idx}`}
+                              onClick={() => {
+                                setPrice(a.price);
+                                setQuantity(a.qty);
+                              }}
+                              className="relative p-1.5 rounded-lg hover:bg-rose-500/15 cursor-pointer transition-colors overflow-hidden flex items-center justify-between font-mono text-[11px]"
+                              title="Click to fill price and quantity"
+                            >
+                              <div
+                                className="absolute inset-y-0 right-0 bg-rose-500/15 pointer-events-none transition-all duration-300"
+                                style={{ width: `${depthPct}%` }}
+                              />
+                              <span className="text-[var(--text-primary)] relative z-10">{a.qty.toLocaleString()} / {a.orders}</span>
+                              <span className="font-bold text-rose-600 dark:text-rose-400 relative z-10">₹{a.price.toFixed(2)}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] font-mono font-bold text-[var(--text-muted)] pt-1 border-t border-[var(--border-subtle)]">
+                        <span>Total Asks:</span>
+                        <span className="text-rose-500">{l2Depth.totalAskQty.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
 
-                {/* Trigger Price */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-[var(--text-primary)]">Trigger Price (for SL)</label>
-                  <input
-                    type="number"
-                    disabled={!orderType.includes('SL')}
-                    value={triggerPrice}
-                    onChange={(e) => setTriggerPrice(Number(e.target.value))}
-                    className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl p-2.5 text-xs font-mono font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)] disabled:opacity-50"
-                  />
+                  {/* Buy vs Sell Pressure Bar */}
+                  <div className="pt-2 border-t border-[var(--border-subtle)] space-y-1">
+                    <div className="flex justify-between text-[10px] font-bold">
+                      <span className="text-emerald-500">
+                        Buy Pressure: {Math.round((l2Depth.totalBidQty / Math.max(1, l2Depth.totalBidQty + l2Depth.totalAskQty)) * 100)}%
+                      </span>
+                      <span className="text-rose-500">
+                        Sell Pressure: {Math.round((l2Depth.totalAskQty / Math.max(1, l2Depth.totalBidQty + l2Depth.totalAskQty)) * 100)}%
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 bg-rose-500/40 rounded-full overflow-hidden flex">
+                      <div
+                        className="h-full bg-emerald-500 transition-all duration-300"
+                        style={{
+                          width: `${(l2Depth.totalBidQty / Math.max(1, l2Depth.totalBidQty + l2Depth.totalAskQty)) * 100}%`
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
+            </div>
 
-              {/* Margin Summary */}
-              <div className="p-5 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                <div>
-                  <span className="text-[var(--text-muted)] block text-[10px] font-bold uppercase">Estimated Order Value</span>
-                  <span className="font-mono font-extrabold text-lg text-[var(--text-primary)]">
-                    {formatCompactCurrency(estOrderVal, currency)}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[var(--text-muted)] block text-[10px] font-bold uppercase">Required Margin</span>
-                  <span className="font-mono font-extrabold text-lg text-[var(--icici-orange)]">
-                    {formatCompactCurrency(productType.includes('Intraday') ? estOrderVal * 0.2 : estOrderVal, currency)}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[var(--text-muted)] block text-[10px] font-bold uppercase">Available Margin Balance</span>
-                  <span className="font-mono font-extrabold text-lg text-emerald-600 dark:text-emerald-400">
-                    {formatCompactCurrency(availableMargin, currency)}
-                  </span>
+            {/* Innovation 2: Pre-Trade What-If Modal */}
+            {showPreTradeModal && preTradeResult && (
+              <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
+                <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-6 sm:p-7 max-w-2xl w-full shadow-2xl space-y-5">
+                  <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-2xl bg-[var(--icici-orange)]/15 border border-[var(--icici-orange)]/30 text-[var(--icici-orange)]">
+                        <ShieldAlert className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-black text-[var(--text-primary)]">
+                          Institutional Pre-Trade Risk & Margin Impact Audit
+                        </h3>
+                        <p className="text-xs text-[var(--text-secondary)] font-medium">
+                          SEBI Upfront Margin Validation, Delta VaR Impact, Slippage & Statutory Fee Engine
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowPreTradeModal(false)}
+                      className="p-1.5 rounded-xl hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2.5 py-0.5 rounded-md font-black text-xs ${orderAction === 'BUY' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
+                        {orderAction}
+                      </span>
+                      <span className="font-mono font-black text-sm text-[var(--text-primary)]">{selectedAsset}</span>
+                      <span className="text-[var(--text-secondary)] font-medium">({productType})</span>
+                    </div>
+                    <div className="font-mono font-bold text-xs text-[var(--text-primary)]">
+                      {quantity.toLocaleString()} Units @ ₹{price.toLocaleString()}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                    <div className="p-3.5 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] space-y-1">
+                      <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase block">Order Value</span>
+                      <span className="font-mono font-black text-base text-[var(--text-primary)] block">
+                        {formatCompactCurrency(preTradeResult.orderValue, currency)}
+                      </span>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] space-y-1">
+                      <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase block">Upfront Margin</span>
+                      <span className="font-mono font-black text-base text-[var(--icici-orange)] block">
+                        {formatCompactCurrency(preTradeResult.requiredMargin, currency)}
+                      </span>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] space-y-1">
+                      <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase block">Est. Slippage</span>
+                      <span className="font-mono font-black text-base text-amber-500 block">
+                        {preTradeResult.slippagePct.toFixed(2)}%
+                      </span>
+                      <span className="text-[10px] text-[var(--text-muted)] font-mono block">
+                        ≈ ₹{preTradeResult.estimatedSlippageCost.toFixed(1)}
+                      </span>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] space-y-1">
+                      <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase block">Portfolio VaR 95%</span>
+                      <div className="font-mono font-black text-xs text-[var(--text-primary)] flex items-center gap-1">
+                        <span>{preTradeResult.currentVaR95.toFixed(2)}%</span>
+                        <ChevronRight className="w-3 h-3 text-[var(--text-muted)]" />
+                        <span className={preTradeResult.projectedVaR95 > preTradeResult.currentVaR95 ? 'text-rose-500' : 'text-emerald-500'}>
+                          {preTradeResult.projectedVaR95.toFixed(2)}%
+                        </span>
+                      </div>
+                      <span className="text-[9px] text-[var(--text-muted)] font-bold block">
+                        Sharpe: {preTradeResult.currentSharpe.toFixed(2)} ➔ {preTradeResult.projectedSharpe.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Statutory Charges Breakdown Box */}
+                  <div className="p-4 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] space-y-2.5 text-xs">
+                    <div className="font-extrabold text-[var(--text-primary)] flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-1.5">
+                        <FileText className="w-4 h-4 text-purple-500" />
+                        SEBI Mandated Statutory Charges & Taxes
+                      </span>
+                      <span className="font-mono font-black text-[var(--icici-orange)]">
+                        Total: ₹{preTradeResult.charges.totalCharges.toFixed(2)}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 font-mono text-[11px] text-[var(--text-secondary)]">
+                      <div className="flex justify-between bg-[var(--bg-card)] p-2 rounded-lg border border-[var(--border-subtle)]">
+                        <span>Brokerage:</span>
+                        <span className="font-bold text-[var(--text-primary)]">₹{preTradeResult.charges.brokerage.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between bg-[var(--bg-card)] p-2 rounded-lg border border-[var(--border-subtle)]">
+                        <span>STT / CTT:</span>
+                        <span className="font-bold text-[var(--text-primary)]">₹{preTradeResult.charges.stt.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between bg-[var(--bg-card)] p-2 rounded-lg border border-[var(--border-subtle)]">
+                        <span>Exchange Fee:</span>
+                        <span className="font-bold text-[var(--text-primary)]">₹{preTradeResult.charges.exchangeFee.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between bg-[var(--bg-card)] p-2 rounded-lg border border-[var(--border-subtle)]">
+                        <span>SEBI Turnover:</span>
+                        <span className="font-bold text-[var(--text-primary)]">₹{preTradeResult.charges.sebiFee.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between bg-[var(--bg-card)] p-2 rounded-lg border border-[var(--border-subtle)]">
+                        <span>Stamp Duty:</span>
+                        <span className="font-bold text-[var(--text-primary)]">₹{preTradeResult.charges.stampDuty.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between bg-[var(--bg-card)] p-2 rounded-lg border border-[var(--border-subtle)]">
+                        <span>GST (18%):</span>
+                        <span className="font-bold text-[var(--text-primary)]">₹{preTradeResult.charges.gst.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SEBI Compliance Status Banner */}
+                  {preTradeResult.freeCashRemaining >= 0 ? (
+                    <div className="p-3.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-2.5">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                      <div>
+                        <div>SEBI Upfront Margin Compliance: PASSED</div>
+                        <div className="text-[11px] font-normal text-emerald-600 dark:text-emerald-400">
+                          Free Available Margin remaining after execution: ₹{preTradeResult.freeCashRemaining.toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-3.5 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs font-bold flex items-center gap-2.5">
+                      <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
+                      <div>
+                        <div>SEBI Upfront Margin Deficit: SHORTFALL DETECTED</div>
+                        <div className="text-[11px] font-normal text-rose-600 dark:text-rose-400">
+                          Shortfall of ₹{Math.abs(preTradeResult.freeCashRemaining).toLocaleString()}. Please deposit funds or reduce order quantity before DMA execution.
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Footer Actions */}
+                  <div className="flex items-center justify-end gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowPreTradeModal(false)}
+                      className="px-5 py-2.5 rounded-xl bg-[var(--bg-tertiary)] hover:bg-[var(--bg-card-hover)] text-[var(--text-secondary)] font-bold text-xs transition-colors cursor-pointer"
+                    >
+                      Cancel & Modify
+                    </button>
+                    <button
+                      type="button"
+                      disabled={preTradeResult.freeCashRemaining < 0}
+                      onClick={handleConfirmPreTradeExecution}
+                      className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      <Zap className="w-4 h-4" />
+                      Confirm DMA Execution
+                    </button>
+                  </div>
                 </div>
               </div>
-
-              <button
-                type="submit"
-                className={`w-full py-3.5 rounded-xl font-black text-sm text-white shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                  orderAction === 'BUY'
-                    ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20'
-                    : 'bg-rose-600 hover:bg-rose-500 shadow-rose-500/20'
-                }`}
-              >
-                <ShoppingCart className="w-4 h-4" />
-                SUBMIT {orderAction} ORDER FOR {selectedAsset}
-              </button>
-            </form>
+            )}
           </div>
         )}
 
@@ -797,7 +1300,7 @@ export const TradingConsolePage: React.FC = () => {
                 <p className="text-xs text-[var(--text-secondary)]">Real-time mark-to-market (MTM) position tracking and instant square-off execution</p>
               </div>
               <span className="text-xs font-mono text-[var(--text-muted)] font-bold bg-[var(--bg-tertiary)] px-3 py-1 rounded-full border border-[var(--border-color)]">
-                4 Active Positions
+                {positions.length} Active Positions
               </span>
             </div>
 
@@ -805,73 +1308,87 @@ export const TradingConsolePage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
                 <div className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase">TOTAL MTM P&L</div>
-                <div className="text-2xl font-mono font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
-                  +{formatCompactCurrency(16425, currency)} (+3.85%)
+                <div className={`text-2xl font-mono font-extrabold mt-1 ${totalMtmPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                  {totalMtmPnl >= 0 ? '+' : ''}{formatCompactCurrency(totalMtmPnl, currency)}
                 </div>
               </div>
 
               <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
                 <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">REALIZED P&L</div>
-                <div className="text-2xl font-mono font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
-                  +{formatCompactCurrency(4200, currency)}
+                <div className={`text-2xl font-mono font-extrabold mt-1 ${totalRealizedPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                  {totalRealizedPnl >= 0 ? '+' : ''}{formatCompactCurrency(totalRealizedPnl, currency)}
                 </div>
               </div>
 
               <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
                 <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">UNREALIZED P&L</div>
-                <div className="text-2xl font-mono font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
-                  +{formatCompactCurrency(12225, currency)}
+                <div className={`text-2xl font-mono font-extrabold mt-1 ${totalUnrealizedPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                  {totalUnrealizedPnl >= 0 ? '+' : ''}{formatCompactCurrency(totalUnrealizedPnl, currency)}
                 </div>
               </div>
             </div>
 
             <div className="overflow-x-auto w-full">
-              <table className="fin-table">
-                <thead>
-                  <tr>
-                    <th>Instrument / Symbol</th>
-                    <th>Product</th>
-                    <th>Net Qty</th>
-                    <th>Avg Buy Price</th>
-                    <th>LTP</th>
-                    <th>MTM P&L ({currency})</th>
-                    <th>P&L %</th>
-                    <th>Quick Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {positions.map(p => (
-                    <tr key={p.ticker}>
-                      <td className="font-mono font-bold text-[var(--text-primary)]">
-                        {p.ticker}
-                        <div className="text-[10px] text-[var(--text-muted)] font-sans">{p.name}</div>
-                      </td>
-                      <td>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--bg-tertiary)] text-[var(--text-secondary)]">
-                          {p.product}
-                        </span>
-                      </td>
-                      <td className="font-mono font-bold text-[var(--text-primary)]">{p.qty}</td>
-                      <td className="font-mono text-[var(--text-secondary)]">₹{p.buyPrice}</td>
-                      <td className="font-mono font-bold text-[var(--text-primary)]">₹{p.ltp}</td>
-                      <td className={`font-mono font-bold ${p.pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                        {p.pnl >= 0 ? '+' : ''}{formatCompactCurrency(p.pnl, currency)}
-                      </td>
-                      <td className={`font-mono font-bold ${p.pnlPct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                        {p.pnlPct >= 0 ? '+' : ''}{p.pnlPct}%
-                      </td>
-                      <td>
-                        <button
-                          onClick={() => handleSquareOff(p.ticker)}
-                          className="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold cursor-pointer transition-colors"
-                        >
-                          Square Off
-                        </button>
-                      </td>
+              {positions.length > 0 ? (
+                <table className="fin-table">
+                  <thead>
+                    <tr>
+                      <th>Instrument / Symbol</th>
+                      <th>Product</th>
+                      <th>Net Qty</th>
+                      <th>Avg Buy Price</th>
+                      <th>Live LTP</th>
+                      <th>Blocked Margin</th>
+                      <th>MTM P&L ({currency})</th>
+                      <th>P&L %</th>
+                      <th>Quick Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {positions.map(p => (
+                      <tr key={p.ticker}>
+                        <td className="font-mono font-bold text-[var(--text-primary)]">
+                          {p.ticker}
+                          <div className="text-[10px] text-[var(--text-muted)] font-sans">{p.name}</div>
+                        </td>
+                        <td>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--bg-tertiary)] text-[var(--text-secondary)]">
+                            {p.product}
+                          </span>
+                        </td>
+                        <td className="font-mono font-bold text-[var(--text-primary)]">{p.qty}</td>
+                        <td className="font-mono text-[var(--text-secondary)]">₹{p.avgBuyPrice.toFixed(2)}</td>
+                        <td className="font-mono font-bold text-[var(--text-primary)]">
+                          <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--bg-tertiary)] border border-[var(--border-subtle)]">
+                            ₹{p.ltp.toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="font-mono text-xs text-[var(--text-muted)]">
+                          {formatCompactCurrency(p.marginBlocked, currency)}
+                        </td>
+                        <td className={`font-mono font-bold ${p.pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                          {p.pnl >= 0 ? '+' : ''}{formatCompactCurrency(p.pnl, currency)}
+                        </td>
+                        <td className={`font-mono font-bold ${p.pnlPct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                          {p.pnlPct >= 0 ? '+' : ''}{p.pnlPct.toFixed(2)}%
+                        </td>
+                        <td>
+                          <button
+                            onClick={() => handleSquareOff(p.ticker)}
+                            className="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold cursor-pointer transition-colors shadow-xs"
+                          >
+                            Square Off
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="p-8 text-center text-xs text-[var(--text-muted)] font-bold bg-[var(--bg-tertiary)] rounded-2xl border border-[var(--border-subtle)]">
+                  No active open positions. Place an Intraday (MIS) or F&O trade to open a live position.
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -888,53 +1405,70 @@ export const TradingConsolePage: React.FC = () => {
                 <p className="text-xs text-[var(--text-secondary)]">Complete order lifecycle audit, execution status, and pending limit orders</p>
               </div>
               <span className="text-xs font-mono text-[var(--text-muted)] font-bold bg-[var(--bg-tertiary)] px-3 py-1 rounded-full border border-[var(--border-color)]">
-                Total Orders: {orderBook.length}
+                Total Orders: {orders.length}
               </span>
             </div>
 
             <div className="overflow-x-auto w-full">
-              <table className="fin-table">
-                <thead>
-                  <tr>
-                    <th>Order ID</th>
-                    <th>Time</th>
-                    <th>Symbol</th>
-                    <th>Type</th>
-                    <th>Product</th>
-                    <th>Qty</th>
-                    <th>Price ({currency})</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orderBook.map(o => (
-                    <tr key={o.id}>
-                      <td className="font-mono text-xs text-[var(--text-muted)]">{o.id}</td>
-                      <td className="font-mono text-xs text-[var(--text-secondary)]">{o.time}</td>
-                      <td className="font-mono font-bold text-[var(--text-primary)]">{o.ticker}</td>
-                      <td>
-                        <span className={`font-bold text-xs ${o.action === 'BUY' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                          {o.action}
-                        </span>
-                      </td>
-                      <td className="text-xs text-[var(--text-secondary)]">{o.product}</td>
-                      <td className="font-mono font-bold text-[var(--text-primary)]">{o.qty}</td>
-                      <td className="font-mono font-bold text-[var(--text-primary)]">₹{o.price}</td>
-                      <td>
-                        <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${
-                          o.status === 'EXECUTED'
-                            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                            : o.status === 'PENDING'
-                            ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
-                            : 'bg-slate-500/15 text-slate-500 border border-slate-500/30'
-                        }`}>
-                          {o.status}
-                        </span>
-                      </td>
+              {orders.length > 0 ? (
+                <table className="fin-table">
+                  <thead>
+                    <tr>
+                      <th>Order ID</th>
+                      <th>Time</th>
+                      <th>Symbol</th>
+                      <th>Type</th>
+                      <th>Product</th>
+                      <th>Qty</th>
+                      <th>Price ({currency})</th>
+                      <th>Status</th>
+                      <th>Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {orders.map(o => (
+                      <tr key={o.id}>
+                        <td className="font-mono text-xs text-[var(--text-muted)]">{o.id}</td>
+                        <td className="font-mono text-xs text-[var(--text-secondary)]">{o.time}</td>
+                        <td className="font-mono font-bold text-[var(--text-primary)]">{o.ticker}</td>
+                        <td>
+                          <span className={`font-bold text-xs ${o.action === 'BUY' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                            {o.action}
+                          </span>
+                        </td>
+                        <td className="text-xs text-[var(--text-secondary)]">{o.product}</td>
+                        <td className="font-mono font-bold text-[var(--text-primary)]">{o.qty}</td>
+                        <td className="font-mono font-bold text-[var(--text-primary)]">₹{o.price.toFixed(2)}</td>
+                        <td>
+                          <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${
+                            o.status === 'EXECUTED'
+                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                              : o.status === 'PENDING'
+                              ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                              : 'bg-slate-500/15 text-slate-500 border border-slate-500/30'
+                          }`}>
+                            {o.status}
+                          </span>
+                        </td>
+                        <td>
+                          {o.status === 'PENDING' && (
+                            <button
+                              onClick={() => cancelOrder(o.id)}
+                              className="px-2.5 py-1 rounded-md bg-rose-600/15 hover:bg-rose-600/25 text-rose-600 text-xs font-bold border border-rose-500/30 cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="p-8 text-center text-xs text-[var(--text-muted)] font-bold bg-[var(--bg-tertiary)] rounded-2xl border border-[var(--border-subtle)]">
+                  No orders placed yet. Orders submitted through the terminal will appear here.
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -950,44 +1484,65 @@ export const TradingConsolePage: React.FC = () => {
                 </h3>
                 <p className="text-xs text-[var(--text-secondary)]">Executed fill details, brokerage calculation, STT, and downloadable digital contract notes</p>
               </div>
-              <button
-                onClick={() => alert("Downloading Official Contract Note PDF...")}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--icici-orange)] text-white text-xs font-bold hover:bg-[var(--icici-orange-hover)] transition-colors cursor-pointer shadow-md"
-              >
-                <Download className="w-4 h-4" />
-                Download Contract Note PDF
-              </button>
+              {trades.length > 0 && (
+                <button
+                  onClick={() => exportContractNotePDF(trades[0], currentUser)}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--icici-orange)] text-white text-xs font-bold hover:bg-[var(--icici-orange-hover)] transition-colors cursor-pointer shadow-md"
+                >
+                  <Download className="w-4 h-4" />
+                  Download Latest Contract Note PDF
+                </button>
+              )}
             </div>
 
             <div className="overflow-x-auto w-full">
-              <table className="fin-table">
-                <thead>
-                  <tr>
-                    <th>Trade Ref ID</th>
-                    <th>Time</th>
-                    <th>Symbol</th>
-                    <th>Type</th>
-                    <th>Executed Qty</th>
-                    <th>Executed Price</th>
-                    <th>Brokerage & STT</th>
-                    <th>Net Value</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tradeBook.map(tb => (
-                    <tr key={tb.id}>
-                      <td className="font-mono text-xs text-[var(--text-muted)]">{tb.id}</td>
-                      <td className="font-mono text-xs text-[var(--text-secondary)]">{tb.time}</td>
-                      <td className="font-mono font-bold text-[var(--text-primary)]">{tb.ticker}</td>
-                      <td className="font-bold text-xs text-emerald-600 dark:text-emerald-400">{tb.action}</td>
-                      <td className="font-mono font-bold text-[var(--text-primary)]">{tb.qty}</td>
-                      <td className="font-mono text-[var(--text-secondary)]">₹{tb.price}</td>
-                      <td className="font-mono text-[var(--text-muted)]">₹{tb.brokerage}</td>
-                      <td className="font-mono font-bold text-[var(--text-primary)]">{formatCompactCurrency(tb.netValue, currency)}</td>
+              {trades.length > 0 ? (
+                <table className="fin-table">
+                  <thead>
+                    <tr>
+                      <th>Trade Ref ID</th>
+                      <th>Time</th>
+                      <th>Symbol</th>
+                      <th>Type</th>
+                      <th>Executed Qty</th>
+                      <th>Executed Price</th>
+                      <th>Brokerage & Statutory</th>
+                      <th>Net Value</th>
+                      <th>Contract Note</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {trades.map(tb => (
+                      <tr key={tb.id}>
+                        <td className="font-mono text-xs text-[var(--text-muted)]">{tb.id}</td>
+                        <td className="font-mono text-xs text-[var(--text-secondary)]">{tb.time}</td>
+                        <td className="font-mono font-bold text-[var(--text-primary)]">{tb.ticker}</td>
+                        <td className={`font-bold text-xs ${tb.action === 'BUY' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                          {tb.action}
+                        </td>
+                        <td className="font-mono font-bold text-[var(--text-primary)]">{tb.qty}</td>
+                        <td className="font-mono text-[var(--text-secondary)]">₹{tb.price.toFixed(2)}</td>
+                        <td className="font-mono text-[var(--text-muted)]">₹{tb.charges.totalCharges.toFixed(2)}</td>
+                        <td className="font-mono font-bold text-[var(--text-primary)]">{formatCompactCurrency(tb.netValue, currency)}</td>
+                        <td>
+                          <button
+                            onClick={() => exportContractNotePDF(tb, currentUser)}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[var(--bg-tertiary)] hover:bg-[var(--bg-card-hover)] text-xs font-bold text-[var(--icici-orange)] border border-[var(--border-color)] cursor-pointer"
+                            title="Download Digital Contract Note"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>PDF</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="p-8 text-center text-xs text-[var(--text-muted)] font-bold bg-[var(--bg-tertiary)] rounded-2xl border border-[var(--border-subtle)]">
+                  No executed trades found in current session.
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -998,44 +1553,58 @@ export const TradingConsolePage: React.FC = () => {
             <div className="border-b border-[var(--border-color)] pb-4">
               <h3 className="text-lg font-extrabold flex items-center gap-2 text-[var(--text-primary)]">
                 <CreditCard className="w-5 h-5 text-[var(--icici-orange)]" />
-                Funds & Margin Management Portal
+                Funds & 3-in-1 Integrated Banking Ecosystem
               </h3>
-              <p className="text-xs text-[var(--text-secondary)]">Manage liquid trading balance, deposit via instant UPI, and view collateral margin</p>
+              <p className="text-xs text-[var(--text-secondary)]">Liquid trading margin, Demat collateral haircut pledging, auto-sweep FD @ 7.1% p.a., and ASBA lien</p>
             </div>
 
             {fundSuccessMsg && (
               <div className="p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-300 text-xs font-bold flex items-center gap-2 animate-pulse">
                 <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                Funds Added Successfully via UPI Instant Transfer! Available margin updated.
+                Funds Added Successfully via UPI Instant Transfer! Liquid margin updated.
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
                 <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">AVAILABLE MARGIN</div>
-                <div className="text-2xl font-mono font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
-                  {formatCompactCurrency(availableMargin, currency)}
+                <div className="text-xl font-mono font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
+                  {formatCompactCurrency(wallet.availableMargin, currency)}
                 </div>
               </div>
 
               <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
                 <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">USED MARGIN</div>
-                <div className="text-2xl font-mono font-extrabold text-amber-600 dark:text-amber-400 mt-1">
-                  {formatCompactCurrency(125000, currency)}
+                <div className="text-xl font-mono font-extrabold text-amber-600 dark:text-amber-400 mt-1">
+                  {formatCompactCurrency(wallet.usedMargin, currency)}
                 </div>
               </div>
 
               <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
                 <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">CASH BALANCE</div>
-                <div className="text-2xl font-mono font-extrabold text-[var(--text-primary)] mt-1">
-                  {formatCompactCurrency(310000, currency)}
+                <div className="text-xl font-mono font-extrabold text-[var(--text-primary)] mt-1">
+                  {formatCompactCurrency(wallet.cashBalance, currency)}
                 </div>
               </div>
 
               <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
                 <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">DEMAT COLLATERAL</div>
-                <div className="text-2xl font-mono font-extrabold text-blue-600 dark:text-blue-400 mt-1">
-                  {formatCompactCurrency(300000, currency)}
+                <div className="text-xl font-mono font-extrabold text-blue-600 dark:text-blue-400 mt-1">
+                  {formatCompactCurrency(wallet.dematCollateral, currency)}
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
+                <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">AUTO-SWEEP FD (7.1%)</div>
+                <div className="text-xl font-mono font-extrabold text-purple-600 dark:text-purple-400 mt-1">
+                  {formatCompactCurrency(wallet.autoSweepBalance, currency)}
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
+                <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">ASBA BLOCKED LIEN</div>
+                <div className="text-xl font-mono font-extrabold text-rose-500 mt-1">
+                  {formatCompactCurrency(wallet.asbaBlockedLien, currency)}
                 </div>
               </div>
             </div>
@@ -1043,12 +1612,14 @@ export const TradingConsolePage: React.FC = () => {
             <div className="p-5 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] space-y-4">
               <h4 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
                 <Plus className="w-4 h-4 text-[var(--icici-orange)]" />
-                Instant UPI / NetBanking Deposit
+                Instant UPI / NetBanking Deposit (Zero Gateway Fee)
               </h4>
 
               <form onSubmit={handleAddFundsSubmit} className="flex flex-wrap items-center gap-4">
                 <input
                   type="number"
+                  min="100"
+                  step="100"
                   value={addFundsAmount}
                   onChange={(e) => setAddFundsAmount(Number(e.target.value))}
                   className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)] w-48"
@@ -1071,77 +1642,115 @@ export const TradingConsolePage: React.FC = () => {
             <div className="border-b border-[var(--border-color)] pb-4">
               <h3 className="text-lg font-extrabold flex items-center gap-2 text-[var(--text-primary)]">
                 <Building2 className="w-5 h-5 text-blue-500" />
-                CDSL / NSDL Demat Holdings Statement
+                CDSL / NSDL Demat Holdings Statement & Corporate Actions
               </h3>
-              <p className="text-xs text-[var(--text-secondary)]">Verified depository holdings statement, valuation, and pledge margin benefits</p>
+              <p className="text-xs text-[var(--text-secondary)]">Verified depository holdings statement, valuation, pledge margin benefits (20% haircut), and corporate action yield</p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
                 <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">INVESTED VALUE</div>
                 <div className="text-2xl font-mono font-extrabold text-[var(--text-primary)] mt-1">
-                  {formatCompactCurrency(1850000, currency)}
+                  {formatCompactCurrency(totalInvestedValue, currency)}
                 </div>
               </div>
 
               <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
                 <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">CURRENT VALUE</div>
                 <div className="text-2xl font-mono font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
-                  {formatCompactCurrency(2480000, currency)}
+                  {formatCompactCurrency(totalHoldingsValue, currency)}
                 </div>
               </div>
 
               <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                <div className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase">OVERALL GAIN</div>
-                <div className="text-2xl font-mono font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
-                  +{formatCompactCurrency(630000, currency)} (+34.05%)
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
-                <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">DAY P&L</div>
-                <div className="text-2xl font-mono font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
-                  +{formatCompactCurrency(12400, currency)}
+                <div className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase">OVERALL GAIN / (LOSS)</div>
+                <div className={`text-2xl font-mono font-extrabold mt-1 ${totalUnrealizedPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                  {totalUnrealizedPnl >= 0 ? '+' : ''}{formatCompactCurrency(totalUnrealizedPnl, currency)}
                 </div>
               </div>
             </div>
 
             <div className="overflow-x-auto w-full">
-              <table className="fin-table">
-                <thead>
-                  <tr>
-                    <th>Stock Symbol</th>
-                    <th>Demat Qty</th>
-                    <th>Avg Cost</th>
-                    <th>LTP</th>
-                    <th>Current Value ({currency})</th>
-                    <th>Overall P&L</th>
-                    <th>Pledge Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dematHoldings.map(dh => (
-                    <tr key={dh.ticker}>
-                      <td className="font-mono font-bold text-[var(--text-primary)]">
-                        {dh.ticker}
-                        <div className="text-[10px] text-[var(--text-muted)] font-sans">{dh.name}</div>
-                      </td>
-                      <td className="font-mono font-bold text-[var(--text-primary)]">{dh.qty}</td>
-                      <td className="font-mono text-[var(--text-secondary)]">₹{dh.avgCost}</td>
-                      <td className="font-mono font-bold text-[var(--text-primary)]">₹{dh.ltp}</td>
-                      <td className="font-mono font-bold text-[var(--text-primary)]">{formatCompactCurrency(dh.val, currency)}</td>
-                      <td className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                        +{formatCompactCurrency(dh.pnl, currency)} ({dh.pnlPct}%)
-                      </td>
-                      <td>
-                        <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border border-[var(--border-color)]">
-                          {dh.pledged}
-                        </span>
-                      </td>
+              {dematHoldings.length > 0 ? (
+                <table className="fin-table">
+                  <thead>
+                    <tr>
+                      <th>Stock Symbol</th>
+                      <th>Category</th>
+                      <th>Demat Qty</th>
+                      <th>Avg Cost</th>
+                      <th>Live LTP</th>
+                      <th>Current Value ({currency})</th>
+                      <th>Overall P&L</th>
+                      <th>Collateral Status</th>
+                      <th>Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {dematHoldings.map(dh => (
+                      <tr key={dh.ticker}>
+                        <td className="font-mono font-bold text-[var(--text-primary)]">
+                          {dh.ticker}
+                          <div className="text-[10px] text-[var(--text-muted)] font-sans">{dh.name}</div>
+                        </td>
+                        <td>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--bg-tertiary)] text-[var(--text-secondary)]">
+                            {dh.category}
+                          </span>
+                        </td>
+                        <td className="font-mono font-bold text-[var(--text-primary)]">{dh.qty}</td>
+                        <td className="font-mono text-[var(--text-secondary)]">₹{dh.avgCost.toFixed(2)}</td>
+                        <td className="font-mono font-bold text-[var(--text-primary)]">₹{dh.ltp.toFixed(2)}</td>
+                        <td className="font-mono font-bold text-[var(--text-primary)]">{formatCompactCurrency(dh.currentValue, currency)}</td>
+                        <td className={`font-mono font-bold ${dh.pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                          {dh.pnl >= 0 ? '+' : ''}{formatCompactCurrency(dh.pnl, currency)} ({dh.pnlPct.toFixed(2)}%)
+                        </td>
+                        <td>
+                          <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${
+                            dh.pledgedStatus === 'Pledged (Collateral)'
+                              ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                              : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border border-[var(--border-color)]'
+                          }`}>
+                            {dh.pledgedStatus === 'Pledged (Collateral)' ? `Pledged (₹${Math.round((dh.pledgedQty || dh.qty) * dh.ltp * 0.8).toLocaleString()})` : 'Unpledged'}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="flex items-center gap-1.5">
+                            {dh.pledgedStatus === 'Pledged (Collateral)' ? (
+                              <button
+                                onClick={() => unpledgeShares(dh.ticker, dh.qty)}
+                                className="px-2 py-1 rounded text-[11px] font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 border border-amber-500/30 cursor-pointer"
+                                title="Unpledge collateral"
+                              >
+                                Unpledge
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => pledgeShares(dh.ticker, dh.qty)}
+                                className="px-2 py-1 rounded text-[11px] font-bold bg-blue-500/15 hover:bg-blue-500/25 text-blue-600 border border-blue-500/30 cursor-pointer"
+                                title="Pledge for trading margin (20% haircut)"
+                              >
+                                Pledge
+                              </button>
+                            )}
+                            <button
+                              onClick={() => triggerCorporateAction('DIVIDEND', dh.ticker, Math.round(dh.ltp * 0.025))}
+                              className="px-2 py-1 rounded text-[11px] font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 border border-emerald-500/30 cursor-pointer"
+                              title="Simulate Corporate Action Dividend Yield"
+                            >
+                              Dividend Yield
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="p-8 text-center text-xs text-[var(--text-muted)] font-bold bg-[var(--bg-tertiary)] rounded-2xl border border-[var(--border-subtle)]">
+                  No securities held in Demat account. Buy delivery shares or subscribe to SGB/Bonds.
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1241,8 +1850,13 @@ export const TradingConsolePage: React.FC = () => {
                 </div>
                 <button
                   onClick={() => {
-                    setGoldSuccessMsg(true);
-                    setTimeout(() => setGoldSuccessMsg(false), 3500);
+                    const res = buySgbTranche(sgbGrams);
+                    if (res.success) {
+                      setGoldSuccessMsg(true);
+                      setTimeout(() => setGoldSuccessMsg(false), 3500);
+                    } else {
+                      alert(res.message || 'Failed to subscribe to SGB');
+                    }
                   }}
                   className="ml-auto px-6 py-2.5 rounded-xl bg-[var(--icici-orange)] hover:bg-[var(--icici-orange-hover)] text-white font-extrabold text-xs shadow-md cursor-pointer transition-all"
                 >
@@ -1441,8 +2055,13 @@ export const TradingConsolePage: React.FC = () => {
                       </button>
                       <button
                         onClick={() => {
+                          const res = buySgbTranche(1, selectedSgbDetail.symbol);
                           setSelectedSgbDetail(null);
-                          handleSelectAsset('SGB-GOLD.NS');
+                          if (res.success) {
+                            alert(`Order Executed! 1g of ${selectedSgbDetail.symbol} added to Demat holdings.`);
+                          } else {
+                            alert(res.message || 'Order could not be placed');
+                          }
                         }}
                         className="px-6 py-2.5 rounded-xl bg-[var(--icici-orange)] hover:bg-[var(--icici-orange-hover)] text-white text-xs font-extrabold transition-all shadow-md cursor-pointer"
                       >
@@ -1583,7 +2202,7 @@ export const TradingConsolePage: React.FC = () => {
                         </td>
                         <td>
                           <button
-                            onClick={() => handleApplyIpo(ipo.name)}
+                            onClick={() => handleApplyIpoAsba(ipo)}
                             className={`px-3.5 py-1.5 rounded-lg text-white text-xs font-bold cursor-pointer transition-colors shadow-xs ${
                               ipo.market.includes('US')
                                 ? 'bg-blue-600 hover:bg-blue-700'
@@ -1604,6 +2223,93 @@ export const TradingConsolePage: React.FC = () => {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Innovation 5: Realistic ASBA IPO / NFO Allotment Lottery Engine */}
+            <div className="pt-6 border-t border-[var(--border-color)] space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h4 className="text-base font-extrabold text-[var(--text-primary)] flex items-center gap-2">
+                    <Award className="w-5 h-5 text-amber-500" />
+                    Simulated ASBA IPO Allotment Engine & GMP Realizer
+                  </h4>
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    SEBI electronic lottery draw simulation. Blocked lien is settled: Allotted shares credit to Demat with GMP gain; unallotted release cash.
+                  </p>
+                </div>
+                <div className="text-xs font-mono font-bold text-[var(--text-muted)] bg-[var(--bg-tertiary)] px-3 py-1.5 rounded-xl border border-[var(--border-color)]">
+                  Total Active Applications: {ipoApplications.length}
+                </div>
+              </div>
+
+              {ipoApplications.length > 0 ? (
+                <div className="overflow-x-auto w-full">
+                  <table className="fin-table">
+                    <thead>
+                      <tr>
+                        <th>Application Ref</th>
+                        <th>IPO / Issue Name</th>
+                        <th>Lots / Shares</th>
+                        <th>Blocked ASBA Lien</th>
+                        <th>GMP Estimate</th>
+                        <th>Status</th>
+                        <th>Lottery Simulation</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ipoApplications.map(app => (
+                        <tr key={app.id}>
+                          <td className="font-mono text-xs text-[var(--text-muted)]">{app.id}</td>
+                          <td className="font-mono font-bold text-[var(--text-primary)]">{app.ipoName}</td>
+                          <td className="font-mono text-xs text-[var(--text-secondary)]">
+                            {app.lotSize} Lots ({app.shares} Shares)
+                          </td>
+                          <td className="font-mono font-bold text-[var(--text-primary)]">
+                            {formatCompactCurrency(app.amountBlocked, currency)}
+                          </td>
+                          <td className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                            {app.gmp} / Share
+                          </td>
+                          <td>
+                            <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${
+                              app.status === 'ALLOTTED'
+                                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                                : app.status === 'REFUNDED_UNBLOCKED'
+                                ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                                : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                            }`}>
+                              {app.status === 'ALLOTTED' ? '✓ ALLOTTED' : app.status === 'REFUNDED_UNBLOCKED' ? '✕ NOT ALLOTTED (REFUNDED)' : '⏳ ASBA LIEN BLOCKED'}
+                            </span>
+                          </td>
+                          <td>
+                            {app.status === 'BLOCKED_ASBA' ? (
+                              <button
+                                onClick={() => {
+                                  const res = runIpoAllotmentLottery(app.id);
+                                  if (res.allotted) {
+                                    alert(`🎉 Congratulations! You were ALLOTTED ${res.shares} shares of ${app.ipoName} at ₹${app.bidPrice}! Shares credited to Demat holdings.`);
+                                  } else {
+                                    alert(`Lottery Draw Result: Not allotted for ${app.ipoName}. ASBA Lien of ₹${app.amountBlocked.toLocaleString()} released back to liquid cash.`);
+                                  }
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-black text-xs shadow-xs cursor-pointer"
+                              >
+                                <span>🎲 Run SEBI Draw</span>
+                              </button>
+                            ) : (
+                              <span className="text-[11px] font-mono text-[var(--text-muted)]">Completed</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="p-6 text-center text-xs text-[var(--text-muted)] font-bold bg-[var(--bg-tertiary)] rounded-2xl border border-[var(--border-subtle)]">
+                  No active ASBA IPO applications. Click "Apply ASBA" on any open IPO above to simulate an allotment bid.
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -2028,12 +2734,23 @@ export const TradingConsolePage: React.FC = () => {
                       </button>
                       <button
                         onClick={() => {
+                          const couponRate = typeof selectedBondDetail.couponRatePct === 'number' ? selectedBondDetail.couponRatePct : 8.5;
+                          const res = investCorporateBond(
+                            selectedBondDetail.name,
+                            selectedBondDetail.minInvestment || 10000,
+                            couponRate,
+                            selectedBondDetail.isin || 'INE123BOND'
+                          );
                           setSelectedBondDetail(null);
-                          handleSelectAsset('RELIANCE.NS');
+                          if (res.success) {
+                            alert(`Bond Investment Confirmed! ₹${(selectedBondDetail.minInvestment || 10000).toLocaleString()} in ${selectedBondDetail.name} credited to Demat holdings.`);
+                          } else {
+                            alert(res.message || 'Investment could not be placed');
+                          }
                         }}
                         className="px-6 py-2.5 rounded-xl bg-[var(--icici-orange)] hover:bg-[var(--icici-orange-hover)] text-white text-xs font-extrabold transition-all shadow-md cursor-pointer"
                       >
-                        Place Secondary Order
+                        Place Secondary Order / Invest
                       </button>
                     </div>
                   </div>
@@ -2881,18 +3598,242 @@ export const TradingConsolePage: React.FC = () => {
             <div className="border-b border-[var(--border-color)] pb-4">
               <h3 className="text-lg font-extrabold flex items-center gap-2 text-[var(--text-primary)]">
                 <Zap className="w-5 h-5 text-amber-500" />
-                SanchayX Pro Smart Trading Tools
+                SanchayX Pro Smart Quant & Tax Optimization Tools
               </h3>
-              <p className="text-xs text-[var(--text-secondary)]">Option chain Greeks calculator, stock basket algorithms, and multi-asset quantitative tools</p>
+              <p className="text-xs text-[var(--text-secondary)]">
+                Autonomous portfolio volatility rebalancing, zero-TDS family wealth structuring (Form 15G/15H), and quantitative risk engines
+              </p>
             </div>
 
+            {/* Innovation 7: Autonomous Quant Rebalancing Volatility Sentinel */}
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-[var(--bg-card)] to-[var(--bg-tertiary)] border-2 border-[var(--border-color)] space-y-5 shadow-lg">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[var(--icici-orange)]">
+                    <Sparkles className="w-4 h-4 text-[var(--icici-orange)]" />
+                    Innovation 7: Autonomous Quant Rebalancing Volatility Sentinel
+                  </div>
+                  <h4 className="text-base font-extrabold text-[var(--text-primary)]">
+                    Real-Time Asset Allocation Drift Sentinel (±5% Tolerance Corridor)
+                  </h4>
+                  <p className="text-xs text-[var(--text-secondary)] max-w-xl">
+                    Continuously monitors live Demat holdings and liquid banking cash against MPT optimal targets. Automatically generates compensatory DMA batches upon drift breach.
+                  </p>
+                </div>
+
+                <button
+                  onClick={handleExecuteRebalance}
+                  disabled={isRebalancing}
+                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-lg transition-all cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isRebalancing ? 'animate-spin' : ''}`} />
+                  <span>{isRebalancing ? 'Calculating & Executing DMA Batch...' : '⚡ 1-Click Autonomous Rebalance'}</span>
+                </button>
+              </div>
+
+              {rebalanceSuccessMsg && (
+                <div className="p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-2.5 animate-bounce">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                  {rebalanceSuccessMsg}
+                </div>
+              )}
+
+              {/* Drift Comparison Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                {/* Equities */}
+                <div className="p-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] space-y-2">
+                  <div className="flex justify-between font-bold">
+                    <span className="text-blue-500">Equities Segment</span>
+                    <span className={`font-mono font-bold ${Math.abs(equityDrift) > 5 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                      {equityDrift >= 0 ? '+' : ''}{equityDrift}% Drift
+                    </span>
+                  </div>
+                  <div className="flex justify-between font-mono text-xs">
+                    <span className="text-[var(--text-muted)]">Target: {targetAllocation.equityPct}%</span>
+                    <span className="font-bold text-[var(--text-primary)]">Live: {currentAllocation.equityPct}%</span>
+                  </div>
+                  <div className="w-full bg-[var(--bg-tertiary)] h-2 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.min(100, currentAllocation.equityPct)}%` }} />
+                  </div>
+                </div>
+
+                {/* Debt / Fixed Income */}
+                <div className="p-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] space-y-2">
+                  <div className="flex justify-between font-bold">
+                    <span className="text-purple-500">Debt & Banking Cash</span>
+                    <span className={`font-mono font-bold ${Math.abs(debtDrift) > 5 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                      {debtDrift >= 0 ? '+' : ''}{debtDrift}% Drift
+                    </span>
+                  </div>
+                  <div className="flex justify-between font-mono text-xs">
+                    <span className="text-[var(--text-muted)]">Target: {targetAllocation.debtPct}%</span>
+                    <span className="font-bold text-[var(--text-primary)]">Live: {currentAllocation.debtPct}%</span>
+                  </div>
+                  <div className="w-full bg-[var(--bg-tertiary)] h-2 rounded-full overflow-hidden">
+                    <div className="h-full bg-purple-500 rounded-full" style={{ width: `${Math.min(100, currentAllocation.debtPct)}%` }} />
+                  </div>
+                </div>
+
+                {/* Gold / SGB */}
+                <div className="p-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] space-y-2">
+                  <div className="flex justify-between font-bold">
+                    <span className="text-amber-500">Sovereign Gold (SGB)</span>
+                    <span className={`font-mono font-bold ${Math.abs(goldDrift) > 5 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                      {goldDrift >= 0 ? '+' : ''}{goldDrift}% Drift
+                    </span>
+                  </div>
+                  <div className="flex justify-between font-mono text-xs">
+                    <span className="text-[var(--text-muted)]">Target: {targetAllocation.goldPct}%</span>
+                    <span className="font-bold text-[var(--text-primary)]">Live: {currentAllocation.goldPct}%</span>
+                  </div>
+                  <div className="w-full bg-[var(--bg-tertiary)] h-2 rounded-full overflow-hidden">
+                    <div className="h-full bg-amber-500 rounded-full" style={{ width: `${Math.min(100, currentAllocation.goldPct)}%` }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Indicator */}
+              <div className="flex items-center justify-between p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-subtle)] text-xs">
+                <div className="flex items-center gap-2">
+                  <div className={`w-2.5 h-2.5 rounded-full ${hasAllocationDrift ? 'bg-amber-500 animate-ping' : 'bg-emerald-500'}`} />
+                  <span className="font-bold text-[var(--text-primary)]">
+                    {hasAllocationDrift
+                      ? 'Sentinel Status: Allocation Drift Detected (> ±5% Corridor Breach)'
+                      : 'Sentinel Status: Portfolio Perfectly Optimized within MPT Corridor'}
+                  </span>
+                </div>
+                <span className="text-[11px] text-[var(--text-muted)] font-mono">
+                  Autonomous DMA Routing: Enabled
+                </span>
+              </div>
+            </div>
+
+            {/* Innovation 4: Zero-TDS Family Wealth Structuring Simulator */}
+            <div className="p-6 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] space-y-5 shadow-lg">
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border-color)] pb-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                    <FileCheck className="w-4 h-4 text-emerald-500" />
+                    Innovation 4: Zero-TDS Family Wealth Structuring Simulator (Section 197A)
+                  </div>
+                  <h4 className="text-base font-extrabold text-[var(--text-primary)]">
+                    Form 15G / 15H Non-Deduction Generator & Household Tax Optimization
+                  </h4>
+                  <p className="text-xs text-[var(--text-secondary)] max-w-xl">
+                    Distribute corporate bond and fixed deposit interest across family members to avoid 10% TDS withholding under Section 197A of Income Tax Act.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-right">
+                  <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase block">
+                    Total Estimated Annual Tax Saved
+                  </span>
+                  <span className="text-2xl font-mono font-black text-emerald-600 dark:text-emerald-400">
+                    ₹{totalFamilyTaxSaved.toLocaleString('en-IN')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Family Tax Profiles Table */}
+              <div className="overflow-x-auto w-full">
+                <table className="fin-table">
+                  <thead>
+                    <tr>
+                      <th>Family Member / Relation</th>
+                      <th>PAN Card</th>
+                      <th>Age Group</th>
+                      <th>Annual Gross Income</th>
+                      <th>Projected Interest</th>
+                      <th>Form 15G / 15H Status</th>
+                      <th>Estimated Tax Saved</th>
+                      <th>Official Declaration Export</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {familyTaxProfiles.map(member => {
+                      const formType = member.isSeniorCitizen ? 'Form 15H' : 'Form 15G';
+                      const hasFormFiled = member.formFiled !== 'None';
+                      return (
+                        <tr key={member.id}>
+                          <td>
+                            <div className="font-bold text-xs text-[var(--text-primary)]">{member.memberName}</div>
+                            <div className="text-[10px] text-[var(--text-muted)]">{member.relationship}</div>
+                          </td>
+                          <td className="font-mono text-xs font-bold text-[var(--text-secondary)]">{member.pan}</td>
+                          <td>
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--bg-tertiary)] text-[var(--text-secondary)]">
+                              {member.isSeniorCitizen ? 'Senior Citizen (60+)' : 'Adult (18-59)'}
+                            </span>
+                          </td>
+                          <td className="font-mono text-xs text-[var(--text-primary)]">
+                            ₹{member.allocatedBondPrincipal.toLocaleString('en-IN')}
+                          </td>
+                          <td className="font-mono font-bold text-xs text-amber-600 dark:text-amber-400">
+                            ₹{member.annualInterestEarned.toLocaleString('en-IN')}
+                          </td>
+                          <td>
+                            <button
+                              onClick={() => {
+                                const nextFormStatus = member.formFiled === 'None'
+                                  ? (member.eligible15H ? 'Form 15H Submitted' : 'Form 15G Submitted')
+                                  : 'None';
+                                updateFamilyProfile({
+                                  ...member,
+                                  formFiled: nextFormStatus
+                                });
+                              }}
+                              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                                hasFormFiled
+                                  ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                                  : 'bg-slate-500/15 border-slate-500/30 text-slate-500 hover:text-[var(--text-primary)]'
+                              }`}
+                              title="Click to toggle Form 15 submission"
+                            >
+                              {hasFormFiled ? `✓ ${member.formFiled}` : `Submit ${formType}`}
+                            </button>
+                          </td>
+                          <td className="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400">
+                            ₹{member.tdsSaved.toLocaleString('en-IN')}
+                          </td>
+                          <td>
+                            <button
+                              onClick={() => exportForm15DeclarationPDF({
+                                formType: member.isSeniorCitizen ? 'Form 15H' : 'Form 15G',
+                                declarantName: member.memberName,
+                                pan: member.pan,
+                                status: member.isSeniorCitizen ? 'Senior Citizen' : 'Individual',
+                                financialYear: '2026-2027',
+                                residentialStatus: 'Resident',
+                                estimatedTotalIncome: 450000,
+                                interestIncome: member.annualInterestEarned,
+                                numberOfForms: 1,
+                                aggregateAmount: member.allocatedBondPrincipal,
+                                bondOrFdName: 'SanchayX Multi-Asset Fixed Income Basket',
+                                taxSavedEstimate: member.tdsSaved
+                              })}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--bg-tertiary)] hover:bg-[var(--bg-card-hover)] text-xs font-bold text-[var(--icici-orange)] border border-[var(--border-color)] transition-colors cursor-pointer"
+                              title={`Download Signed Section 197A ${formType} Declaration PDF`}
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              <span>{formType} PDF</span>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Other Quant Tools */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="p-6 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] space-y-3">
                 <h4 className="font-bold text-base text-[var(--icici-orange)] flex items-center gap-2">
-                  <Sliders className="w-5 h-5" /> Option Chain & Greek Calculator
+                  <Sliders className="w-5 h-5" /> Option Chain & Black-Scholes Greeks Calculator
                 </h4>
                 <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                  Compute implied volatility (IV), Delta, Gamma, Theta, and Vega for NIFTY, BANKNIFTY, and stock option strikes.
+                  Compute real-time implied volatility (IV), Delta, Gamma, Theta, and Vega for NIFTY, BANKNIFTY, and stock option strikes.
                 </p>
                 <button onClick={() => alert("Option Greeks Calculator Initialized")} className="px-4 py-2 rounded-xl bg-[var(--icici-orange)] text-white text-xs font-bold cursor-pointer shadow-md">
                   Open Option Chain Tool
@@ -2901,10 +3842,10 @@ export const TradingConsolePage: React.FC = () => {
 
               <div className="p-6 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] space-y-3">
                 <h4 className="font-bold text-base text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
-                  <RefreshCw className="w-5 h-5" /> Stock Basket & Equity SIP
+                  <RefreshCw className="w-5 h-5" /> Multi-Asset Stock Basket & Equity SIP
                 </h4>
                 <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                  Create automated monthly SIP orders across diversified multi-asset stock baskets with automatic rebalancing.
+                  Automated monthly SIP orders across diversified multi-asset stock baskets with algorithmic rebalancing execution.
                 </p>
                 <button onClick={() => alert("Equity SIP Creator Initialized")} className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold cursor-pointer shadow-md">
                   Create Stock Basket SIP
