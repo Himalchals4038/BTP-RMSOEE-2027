@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { usePortfolio } from './PortfolioContext';
 import {
   subscribeToLiveTicks,
@@ -9,6 +9,7 @@ import {
   type Level2MarketDepth
 } from '../services/liveMarketService';
 import { calculateStatutoryCharges } from '../utils/exportUtils';
+import { soundService } from '../services/soundService';
 import type {
   OrderAction,
   ProductType,
@@ -23,7 +24,38 @@ import type {
   PreTradeImpactAnalysis
 } from '../types/tradingSimulation';
 
-interface PlaceOrderParams {
+// Isolated ticker subscription registry for 60 FPS tick decoupling (Optimization 1)
+type TickerListener = (tick: LiveTick) => void;
+const tickerListeners = new Map<string, Set<TickerListener>>();
+
+export function subscribeToTicker(ticker: string, listener: TickerListener) {
+  if (!tickerListeners.has(ticker)) {
+    tickerListeners.set(ticker, new Set());
+  }
+  tickerListeners.get(ticker)!.add(listener);
+  return () => {
+    const set = tickerListeners.get(ticker);
+    if (set) {
+      set.delete(listener);
+      if (set.size === 0) tickerListeners.delete(ticker);
+    }
+  };
+}
+
+export function useLiveTickerPrice(ticker: string): LiveTick | undefined {
+  const [tick, setTick] = useState<LiveTick | undefined>(() => getLatestTick(ticker));
+
+  useEffect(() => {
+    const unsub = subscribeToTicker(ticker, (newTick) => {
+      setTick(newTick);
+    });
+    return unsub;
+  }, [ticker]);
+
+  return tick;
+}
+
+export interface PlaceOrderParams {
   ticker: string;
   name?: string;
   action: OrderAction;
@@ -32,6 +64,12 @@ interface PlaceOrderParams {
   qty: number;
   price: number;
   triggerPrice?: number;
+  targetPrice?: number;
+  stopLossPrice?: number;
+  trailingStopLoss?: number;
+  disclosedQty?: number;
+  icebergLegs?: number;
+  gttExpiryDays?: number;
 }
 
 interface TradingSimulationContextType {
@@ -53,6 +91,7 @@ interface TradingSimulationContextType {
   marketDepth: (symbol: string, currentLtp?: number) => Level2MarketDepth;
   placeOrder: (params: PlaceOrderParams) => { success: boolean; message: string; orderId?: string };
   squareOffPosition: (ticker: string) => { success: boolean; message: string };
+  panicSquareOffAllIntraday: () => { success: boolean; count: number; message: string };
   cancelOrder: (orderId: string) => { success: boolean; message: string };
   addFunds: (amount: number, paymentMethod?: string) => void;
   pledgeShares: (ticker: string, qty: number) => { success: boolean; message: string };
@@ -278,10 +317,38 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
     setLedger(getInitialLedgerForUser(currentUser.id, currentUser.accountType));
   }, [currentUser.id, currentUser.accountType, storageKey]);
 
-  // Persist ledger state on changes
+  // Debounced persistence buffer for high-frequency tick updates (Optimization 5)
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const persistLedger = useCallback((data: typeof ledger, immediate: boolean = false) => {
+    if (immediate) {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(data));
+      } catch (e) {
+        console.warn('Failed to immediately save ledger to localStorage:', e);
+      }
+      return;
+    }
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(data));
+      } catch (e) {
+        console.warn('Failed to debounced save ledger to localStorage:', e);
+      }
+    }, 3000); // 3-second debounced buffer
+  }, [storageKey]);
+
   useEffect(() => {
-    localStorage.setItem(storageKey, JSON.stringify(ledger));
-  }, [ledger, storageKey]);
+    persistLedger(ledger, false);
+  }, [ledger, persistLedger]);
 
   // Live Market Ticks Stream
   const [liveTicks, setLiveTicks] = useState<Record<string, LiveTick>>(getAllLatestTicks);
@@ -312,8 +379,18 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
     const unsubscribe = subscribeToLiveTicks((ticks) => {
       setLiveTicks(ticks);
 
+      // 1. Broadcast to individual per-ticker listeners (Optimization 1 - 60 FPS Decoupling)
+      Object.entries(ticks).forEach(([symbol, t]) => {
+        const listeners = tickerListeners.get(symbol);
+        if (listeners) {
+          listeners.forEach(cb => cb(t));
+        }
+      });
+
       setLedger((prev: typeof ledger) => {
         let hasChanges = false;
+        let playChime = false;
+        let playMarginCallWarning = false;
 
         // 1. Update Open Positions MTM
         const updatedPositions = prev.positions.map((pos: SimulatedPosition) => {
@@ -326,6 +403,10 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
           const pnl = Number((priceDiff * pos.qty).toFixed(2));
           const pnlPct = Number(((priceDiff / pos.avgBuyPrice) * 100).toFixed(2));
           const isMarginCall = pos.marginBlocked > 0 && pnl < -0.80 * pos.marginBlocked;
+
+          if (!pos.isMarginCall && isMarginCall) {
+            playMarginCallWarning = true;
+          }
 
           if (pos.ltp !== currentLtp || pos.pnl !== pnl || pos.isMarginCall !== isMarginCall) {
             hasChanges = true;
@@ -370,20 +451,31 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
           return h;
         });
 
-        // 3. Process Pending Limit Orders Queue
+        // 3. Process Pending Limit Orders, Bracket Order OCO, and GTT Triggers
         let updatedWallet = { ...prev.wallet };
         const newTrades: SimulatedTrade[] = [];
+        const spawnedOrders: SimulatedOrder[] = [];
+        const cancelledOrderIds = new Set<string>();
+
         const updatedOrders = prev.orders.map((ord: SimulatedOrder) => {
           if (ord.status !== 'PENDING') return ord;
+          if (cancelledOrderIds.has(ord.id)) return { ...ord, status: 'CANCELLED' as const };
           const tick = ticks[ord.ticker];
           if (!tick) return ord;
 
-          const shouldFill = ord.action === 'BUY'
+          // GTT Trigger Check
+          let isGttTriggered = true;
+          if (ord.orderType === 'Good-Till-Triggered (GTT)' && ord.triggerPrice) {
+            isGttTriggered = ord.action === 'BUY' ? tick.ltp <= ord.triggerPrice : tick.ltp >= ord.triggerPrice;
+          }
+
+          const shouldFill = isGttTriggered && (ord.action === 'BUY'
             ? tick.ltp <= ord.price
-            : tick.ltp >= ord.price;
+            : tick.ltp >= ord.price);
 
           if (shouldFill) {
             hasChanges = true;
+            playChime = true;
             const charges = calculateStatutoryCharges(ord.qty * ord.price, ord.action, ord.product);
             const netVal = ord.action === 'BUY'
               ? (ord.qty * ord.price) + charges.totalCharges
@@ -403,6 +495,40 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
               charges,
               netValue: Number(netVal.toFixed(2))
             });
+
+            // Handle Bracket Order OCO (One-Cancels-Other)
+            if (ord.parentOrderId) {
+              if (ord.isOcoTarget) {
+                // Target hit -> Cancel linked Stop-Loss
+                prev.orders.forEach((o: SimulatedOrder) => {
+                  if (o.parentOrderId === ord.parentOrderId && o.isOcoStopLoss && o.status === 'PENDING') {
+                    cancelledOrderIds.add(o.id);
+                  }
+                });
+              } else if (ord.isOcoStopLoss) {
+                // Stop-loss hit -> Cancel linked Target Profit
+                prev.orders.forEach((o: SimulatedOrder) => {
+                  if (o.parentOrderId === ord.parentOrderId && o.isOcoTarget && o.status === 'PENDING') {
+                    cancelledOrderIds.add(o.id);
+                  }
+                });
+              }
+            }
+
+            // Handle Iceberg Order Next Leg Spawning
+            if (ord.orderType === 'Iceberg Order' && ord.icebergLegs && ord.icebergCurrentLeg && ord.icebergCurrentLeg < ord.icebergLegs) {
+              const nextLegNum = ord.icebergCurrentLeg + 1;
+              const remainingQty = (ord.icebergTotalQty || ord.qty * ord.icebergLegs) - (ord.qty * ord.icebergCurrentLeg);
+              const nextLegQty = Math.min(ord.qty, Math.max(1, remainingQty));
+              spawnedOrders.push({
+                ...ord,
+                id: `ORD-ICE-${Math.floor(10000 + Math.random() * 90000)}`,
+                time: new Date().toLocaleTimeString(),
+                qty: nextLegQty,
+                icebergCurrentLeg: nextLegNum,
+                status: 'PENDING'
+              });
+            }
 
             // Adjust positions or holdings
             if (ord.product.includes('CNC') || ord.product.includes('Delivery')) {
@@ -434,6 +560,33 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
                   pledgedStatus: 'Unpledged'
                 });
               }
+            } else {
+              // Intraday / MIS position entry on limit fill
+              const existingPosIdx = updatedPositions.findIndex((p: SimulatedPosition) => p.ticker === ord.ticker && p.status === 'OPEN');
+              if (existingPosIdx >= 0) {
+                const ep = updatedPositions[existingPosIdx];
+                const totalQ = ep.qty + ord.qty;
+                const newAvg = (ep.avgBuyPrice * ep.qty + ord.price * ord.qty) / totalQ;
+                updatedPositions[existingPosIdx] = {
+                  ...ep,
+                  qty: totalQ,
+                  avgBuyPrice: Number(newAvg.toFixed(2))
+                };
+              } else {
+                updatedPositions.push({
+                  ticker: ord.ticker,
+                  name: ord.name,
+                  product: ord.product,
+                  action: ord.action,
+                  qty: ord.qty,
+                  avgBuyPrice: ord.price,
+                  ltp: tick.ltp,
+                  pnl: 0,
+                  pnlPct: 0,
+                  marginBlocked: Number((ord.qty * ord.price * 0.20).toFixed(2)),
+                  status: 'OPEN'
+                });
+              }
             }
 
             return {
@@ -442,7 +595,10 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
             };
           }
           return ord;
-        });
+        }).map((ord: SimulatedOrder) => cancelledOrderIds.has(ord.id) ? { ...ord, status: 'CANCELLED' as const } : ord);
+
+        if (playChime) soundService.playExecutionChime();
+        if (playMarginCallWarning) soundService.playMarginWarningAlert();
 
         if (!hasChanges) return prev;
 
@@ -451,13 +607,15 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
           wallet: updatedWallet,
           positions: updatedPositions,
           dematHoldings: updatedHoldings,
-          orders: updatedOrders,
-          trades: [...newTrades, ...prev.trades]
+          trades: [...newTrades, ...prev.trades],
+          orders: [...spawnedOrders, ...updatedOrders]
         };
       });
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   // Compute Aggregate Portfolio Net Worth & P&L
@@ -507,16 +665,29 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
     return getLevel2MarketDepth(symbol, currentLtp, userPendingOrders);
   }, [ledger.orders]);
 
-  // Place Order Simulation Core
+  // Place Order Simulation Core with Advanced Order Types (BO, CO, GTT, Iceberg)
   const placeOrder = useCallback((params: PlaceOrderParams) => {
     const tick = getLatestTick(params.ticker);
     const executionPrice = params.orderType === 'Market Order' ? (tick?.ltp || params.price) : params.price;
-    const orderValue = params.qty * executionPrice;
+
+    // Slicing calculation for Iceberg Orders
+    const isIceberg = params.orderType === 'Iceberg Order';
+    const disclosedQty = isIceberg
+      ? (params.disclosedQty && params.disclosedQty > 0 ? params.disclosedQty : Math.max(1, Math.round(params.qty / 5)))
+      : params.qty;
+    const currentLegQty = isIceberg ? Math.min(disclosedQty, params.qty) : params.qty;
+    const icebergLegs = isIceberg ? Math.ceil(params.qty / disclosedQty) : undefined;
+
+    const orderValue = currentLegQty * executionPrice;
     const charges = calculateStatutoryCharges(orderValue, params.action, params.product);
 
-    // Calculate required margin
+    // Calculate required margin based on product & order type leverage
     let requiredMargin = orderValue;
-    if (params.product.includes('Intraday') || params.product.includes('MIS')) {
+    if (params.orderType === 'Cover Order (CO)') {
+      requiredMargin = orderValue * 0.10; // 10x leverage = 10% margin (downside loss capped by compulsory SL)
+    } else if (params.orderType === 'Bracket Order (BO)') {
+      requiredMargin = orderValue * 0.15; // 15% margin for disciplined risk-reward bracket
+    } else if (params.product.includes('Intraday') || params.product.includes('MIS')) {
       requiredMargin = orderValue * 0.20; // 5x leverage = 20% margin
     } else if (params.product.includes('MTF')) {
       requiredMargin = orderValue / 3.5; // 3.5x leverage
@@ -528,6 +699,7 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
 
     // Check available margin
     if (ledger.wallet.availableMargin < totalDebitRequired) {
+      soundService.playOrderRejectionClick();
       return {
         success: false,
         message: `Insufficient Margin. Required: ₹${totalDebitRequired.toLocaleString('en-IN', { maximumFractionDigits: 2 })}, Available: ₹${ledger.wallet.availableMargin.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`
@@ -548,10 +720,18 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
       action: params.action,
       product: params.product,
       orderType: params.orderType,
-      qty: params.qty,
+      qty: currentLegQty,
       price: executionPrice,
       triggerPrice: params.triggerPrice,
-      status: isInstantFill ? 'EXECUTED' : 'PENDING'
+      status: isInstantFill ? 'EXECUTED' : 'PENDING',
+      targetPrice: params.targetPrice,
+      stopLossPrice: params.stopLossPrice,
+      trailingStopLoss: params.trailingStopLoss,
+      disclosedQty: isIceberg ? disclosedQty : undefined,
+      icebergTotalQty: isIceberg ? params.qty : undefined,
+      icebergLegs: isIceberg ? icebergLegs : undefined,
+      icebergCurrentLeg: isIceberg ? 1 : undefined,
+      gttExpiryDays: params.orderType === 'Good-Till-Triggered (GTT)' ? (params.gttExpiryDays || 365) : undefined
     };
 
     setLedger((prev: typeof ledger) => {
@@ -559,6 +739,7 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
       let nextHoldings = [...prev.dematHoldings];
       let nextPositions = [...prev.positions];
       let nextTrades = [...prev.trades];
+      let nextOrders = [newOrder, ...prev.orders];
 
       if (isInstantFill) {
         // Record executed trade
@@ -574,23 +755,83 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
           name: newOrder.name,
           action: params.action,
           product: params.product,
-          qty: params.qty,
+          qty: currentLegQty,
           price: executionPrice,
           charges,
           netValue: Number(netValue.toFixed(2))
         };
         nextTrades = [newTrade, ...nextTrades];
 
+        // If Bracket Order (BO) filled, automatically spawn OCO Target and Stop-Loss orders!
+        if (params.orderType === 'Bracket Order (BO)') {
+          const targetPrice = params.targetPrice || (params.action === 'BUY' ? executionPrice * 1.03 : executionPrice * 0.97);
+          const stopLossPrice = params.stopLossPrice || (params.action === 'BUY' ? executionPrice * 0.98 : executionPrice * 1.02);
+
+          const ocoTargetOrder: SimulatedOrder = {
+            id: `ORD-TGT-${Math.floor(10000 + Math.random() * 90000)}`,
+            time: new Date().toLocaleTimeString(),
+            ticker: params.ticker,
+            name: `${newOrder.name} (BO Target)`,
+            action: params.action === 'BUY' ? 'SELL' : 'BUY',
+            product: params.product,
+            orderType: 'Limit Order',
+            qty: currentLegQty,
+            price: targetPrice,
+            status: 'PENDING',
+            parentOrderId: orderId,
+            isOcoTarget: true
+          };
+
+          const ocoSlOrder: SimulatedOrder = {
+            id: `ORD-SL-${Math.floor(10000 + Math.random() * 90000)}`,
+            time: new Date().toLocaleTimeString(),
+            ticker: params.ticker,
+            name: `${newOrder.name} (BO Stop-Loss)`,
+            action: params.action === 'BUY' ? 'SELL' : 'BUY',
+            product: params.product,
+            orderType: 'Stop-Loss (SL)',
+            qty: currentLegQty,
+            price: stopLossPrice,
+            triggerPrice: stopLossPrice,
+            status: 'PENDING',
+            parentOrderId: orderId,
+            isOcoStopLoss: true,
+            trailingStopLoss: params.trailingStopLoss
+          };
+
+          nextOrders = [ocoTargetOrder, ocoSlOrder, ...nextOrders];
+        }
+
+        // If Cover Order (CO) filled, automatically spawn compulsory Stop-Loss order!
+        if (params.orderType === 'Cover Order (CO)') {
+          const stopLossPrice = params.stopLossPrice || (params.action === 'BUY' ? executionPrice * 0.98 : executionPrice * 1.02);
+          const coSlOrder: SimulatedOrder = {
+            id: `ORD-CO-SL-${Math.floor(10000 + Math.random() * 90000)}`,
+            time: new Date().toLocaleTimeString(),
+            ticker: params.ticker,
+            name: `${newOrder.name} (CO Compulsory SL)`,
+            action: params.action === 'BUY' ? 'SELL' : 'BUY',
+            product: params.product,
+            orderType: 'Stop-Loss (SL)',
+            qty: currentLegQty,
+            price: stopLossPrice,
+            triggerPrice: stopLossPrice,
+            status: 'PENDING',
+            parentOrderId: orderId
+          };
+          nextOrders = [coSlOrder, ...nextOrders];
+        }
+
         if (params.product.includes('Delivery') || params.product.includes('CNC')) {
-          // CNC Delivery Execution: debits available cash & credits Demat
+          // CNC Delivery Execution
           nextWallet.availableMargin = Number((nextWallet.availableMargin - totalDebitRequired).toFixed(2));
           nextWallet.cashBalance = Number((nextWallet.cashBalance - totalDebitRequired).toFixed(2));
 
           const existingIdx = nextHoldings.findIndex(h => h.ticker === params.ticker);
           if (existingIdx >= 0) {
             const ex = nextHoldings[existingIdx];
-            const totalQ = ex.qty + params.qty;
-            const newAvg = (ex.avgCost * ex.qty + executionPrice * params.qty) / totalQ;
+            const totalQ = ex.qty + currentLegQty;
+            const newAvg = (ex.avgCost * ex.qty + executionPrice * currentLegQty) / totalQ;
             nextHoldings[existingIdx] = {
               ...ex,
               qty: totalQ,
@@ -604,7 +845,7 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
               ticker: params.ticker,
               name: newOrder.name,
               category: 'Equity',
-              qty: params.qty,
+              qty: currentLegQty,
               avgCost: executionPrice,
               ltp: executionPrice,
               currentValue: orderValue,
@@ -623,8 +864,8 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
           const existingPosIdx = nextPositions.findIndex(p => p.ticker === params.ticker && p.status === 'OPEN');
           if (existingPosIdx >= 0) {
             const ep = nextPositions[existingPosIdx];
-            const totalQ = ep.qty + params.qty;
-            const newAvg = (ep.avgBuyPrice * ep.qty + executionPrice * params.qty) / totalQ;
+            const totalQ = ep.qty + currentLegQty;
+            const newAvg = (ep.avgBuyPrice * ep.qty + executionPrice * currentLegQty) / totalQ;
             nextPositions[existingPosIdx] = {
               ...ep,
               qty: totalQ,
@@ -637,7 +878,7 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
               name: newOrder.name,
               product: params.product,
               action: params.action,
-              qty: params.qty,
+              qty: currentLegQty,
               avgBuyPrice: executionPrice,
               ltp: executionPrice,
               pnl: 0,
@@ -648,29 +889,95 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
           }
         }
       } else {
-        // Pending Limit Order: Reserve required margin
+        // Pending Limit / GTT Order: Reserve required margin
         nextWallet.availableMargin = Number((nextWallet.availableMargin - totalDebitRequired).toFixed(2));
         nextWallet.usedMargin = Number((nextWallet.usedMargin + requiredMargin).toFixed(2));
       }
 
-      return {
+      const nextLedger = {
         ...prev,
         wallet: nextWallet,
-        orders: [newOrder, ...prev.orders],
+        orders: nextOrders,
         trades: nextTrades,
         positions: nextPositions,
         dematHoldings: nextHoldings
       };
+      persistLedger(nextLedger, true); // Immediate disk persistence on user order
+      return nextLedger;
     });
+
+    if (isInstantFill) {
+      soundService.playExecutionChime();
+    }
 
     return {
       success: true,
       message: isInstantFill
-        ? `Order ${orderId} filled instantly at ₹${executionPrice.toLocaleString('en-IN')}`
-        : `Limit Order ${orderId} queued in exchange depth ladder at ₹${executionPrice.toLocaleString('en-IN')}`,
+        ? `${params.orderType} ${orderId} filled instantly at ₹${executionPrice.toLocaleString('en-IN')}${isIceberg ? ` (Leg 1 of ${icebergLegs})` : ''}`
+        : `${params.orderType} ${orderId} queued in exchange depth ladder at ₹${executionPrice.toLocaleString('en-IN')}`,
       orderId
     };
-  }, [ledger.wallet.availableMargin]);
+  }, [ledger.wallet.availableMargin, persistLedger]);
+
+  // PANIC BUTTON: Instant square-off of all active intraday MIS positions (Feature 6)
+  const panicSquareOffAllIntraday = useCallback(() => {
+    let count = 0;
+    setLedger((prev: typeof ledger) => {
+      const misPositions = prev.positions.filter((p: SimulatedPosition) => p.status === 'OPEN' && (p.product.includes('MIS') || p.product.includes('Intraday')));
+      if (misPositions.length === 0) return prev;
+
+      count = misPositions.length;
+      let nextWallet = { ...prev.wallet };
+      const newTrades: SimulatedTrade[] = [];
+
+      const updatedPositions = prev.positions.map((p: SimulatedPosition) => {
+        if (p.status === 'OPEN' && (p.product.includes('MIS') || p.product.includes('Intraday'))) {
+          const tick = getLatestTick(p.ticker);
+          const exitPrice = tick?.ltp || p.ltp;
+          const orderVal = p.qty * exitPrice;
+          const charges = calculateStatutoryCharges(orderVal, p.action === 'BUY' ? 'SELL' : 'BUY', p.product);
+          const grossPnl = (exitPrice - p.avgBuyPrice) * p.qty * (p.action === 'SELL' ? -1 : 1);
+          const netPnl = Number((grossPnl - charges.totalCharges).toFixed(2));
+
+          nextWallet.availableMargin = Number((nextWallet.availableMargin + p.marginBlocked + netPnl).toFixed(2));
+          nextWallet.usedMargin = Math.max(0, Number((nextWallet.usedMargin - p.marginBlocked).toFixed(2)));
+          nextWallet.cashBalance = Number((nextWallet.cashBalance + netPnl).toFixed(2));
+
+          newTrades.push({
+            id: `TRD-PANIC-${Math.floor(10000 + Math.random() * 90000)}`,
+            orderId: `PANIC-CLOSE`,
+            time: new Date().toLocaleTimeString(),
+            ticker: p.ticker,
+            name: p.name,
+            action: p.action === 'BUY' ? 'SELL' : 'BUY',
+            product: p.product,
+            qty: p.qty,
+            price: exitPrice,
+            charges,
+            netValue: Number((orderVal - charges.totalCharges).toFixed(2))
+          });
+
+          return { ...p, status: 'CLOSED' as const, pnl: netPnl };
+        }
+        return p;
+      });
+
+      const nextLedger = {
+        ...prev,
+        wallet: nextWallet,
+        positions: updatedPositions,
+        trades: [...newTrades, ...prev.trades]
+      };
+      persistLedger(nextLedger, true);
+      return nextLedger;
+    });
+
+    if (count > 0) {
+      soundService.playExecutionChime();
+      return { success: true, count, message: `PANIC BUTTON TRIGGERED: ${count} active intraday (MIS) position(s) squared off instantly at market rates!` };
+    }
+    return { success: false, count: 0, message: 'No active open intraday (MIS) positions found to square off.' };
+  }, [persistLedger]);
 
   // Square Off Position
   const squareOffPosition = useCallback((ticker: string) => {
@@ -1195,6 +1502,7 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
         marketDepth,
         placeOrder,
         squareOffPosition,
+        panicSquareOffAllIntraday,
         cancelOrder,
         addFunds,
         pledgeShares,

@@ -1,6 +1,14 @@
 export type OrderAction = 'BUY' | 'SELL';
 export type ProductType = 'Delivery (CNC)' | 'Intraday (MIS)' | 'F&O Options' | 'MTF Margin';
-export type OrderType = 'Market Order' | 'Limit Order' | 'Stop-Loss (SL)' | 'SL-Market (SL-M)';
+export type OrderType =
+  | 'Market Order'
+  | 'Limit Order'
+  | 'Stop-Loss (SL)'
+  | 'SL-Market (SL-M)'
+  | 'Bracket Order (BO)'
+  | 'Cover Order (CO)'
+  | 'Good-Till-Triggered (GTT)'
+  | 'Iceberg Order';
 export type OrderStatus = 'EXECUTED' | 'PENDING' | 'CANCELLED' | 'REJECTED';
 
 export interface StatutoryCharges {
@@ -21,25 +29,43 @@ export interface SimulatedOrder {
   action: OrderAction;
   product: ProductType;
   orderType: OrderType;
+  type?: OrderType;
   qty: number;
+  quantity?: number;
   price: number;
   triggerPrice?: number;
   status: OrderStatus;
   rejectionReason?: string;
+  // Advanced Indian Broker Order Fields
+  targetPrice?: number;
+  stopLossPrice?: number;
+  trailingStopLoss?: number;
+  disclosedQty?: number;
+  icebergTotalQty?: number;
+  icebergLegs?: number;
+  icebergCurrentLeg?: number;
+  gttExpiryDays?: number;
+  parentOrderId?: string;
+  isOcoTarget?: boolean;
+  isOcoStopLoss?: boolean;
 }
 
 export interface SimulatedTrade {
   id: string;
   orderId: string;
   time: string;
+  timestamp?: number;
   ticker: string;
   name: string;
   action: OrderAction;
   product: ProductType;
   qty: number;
+  quantity?: number;
   price: number;
   charges: StatutoryCharges;
   netValue: number;
+  exchange?: string;
+  realizedPnl?: number;
 }
 
 export interface SimulatedPosition {
@@ -48,7 +74,9 @@ export interface SimulatedPosition {
   product: ProductType;
   action: OrderAction;
   qty: number;
+  quantity?: number;
   avgBuyPrice: number;
+  avgPrice?: number;
   ltp: number;
   pnl: number;
   pnlPct: number;

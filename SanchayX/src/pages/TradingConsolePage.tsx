@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { usePortfolio } from '../context/PortfolioContext';
 import { useTradingSimulation } from '../context/TradingSimulationContext';
-import { exportContractNotePDF, exportForm15DeclarationPDF } from '../utils/exportUtils';
+import { exportForm15DeclarationPDF } from '../utils/exportUtils';
 import type { ProductType, OrderType, OrderAction, PreTradeImpactAnalysis } from '../types/tradingSimulation';
 import { formatCompactCurrency } from '../utils/financialMath';
 import type { IPONFORecord } from '../services/indexedDBService';
@@ -9,8 +9,9 @@ import { getIposFromIndexedDB, DEFAULT_IPO_CATALOG } from '../services/indexedDB
 import { fetchLiveIpoNfoData } from '../services/ipoService';
 import type { BondFDItem } from '../services/bondsExtendedDataset';
 import { INDIAN_BONDS_CATALOG, US_BONDS_CATALOG } from '../services/bondsExtendedDataset';
+import { SpotlightSearchModal } from '../components/trading/SpotlightSearchModal';
+import { soundService } from '../services/soundService';
 import {
-  ShoppingCart,
   TrendingUp,
   Clock,
   CheckCircle2,
@@ -42,43 +43,43 @@ import {
   Percent,
   X,
   Filter,
-  Layers,
   Smartphone,
   Monitor,
-  AlertTriangle
+  AlertTriangle,
+  Volume2,
+  VolumeX,
+  Command
 } from 'lucide-react';
 
+// Code-split Trading Console sub-views via React.lazy() (Optimization 2)
+const OrderEntryView = React.lazy(() => import('./console/OrderEntryView'));
+const PositionsView = React.lazy(() => import('./console/PositionsView'));
+const OrderBookView = React.lazy(() => import('./console/OrderBookView'));
+const TradeBookView = React.lazy(() => import('./console/TradeBookView'));
+const DematHoldingsView = React.lazy(() => import('./console/DematHoldingsView'));
+const FundsView = React.lazy(() => import('./console/FundsView'));
+const ReportsView = React.lazy(() => import('./console/ReportsView'));
+
 export const TradingConsolePage: React.FC = () => {
-  const { assets, currency, activeSubTab, exportReportCSV, exportReportPDF, currentUser } = usePortfolio();
+  const { assets, currency, activeSubTab, setActiveSubTab, exportReportCSV, exportReportPDF } = usePortfolio();
   const {
     wallet,
-    orders,
-    trades,
     positions,
     dematHoldings,
     ipoApplications,
     familyTaxProfiles,
-    totalHoldingsValue,
-    totalInvestedValue,
-    totalUnrealizedPnl,
-    totalRealizedPnl,
     totalMtmPnl,
     hasMarginCall,
     marketDepth,
     placeOrder,
-    squareOffPosition,
-    cancelOrder,
-    addFunds,
-    pledgeShares,
-    unpledgeShares,
+    panicSquareOffAllIntraday,
     buySgbTranche,
     investCorporateBond,
     applyIpoAsba,
     runIpoAllotmentLottery,
     preTradeAnalyze,
     updateFamilyProfile,
-    executeRebalanceBasket,
-    triggerCorporateAction
+    executeRebalanceBasket
   } = useTradingSimulation();
 
   // Active sub-section on the dedicated page (defaults to 'place_order' if activeSubTab is null)
@@ -111,8 +112,72 @@ export const TradingConsolePage: React.FC = () => {
   const [quantity, setQuantity] = useState<number>(100);
   const [price, setPrice] = useState<number>(2450);
   const [triggerPrice, setTriggerPrice] = useState<number>(2420);
-  const [orderSearchQuery, setOrderSearchQuery] = useState<string>('');
-  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState<boolean>(false);
+  const [targetPrice, setTargetPrice] = useState<number>(2500);
+  const [stopLossPrice, setStopLossPrice] = useState<number>(2400);
+  const [trailingStopLoss, setTrailingStopLoss] = useState<number>(5);
+  const [icebergLegs, setIcebergLegs] = useState<number>(4);
+  const [disclosedQty, setDisclosedQty] = useState<number>(25);
+  const gttExpiryDays = 365;
+
+  // Bloomberg Hotkeys & Spotlight Search State
+  const [isSpotlightOpen, setIsSpotlightOpen] = useState<boolean>(false);
+  const [showPanicModal, setShowPanicModal] = useState<boolean>(false);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(soundService.isEnabled());
+
+  // Global Bloomberg Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT';
+
+      // [Ctrl+K] / [Cmd+K] Universal Spotlight
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSpotlightOpen(prev => !prev);
+        return;
+      }
+
+      if (isInput) return;
+
+      // [Shift+S] Panic Square-Off
+      if (e.shiftKey && (e.key === 'S' || e.key === 's')) {
+        e.preventDefault();
+        setShowPanicModal(true);
+        return;
+      }
+
+      // [B] -> Buy Order
+      if (e.key === 'b' || e.key === 'B') {
+        e.preventDefault();
+        setActiveSubTab('place_order');
+        setOrderAction('BUY');
+      }
+      // [S] -> Sell Order
+      else if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        setActiveSubTab('place_order');
+        setOrderAction('SELL');
+      }
+      // [F1] -> Place Order
+      else if (e.key === 'F1') {
+        e.preventDefault();
+        setActiveSubTab('place_order');
+      }
+      // [F2] -> Open Positions
+      else if (e.key === 'F2') {
+        e.preventDefault();
+        setActiveSubTab('open_positions');
+      }
+      // [F3] -> Order Book
+      else if (e.key === 'F3') {
+        e.preventDefault();
+        setActiveSubTab('order_book');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setActiveSubTab]);
 
   // Helper to handle selecting asset and auto-routing appropriate Exchange
   const handleSelectAsset = (assetTicker: string) => {
@@ -128,12 +193,7 @@ export const TradingConsolePage: React.FC = () => {
         setExchange('NSE — National Stock Exchange');
       }
     }
-    setIsSearchDropdownOpen(false);
   };
-
-  // State for Add Funds
-  const [addFundsAmount, setAddFundsAmount] = useState<number>(50000);
-  const [fundSuccessMsg, setFundSuccessMsg] = useState<boolean>(false);
 
   // Innovation 8: Dual Viewport Terminal Mode (Desktop Bloomberg vs Mobile Native)
   const [viewportMode, setViewportMode] = useState<'desktop' | 'mobile'>('desktop');
@@ -471,7 +531,13 @@ export const TradingConsolePage: React.FC = () => {
       orderType: orderType as OrderType,
       qty: quantity,
       price,
-      triggerPrice
+      triggerPrice,
+      targetPrice: orderType === 'Bracket Order (BO)' ? targetPrice : undefined,
+      stopLossPrice: (orderType === 'Bracket Order (BO)' || orderType === 'Cover Order (CO)') ? stopLossPrice : undefined,
+      trailingStopLoss: orderType === 'Bracket Order (BO)' ? trailingStopLoss : undefined,
+      disclosedQty: orderType === 'Iceberg Order' ? disclosedQty : undefined,
+      icebergLegs: orderType === 'Iceberg Order' ? icebergLegs : undefined,
+      gttExpiryDays: orderType === 'Good-Till-Triggered (GTT)' ? gttExpiryDays : undefined
     });
     if (result.success) {
       setOrderFeedback({
@@ -498,7 +564,13 @@ export const TradingConsolePage: React.FC = () => {
       orderType: orderType as OrderType,
       qty: quantity,
       price,
-      triggerPrice
+      triggerPrice,
+      targetPrice: orderType === 'Bracket Order (BO)' ? targetPrice : undefined,
+      stopLossPrice: (orderType === 'Bracket Order (BO)' || orderType === 'Cover Order (CO)') ? stopLossPrice : undefined,
+      trailingStopLoss: orderType === 'Bracket Order (BO)' ? trailingStopLoss : undefined,
+      disclosedQty: orderType === 'Iceberg Order' ? disclosedQty : undefined,
+      icebergLegs: orderType === 'Iceberg Order' ? icebergLegs : undefined,
+      gttExpiryDays: orderType === 'Good-Till-Triggered (GTT)' ? gttExpiryDays : undefined
     });
     setShowPreTradeModal(false);
     if (result.success) {
@@ -518,16 +590,36 @@ export const TradingConsolePage: React.FC = () => {
     }
   };
 
-  const handleSquareOff = (ticker: string) => {
-    squareOffPosition(ticker);
+  const selectedAssetObj = assets.find(a => a.ticker === selectedAsset) || assets[0];
+  const filteredAssets = assets;
+
+  const getExchangeOptions = () => {
+    if (selectedAssetObj.category === 'Crypto') {
+      return [
+        { id: 'Binance Exchange', label: 'Binance Exchange (Crypto Spot & Derivatives)' },
+        { id: 'Binance Spot', label: 'Binance Spot Trading' },
+        { id: 'Binance Futures', label: 'Binance USDS-M Futures' },
+        { id: 'Coinbase Global', label: 'Coinbase Global Pro' }
+      ];
+    } else if (selectedAssetObj.currency === '$' || selectedAssetObj.market.includes('NASDAQ') || selectedAssetObj.market.includes('NYSE')) {
+      return [
+        { id: 'NYSE — New York Stock Exchange', label: 'NYSE — New York Stock Exchange' },
+        { id: 'NASDAQ — US Tech Market', label: 'NASDAQ — US Tech Market' },
+        { id: 'CBOE — US Options', label: 'CBOE — US Equity Options' }
+      ];
+    } else {
+      return [
+        { id: 'NSE — National Stock Exchange', label: 'NSE — National Stock Exchange' },
+        { id: 'BSE — Bombay Stock Exchange', label: 'BSE — Bombay Stock Exchange' },
+        { id: 'NFO — National Futures & Options', label: 'NFO — Derivatives (Futures & Options)' },
+        { id: 'MCX — Multi Commodity Exchange', label: 'MCX — Commodity Derivatives' }
+      ];
+    }
   };
 
-  const handleAddFundsSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (addFundsAmount <= 0) return;
-    addFunds(Number(addFundsAmount));
-    setFundSuccessMsg(true);
-    setTimeout(() => setFundSuccessMsg(false), 3000);
+  const handleInvestFd = (issuer: string) => {
+    setFdInvestedMsg(`FD Deposit Application initiated for ${issuer}! Order ID: FD-${Math.floor(100000 + Math.random() * 900000)}`);
+    setTimeout(() => setFdInvestedMsg(null), 4000);
   };
 
   const handleRefreshFdData = () => {
@@ -560,50 +652,12 @@ export const TradingConsolePage: React.FC = () => {
     setTimeout(() => setIpoAppliedMsg(null), 4500);
   };
 
-  const handleInvestFd = (issuer: string) => {
-    setFdInvestedMsg(`FD Deposit Application initiated for ${issuer}! Order ID: FD-${Math.floor(100000 + Math.random() * 900000)}`);
-    setTimeout(() => setFdInvestedMsg(null), 4000);
-  };
-
-  const selectedAssetObj = assets.find(a => a.ticker === selectedAsset) || assets[0];
-  const estOrderVal = quantity * price;
-
-  const filteredAssets = assets.filter(a =>
-    a.ticker.toLowerCase().includes(orderSearchQuery.toLowerCase()) ||
-    a.name.toLowerCase().includes(orderSearchQuery.toLowerCase()) ||
-    a.category.toLowerCase().includes(orderSearchQuery.toLowerCase())
-  );
-
-  const getExchangeOptions = () => {
-    if (selectedAssetObj.category === 'Crypto') {
-      return [
-        { id: 'Binance Exchange', label: 'Binance Exchange (Crypto Spot & Derivatives)' },
-        { id: 'Binance Spot', label: 'Binance Spot Trading' },
-        { id: 'Binance Futures', label: 'Binance USDS-M Futures' },
-        { id: 'Coinbase Global', label: 'Coinbase Global Pro' }
-      ];
-    } else if (selectedAssetObj.currency === '$' || selectedAssetObj.market.includes('NASDAQ') || selectedAssetObj.market.includes('NYSE')) {
-      return [
-        { id: 'NYSE — New York Stock Exchange', label: 'NYSE — New York Stock Exchange' },
-        { id: 'NASDAQ — US Tech Market', label: 'NASDAQ — US Tech Market' },
-        { id: 'CBOE — US Options', label: 'CBOE — US Equity Options' }
-      ];
-    } else {
-      return [
-        { id: 'NSE — National Stock Exchange', label: 'NSE — National Stock Exchange' },
-        { id: 'BSE — Bombay Stock Exchange', label: 'BSE — Bombay Stock Exchange' },
-        { id: 'NFO — National Futures & Options', label: 'NFO — Derivatives (Futures & Options)' },
-        { id: 'MCX — Multi Commodity Exchange', label: 'MCX — Commodity Derivatives' }
-      ];
-    }
-  };
-
   const exchangeOptions = getExchangeOptions();
 
   // Innovation 7: Compute live allocation vs target for Sentinel
   const currentAllocation = useMemo(() => {
     let eq = 0, debt = 0, gold = 0;
-    dematHoldings.forEach(h => {
+    dematHoldings.forEach((h: any) => {
       if (h.category === 'Equity') eq += h.currentValue;
       else if (h.category === 'Corporate Bond' || h.category === 'NCD') debt += h.currentValue;
       else if (h.category === 'SGB') gold += h.currentValue;
@@ -625,7 +679,7 @@ export const TradingConsolePage: React.FC = () => {
   const hasAllocationDrift = maxAbsDrift > 5;
 
   const totalFamilyTaxSaved = useMemo(() => {
-    return familyTaxProfiles.reduce((acc, member) => acc + member.tdsSaved, 0);
+    return familyTaxProfiles.reduce((acc: number, member: any) => acc + member.tdsSaved, 0);
   }, [familyTaxProfiles]);
 
   const handleExecuteRebalance = () => {
@@ -668,7 +722,53 @@ export const TradingConsolePage: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            {/* Feature 6: Universal Spotlight Search Button */}
+            <button
+              type="button"
+              onClick={() => setIsSpotlightOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--bg-tertiary)] hover:bg-[var(--bg-card-hover)] text-[var(--text-primary)] font-bold text-xs border border-[var(--border-color)] transition-all cursor-pointer shadow-xs"
+              title="Universal Search & Terminal Commands (Ctrl+K)"
+            >
+              <Command className="w-3.5 h-3.5 text-[var(--icici-orange)]" />
+              <span className="hidden sm:inline">Spotlight</span>
+              <kbd className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)]">
+                Ctrl+K
+              </kbd>
+            </button>
+
+            {/* Feature 7: Sound Engine Toggle Button */}
+            <button
+              type="button"
+              onClick={() => {
+                soundService.toggleSound();
+                setSoundEnabled(soundService.isEnabled());
+                if (!soundEnabled) {
+                  soundService.playExecutionChime();
+                }
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-xs ${
+                soundEnabled
+                  ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                  : 'bg-[var(--bg-tertiary)] border-[var(--border-color)] text-[var(--text-muted)]'
+              }`}
+              title="Exchange Sound Engine Toggle (Execution Chimes & Alerts)"
+            >
+              {soundEnabled ? <Volume2 className="w-3.5 h-3.5 text-emerald-500" /> : <VolumeX className="w-3.5 h-3.5 text-slate-400" />}
+              <span className="hidden sm:inline">Audio</span>
+            </button>
+
+            {/* Feature 6: SEBI Panic Square-Off Hotkey Button */}
+            <button
+              type="button"
+              onClick={() => setShowPanicModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-600 dark:text-rose-400 font-bold text-xs border border-rose-500/40 transition-all cursor-pointer shadow-xs"
+              title="SEBI Emergency Panic Square-Off [Shift+S]"
+            >
+              <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
+              <span className="hidden sm:inline">PANIC [Shift+S]</span>
+            </button>
+
             {/* Innovation 8: Dual Viewport Mode Switcher */}
             <div className="flex items-center gap-1 bg-[var(--bg-tertiary)] p-1 rounded-xl border border-[var(--border-color)]">
               <button
@@ -682,7 +782,7 @@ export const TradingConsolePage: React.FC = () => {
                 title="Desktop Bloomberg Terminal Layout"
               >
                 <Monitor className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Bloomberg View</span>
+                <span className="hidden sm:inline">Bloomberg</span>
               </button>
               <button
                 type="button"
@@ -695,7 +795,7 @@ export const TradingConsolePage: React.FC = () => {
                 title="Mobile Native Smartphone Terminal"
               >
                 <Smartphone className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Mobile View</span>
+                <span className="hidden sm:inline">Mobile</span>
               </button>
             </div>
 
@@ -735,390 +835,44 @@ export const TradingConsolePage: React.FC = () => {
       <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-xl">
         {/* SECTION 1: PLACE ORDER */}
         {activeTabId === 'place_order' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-4">
-              <div>
-                <h3 className="text-lg font-extrabold flex items-center gap-2 text-[var(--text-primary)]">
-                  <ShoppingCart className="w-5 h-5 text-[var(--icici-orange)]" />
-                  Multi-Asset Order Entry Form
-                </h3>
-                <p className="text-xs text-[var(--text-secondary)]">Direct Market Access (DMA) to NSE, BSE, NYSE, NASDAQ & Crypto Exchanges</p>
-              </div>
-
-              <div className="flex items-center gap-1 bg-[var(--bg-tertiary)] p-1 rounded-xl border border-[var(--border-color)]">
-                <button
-                  onClick={() => setOrderAction('BUY')}
-                  className={`px-5 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                    orderAction === 'BUY'
-                      ? 'bg-emerald-600 text-white shadow-md'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  BUY ORDER
-                </button>
-                <button
-                  onClick={() => setOrderAction('SELL')}
-                  className={`px-5 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                    orderAction === 'SELL'
-                      ? 'bg-rose-600 text-white shadow-md'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  SELL ORDER
-                </button>
-              </div>
-            </div>
-
-            {/* Dynamic Order Feedback Banner */}
-            {orderFeedback && (
-              <div className={`p-4 rounded-xl border text-xs font-bold flex items-center gap-2.5 animate-bounce ${
-                orderFeedback.type === 'success'
-                  ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
-                  : 'bg-rose-500/15 border-rose-500/30 text-rose-700 dark:text-rose-300'
-              }`}>
-                {orderFeedback.type === 'success' ? (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                ) : (
-                  <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
-                )}
-                {orderFeedback.message}
-              </div>
-            )}
-
-            {/* Layout: Order Entry Form + Innovation 1 Level-2 Market Depth */}
-            <div className={`grid gap-6 ${viewportMode === 'mobile' ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'}`}>
-              <div className={viewportMode === 'mobile' ? 'w-full' : 'lg:col-span-2'}>
-                <form onSubmit={handlePlaceOrderSubmit} className="space-y-5">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                    {/* Searchable Security Selector */}
-                    <div className="space-y-1.5 relative">
-                      <label className="text-xs font-bold text-[var(--text-primary)]">Search & Select Security / Instrument</label>
-                      <div className="relative">
-                        <Search className="w-4 h-4 text-[var(--text-muted)] absolute left-3 top-3" />
-                        <input
-                          type="text"
-                          placeholder="Type ticker or name (e.g. BTC, RELIANCE, AAPL, SGB)..."
-                          value={isSearchDropdownOpen ? orderSearchQuery : `${selectedAssetObj.ticker} — ${selectedAssetObj.name}`}
-                          onFocus={() => {
-                            setOrderSearchQuery('');
-                            setIsSearchDropdownOpen(true);
-                          }}
-                          onChange={(e) => {
-                            setOrderSearchQuery(e.target.value);
-                            setIsSearchDropdownOpen(true);
-                          }}
-                          className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl pl-9 pr-8 py-2.5 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)]"
-                        />
-                      </div>
-
-                      {isSearchDropdownOpen && (
-                        <div className="absolute left-0 right-0 top-full mt-1 max-h-64 overflow-y-auto bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-2xl z-30 divide-y divide-[var(--border-subtle)]">
-                          {filteredAssets.length > 0 ? (
-                            filteredAssets.map(a => (
-                              <div
-                                key={a.ticker}
-                                onClick={() => handleSelectAsset(a.ticker)}
-                                className={`p-3 hover:bg-[var(--bg-tertiary)] cursor-pointer flex items-center justify-between transition-colors ${
-                                  selectedAsset === a.ticker ? 'bg-[var(--bg-tertiary)] border-l-4 border-[var(--icici-orange)]' : ''
-                                }`}
-                              >
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-mono font-bold text-xs text-[var(--text-primary)]">{a.ticker}</span>
-                                    <span className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${
-                                      a.category === 'Crypto' ? 'bg-amber-500/20 text-amber-500' :
-                                      a.category === 'Equities' ? 'bg-blue-500/20 text-blue-500' :
-                                      a.category === 'Bonds' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-purple-500/20 text-purple-500'
-                                    }`}>
-                                      {a.category}
-                                    </span>
-                                  </div>
-                                  <span className="text-[11px] text-[var(--text-secondary)] block truncate max-w-[220px]">{a.name}</span>
-                                </div>
-                                <div className="text-right">
-                                  <span className="font-mono font-bold text-xs text-[var(--text-primary)] block">
-                                    {a.currency}{a.price.toLocaleString()}
-                                  </span>
-                                  <span className={`text-[10px] font-bold ${a.change24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                    {a.change24h >= 0 ? '+' : ''}{a.change24h}%
-                                  </span>
-                                </div>
-                              </div>
-                            ))
-                          ) : (
-                            <div className="p-4 text-center text-xs text-[var(--text-muted)] font-bold">
-                              No matching security found for "{orderSearchQuery}"
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Exchange Segment */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-[var(--text-primary)]">Exchange Platform</label>
-                      <select
-                        value={exchange}
-                        onChange={(e) => setExchange(e.target.value)}
-                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl p-2.5 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)]"
-                      >
-                        {exchangeOptions.map(ex => (
-                          <option key={ex.id} value={ex.id} className="bg-[var(--bg-card)]">
-                            {ex.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Product Type */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-[var(--text-primary)]">Product Type</label>
-                      <select
-                        value={productType}
-                        onChange={(e) => setProductType(e.target.value)}
-                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl p-2.5 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)]"
-                      >
-                        <option value="Delivery (CNC)">Delivery (CNC) — Cash & Carry</option>
-                        <option value="Intraday (MIS)">Intraday (MIS) — Margin Intraday</option>
-                        <option value="MTF (Margin)">MTF — Margin Trading Facility (4x Leverage)</option>
-                        <option value="F&O Carry">F&O Derivatives Carry-Forward</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
-                    {/* Order Type */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-[var(--text-primary)]">Order Type</label>
-                      <select
-                        value={orderType}
-                        onChange={(e) => setOrderType(e.target.value)}
-                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl p-2.5 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)]"
-                      >
-                        <option value="Limit Order">Limit Order</option>
-                        <option value="Market Order">Market Order (LTP)</option>
-                        <option value="Stop-Loss (SL)">Stop-Loss Limit (SL)</option>
-                        <option value="SL-Market (SL-M)">Stop-Loss Market (SL-M)</option>
-                      </select>
-                    </div>
-
-                    {/* Quantity */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-[var(--text-primary)]">Quantity (Shares/Lots)</label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={quantity}
-                        onChange={(e) => setQuantity(Number(e.target.value))}
-                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl p-2.5 text-xs font-mono font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)]"
-                      />
-                    </div>
-
-                    {/* Price */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-[var(--text-primary)]">Order Price ({selectedAssetObj.currency})</label>
-                      <input
-                        type="number"
-                        disabled={orderType === 'Market Order'}
-                        value={price}
-                        onChange={(e) => setPrice(Number(e.target.value))}
-                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl p-2.5 text-xs font-mono font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)] disabled:opacity-50"
-                      />
-                    </div>
-
-                    {/* Trigger Price */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-[var(--text-primary)]">Trigger Price (for SL)</label>
-                      <input
-                        type="number"
-                        disabled={!orderType.includes('SL')}
-                        value={triggerPrice}
-                        onChange={(e) => setTriggerPrice(Number(e.target.value))}
-                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl p-2.5 text-xs font-mono font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)] disabled:opacity-50"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Quick Quantity Presets for Fast Ordering */}
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="text-[11px] font-bold text-[var(--text-muted)]">Quick Qty:</span>
-                    {[25, 50, 100, 250, 500].map(q => (
-                      <button
-                        key={q}
-                        type="button"
-                        onClick={() => setQuantity(q)}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
-                          quantity === q
-                            ? 'bg-[var(--icici-orange)] text-white'
-                            : 'bg-[var(--bg-tertiary)] hover:bg-[var(--bg-card-hover)] text-[var(--text-secondary)] border border-[var(--border-color)]'
-                        }`}
-                      >
-                        +{q}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Margin Summary */}
-                  <div className="p-5 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                    <div>
-                      <span className="text-[var(--text-muted)] block text-[10px] font-bold uppercase">Estimated Order Value</span>
-                      <span className="font-mono font-extrabold text-lg text-[var(--text-primary)]">
-                        {formatCompactCurrency(estOrderVal, currency)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[var(--text-muted)] block text-[10px] font-bold uppercase">Required Margin</span>
-                      <span className="font-mono font-extrabold text-lg text-[var(--icici-orange)]">
-                        {formatCompactCurrency(productType.includes('Intraday') ? estOrderVal * 0.2 : estOrderVal, currency)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[var(--text-muted)] block text-[10px] font-bold uppercase">Available Margin Balance</span>
-                      <span className="font-mono font-extrabold text-lg text-emerald-600 dark:text-emerald-400">
-                        {formatCompactCurrency(wallet.availableMargin, currency)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons: Pre-Trade Audit & Submit Order */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                    <button
-                      type="button"
-                      onClick={handlePreTradeAudit}
-                      className="py-3.5 px-4 rounded-xl font-black text-xs bg-[var(--bg-tertiary)] hover:bg-[var(--bg-card-hover)] border-2 border-[var(--icici-orange)]/40 hover:border-[var(--icici-orange)] text-[var(--icici-orange)] shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2"
-                    >
-                      <ShieldCheck className="w-4 h-4" />
-                      PRE-TRADE "WHAT-IF" AUDIT
-                    </button>
-
-                    <button
-                      type="submit"
-                      className={`py-3.5 px-4 rounded-xl font-black text-xs text-white shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                        orderAction === 'BUY'
-                          ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20'
-                          : 'bg-rose-600 hover:bg-rose-500 shadow-rose-500/20'
-                      }`}
-                    >
-                      <ShoppingCart className="w-4 h-4" />
-                      SUBMIT {orderAction} ORDER FOR {selectedAsset}
-                    </button>
-                  </div>
-                </form>
-              </div>
-
-              {/* Innovation 1: Level-2 Market Depth & Virtual Order Ladder */}
-              <div className="space-y-4">
-                <div className="bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-2xl p-4 space-y-3">
-                  <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-2.5">
-                    <div>
-                      <div className="text-xs font-black text-[var(--text-primary)] flex items-center gap-1.5">
-                        <Layers className="w-4 h-4 text-[var(--icici-orange)]" />
-                        <span>Level-2 Market Depth Ladder</span>
-                      </div>
-                      <div className="text-[10px] text-[var(--text-secondary)]">Click bid/ask to autofill price & qty</div>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-[10px] font-mono font-bold text-[var(--text-muted)] block">Spread</span>
-                      <div className="text-xs font-mono font-bold text-amber-500">
-                        ₹{Math.max(0.05, ((l2Depth.asks[0]?.price || price) - (l2Depth.bids[0]?.price || price))).toFixed(2)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    {/* BIDS (BUYERS) */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-[10px] font-bold text-emerald-600 dark:text-emerald-400 pb-1 border-b border-emerald-500/20">
-                        <span>BUYERS</span>
-                        <span>ORDERS / QTY</span>
-                      </div>
-                      <div className="space-y-1">
-                        {l2Depth.bids.map((b, idx) => {
-                          const depthPct = Math.min(100, Math.round((b.qty / (l2Depth.totalBidQty || 1)) * 100));
-                          return (
-                            <div
-                              key={`bid-${idx}`}
-                              onClick={() => {
-                                setPrice(b.price);
-                                setQuantity(b.qty);
-                              }}
-                              className="relative p-1.5 rounded-lg hover:bg-emerald-500/15 cursor-pointer transition-colors overflow-hidden flex items-center justify-between font-mono text-[11px]"
-                              title="Click to fill price and quantity"
-                            >
-                              <div
-                                className="absolute inset-y-0 left-0 bg-emerald-500/15 pointer-events-none transition-all duration-300"
-                                style={{ width: `${depthPct}%` }}
-                              />
-                              <span className="font-bold text-emerald-600 dark:text-emerald-400 relative z-10">₹{b.price.toFixed(2)}</span>
-                              <span className="text-[var(--text-primary)] relative z-10">{b.orders} / {b.qty.toLocaleString()}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <div className="flex justify-between items-center text-[10px] font-mono font-bold text-[var(--text-muted)] pt-1 border-t border-[var(--border-subtle)]">
-                        <span>Total Bids:</span>
-                        <span className="text-emerald-500">{l2Depth.totalBidQty.toLocaleString()}</span>
-                      </div>
-                    </div>
-
-                    {/* ASKS (SELLERS) */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-[10px] font-bold text-rose-600 dark:text-rose-400 pb-1 border-b border-rose-500/20">
-                        <span>SELLERS</span>
-                        <span>QTY / ORDERS</span>
-                      </div>
-                      <div className="space-y-1">
-                        {l2Depth.asks.map((a, idx) => {
-                          const depthPct = Math.min(100, Math.round((a.qty / (l2Depth.totalAskQty || 1)) * 100));
-                          return (
-                            <div
-                              key={`ask-${idx}`}
-                              onClick={() => {
-                                setPrice(a.price);
-                                setQuantity(a.qty);
-                              }}
-                              className="relative p-1.5 rounded-lg hover:bg-rose-500/15 cursor-pointer transition-colors overflow-hidden flex items-center justify-between font-mono text-[11px]"
-                              title="Click to fill price and quantity"
-                            >
-                              <div
-                                className="absolute inset-y-0 right-0 bg-rose-500/15 pointer-events-none transition-all duration-300"
-                                style={{ width: `${depthPct}%` }}
-                              />
-                              <span className="text-[var(--text-primary)] relative z-10">{a.qty.toLocaleString()} / {a.orders}</span>
-                              <span className="font-bold text-rose-600 dark:text-rose-400 relative z-10">₹{a.price.toFixed(2)}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <div className="flex justify-between items-center text-[10px] font-mono font-bold text-[var(--text-muted)] pt-1 border-t border-[var(--border-subtle)]">
-                        <span>Total Asks:</span>
-                        <span className="text-rose-500">{l2Depth.totalAskQty.toLocaleString()}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Buy vs Sell Pressure Bar */}
-                  <div className="pt-2 border-t border-[var(--border-subtle)] space-y-1">
-                    <div className="flex justify-between text-[10px] font-bold">
-                      <span className="text-emerald-500">
-                        Buy Pressure: {Math.round((l2Depth.totalBidQty / Math.max(1, l2Depth.totalBidQty + l2Depth.totalAskQty)) * 100)}%
-                      </span>
-                      <span className="text-rose-500">
-                        Sell Pressure: {Math.round((l2Depth.totalAskQty / Math.max(1, l2Depth.totalBidQty + l2Depth.totalAskQty)) * 100)}%
-                      </span>
-                    </div>
-                    <div className="w-full h-1.5 bg-rose-500/40 rounded-full overflow-hidden flex">
-                      <div
-                        className="h-full bg-emerald-500 transition-all duration-300"
-                        style={{
-                          width: `${(l2Depth.totalBidQty / Math.max(1, l2Depth.totalBidQty + l2Depth.totalAskQty)) * 100}%`
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <Suspense fallback={<div className="p-12 text-center text-xs text-[var(--text-muted)] font-mono animate-pulse">Loading Institutional DMA Order Engine...</div>}>
+            <OrderEntryView
+              orderAction={orderAction}
+              setOrderAction={setOrderAction}
+              selectedAsset={selectedAsset}
+              setSelectedAsset={setSelectedAsset}
+              exchange={exchange}
+              setExchange={setExchange}
+              productType={productType}
+              setProductType={setProductType}
+              orderType={orderType}
+              setOrderType={setOrderType}
+              quantity={quantity}
+              setQuantity={setQuantity}
+              price={price}
+              setPrice={setPrice}
+              triggerPrice={triggerPrice}
+              setTriggerPrice={setTriggerPrice}
+              targetPrice={targetPrice}
+              setTargetPrice={setTargetPrice}
+              stopLossPrice={stopLossPrice}
+              setStopLossPrice={setStopLossPrice}
+              trailingStopLoss={trailingStopLoss}
+              setTrailingStopLoss={setTrailingStopLoss}
+              icebergLegs={icebergLegs}
+              setIcebergLegs={setIcebergLegs}
+              disclosedQty={disclosedQty}
+              setDisclosedQty={setDisclosedQty}
+              handleSelectAsset={handleSelectAsset}
+              handlePlaceOrderSubmit={handlePlaceOrderSubmit}
+              handlePreTradeAudit={handlePreTradeAudit}
+              orderFeedback={orderFeedback}
+              viewportMode={viewportMode}
+              filteredAssets={filteredAssets}
+              selectedAssetObj={selectedAssetObj}
+              exchangeOptions={exchangeOptions}
+              l2Depth={l2Depth}
+            />
 
             {/* Innovation 2: Pre-Trade What-If Modal */}
             {showPreTradeModal && preTradeResult && (
@@ -1255,7 +1009,7 @@ export const TradingConsolePage: React.FC = () => {
                     <div className="p-3.5 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs font-bold flex items-center gap-2.5">
                       <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
                       <div>
-                        <div>SEBI Upfront Margin Deficit: SHORTFALL DETECTED</div>
+                        <div>SEBI Upfront Margin Check: SHORTFALL DETECTED</div>
                         <div className="text-[11px] font-normal text-rose-600 dark:text-rose-400">
                           Shortfall of ₹{Math.abs(preTradeResult.freeCashRemaining).toLocaleString()}. Please deposit funds or reduce order quantity before DMA execution.
                         </div>
@@ -1285,474 +1039,42 @@ export const TradingConsolePage: React.FC = () => {
                 </div>
               </div>
             )}
-          </div>
+          </Suspense>
         )}
 
         {/* SECTION 2: OPEN POSITIONS */}
         {(activeTabId === 'open_positions' || activeTabId === 'portfolio_summary') && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-4">
-              <div>
-                <h3 className="text-lg font-extrabold flex items-center gap-2 text-[var(--text-primary)]">
-                  <TrendingUp className="w-5 h-5 text-emerald-500" />
-                  Live Intraday & F&O Open Positions
-                </h3>
-                <p className="text-xs text-[var(--text-secondary)]">Real-time mark-to-market (MTM) position tracking and instant square-off execution</p>
-              </div>
-              <span className="text-xs font-mono text-[var(--text-muted)] font-bold bg-[var(--bg-tertiary)] px-3 py-1 rounded-full border border-[var(--border-color)]">
-                {positions.length} Active Positions
-              </span>
-            </div>
-
-            {/* MTM Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                <div className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase">TOTAL MTM P&L</div>
-                <div className={`text-2xl font-mono font-extrabold mt-1 ${totalMtmPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                  {totalMtmPnl >= 0 ? '+' : ''}{formatCompactCurrency(totalMtmPnl, currency)}
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
-                <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">REALIZED P&L</div>
-                <div className={`text-2xl font-mono font-extrabold mt-1 ${totalRealizedPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                  {totalRealizedPnl >= 0 ? '+' : ''}{formatCompactCurrency(totalRealizedPnl, currency)}
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
-                <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">UNREALIZED P&L</div>
-                <div className={`text-2xl font-mono font-extrabold mt-1 ${totalUnrealizedPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                  {totalUnrealizedPnl >= 0 ? '+' : ''}{formatCompactCurrency(totalUnrealizedPnl, currency)}
-                </div>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto w-full">
-              {positions.length > 0 ? (
-                <table className="fin-table">
-                  <thead>
-                    <tr>
-                      <th>Instrument / Symbol</th>
-                      <th>Product</th>
-                      <th>Net Qty</th>
-                      <th>Avg Buy Price</th>
-                      <th>Live LTP</th>
-                      <th>Blocked Margin</th>
-                      <th>MTM P&L ({currency})</th>
-                      <th>P&L %</th>
-                      <th>Quick Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {positions.map(p => (
-                      <tr key={p.ticker}>
-                        <td className="font-mono font-bold text-[var(--text-primary)]">
-                          {p.ticker}
-                          <div className="text-[10px] text-[var(--text-muted)] font-sans">{p.name}</div>
-                        </td>
-                        <td>
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--bg-tertiary)] text-[var(--text-secondary)]">
-                            {p.product}
-                          </span>
-                        </td>
-                        <td className="font-mono font-bold text-[var(--text-primary)]">{p.qty}</td>
-                        <td className="font-mono text-[var(--text-secondary)]">₹{p.avgBuyPrice.toFixed(2)}</td>
-                        <td className="font-mono font-bold text-[var(--text-primary)]">
-                          <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--bg-tertiary)] border border-[var(--border-subtle)]">
-                            ₹{p.ltp.toFixed(2)}
-                          </span>
-                        </td>
-                        <td className="font-mono text-xs text-[var(--text-muted)]">
-                          {formatCompactCurrency(p.marginBlocked, currency)}
-                        </td>
-                        <td className={`font-mono font-bold ${p.pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                          {p.pnl >= 0 ? '+' : ''}{formatCompactCurrency(p.pnl, currency)}
-                        </td>
-                        <td className={`font-mono font-bold ${p.pnlPct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                          {p.pnlPct >= 0 ? '+' : ''}{p.pnlPct.toFixed(2)}%
-                        </td>
-                        <td>
-                          <button
-                            onClick={() => handleSquareOff(p.ticker)}
-                            className="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold cursor-pointer transition-colors shadow-xs"
-                          >
-                            Square Off
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <div className="p-8 text-center text-xs text-[var(--text-muted)] font-bold bg-[var(--bg-tertiary)] rounded-2xl border border-[var(--border-subtle)]">
-                  No active open positions. Place an Intraday (MIS) or F&O trade to open a live position.
-                </div>
-              )}
-            </div>
-          </div>
+          <Suspense fallback={<div className="p-12 text-center text-xs text-[var(--text-muted)] font-mono animate-pulse">Loading Positions...</div>}>
+            <PositionsView onTriggerPanic={() => setShowPanicModal(true)} />
+          </Suspense>
         )}
 
         {/* SECTION 3: ORDER BOOK */}
         {activeTabId === 'order_book' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-4">
-              <div>
-                <h3 className="text-lg font-extrabold flex items-center gap-2 text-[var(--text-primary)]">
-                  <Clock className="w-5 h-5 text-[var(--icici-orange)]" />
-                  Exchange Order Book & Audit Log
-                </h3>
-                <p className="text-xs text-[var(--text-secondary)]">Complete order lifecycle audit, execution status, and pending limit orders</p>
-              </div>
-              <span className="text-xs font-mono text-[var(--text-muted)] font-bold bg-[var(--bg-tertiary)] px-3 py-1 rounded-full border border-[var(--border-color)]">
-                Total Orders: {orders.length}
-              </span>
-            </div>
-
-            <div className="overflow-x-auto w-full">
-              {orders.length > 0 ? (
-                <table className="fin-table">
-                  <thead>
-                    <tr>
-                      <th>Order ID</th>
-                      <th>Time</th>
-                      <th>Symbol</th>
-                      <th>Type</th>
-                      <th>Product</th>
-                      <th>Qty</th>
-                      <th>Price ({currency})</th>
-                      <th>Status</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orders.map(o => (
-                      <tr key={o.id}>
-                        <td className="font-mono text-xs text-[var(--text-muted)]">{o.id}</td>
-                        <td className="font-mono text-xs text-[var(--text-secondary)]">{o.time}</td>
-                        <td className="font-mono font-bold text-[var(--text-primary)]">{o.ticker}</td>
-                        <td>
-                          <span className={`font-bold text-xs ${o.action === 'BUY' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                            {o.action}
-                          </span>
-                        </td>
-                        <td className="text-xs text-[var(--text-secondary)]">{o.product}</td>
-                        <td className="font-mono font-bold text-[var(--text-primary)]">{o.qty}</td>
-                        <td className="font-mono font-bold text-[var(--text-primary)]">₹{o.price.toFixed(2)}</td>
-                        <td>
-                          <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${
-                            o.status === 'EXECUTED'
-                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                              : o.status === 'PENDING'
-                              ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
-                              : 'bg-slate-500/15 text-slate-500 border border-slate-500/30'
-                          }`}>
-                            {o.status}
-                          </span>
-                        </td>
-                        <td>
-                          {o.status === 'PENDING' && (
-                            <button
-                              onClick={() => cancelOrder(o.id)}
-                              className="px-2.5 py-1 rounded-md bg-rose-600/15 hover:bg-rose-600/25 text-rose-600 text-xs font-bold border border-rose-500/30 cursor-pointer"
-                            >
-                              Cancel
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <div className="p-8 text-center text-xs text-[var(--text-muted)] font-bold bg-[var(--bg-tertiary)] rounded-2xl border border-[var(--border-subtle)]">
-                  No orders placed yet. Orders submitted through the terminal will appear here.
-                </div>
-              )}
-            </div>
-          </div>
+          <Suspense fallback={<div className="p-12 text-center text-xs text-[var(--text-muted)] font-mono animate-pulse">Loading Order Book...</div>}>
+            <OrderBookView />
+          </Suspense>
         )}
 
         {/* SECTION 4: TRADE BOOK */}
         {activeTabId === 'trade_book' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-4">
-              <div>
-                <h3 className="text-lg font-extrabold flex items-center gap-2 text-[var(--text-primary)]">
-                  <FileText className="w-5 h-5 text-purple-500" />
-                  Executed Trade Book & Contract Notes
-                </h3>
-                <p className="text-xs text-[var(--text-secondary)]">Executed fill details, brokerage calculation, STT, and downloadable digital contract notes</p>
-              </div>
-              {trades.length > 0 && (
-                <button
-                  onClick={() => exportContractNotePDF(trades[0], currentUser)}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--icici-orange)] text-white text-xs font-bold hover:bg-[var(--icici-orange-hover)] transition-colors cursor-pointer shadow-md"
-                >
-                  <Download className="w-4 h-4" />
-                  Download Latest Contract Note PDF
-                </button>
-              )}
-            </div>
-
-            <div className="overflow-x-auto w-full">
-              {trades.length > 0 ? (
-                <table className="fin-table">
-                  <thead>
-                    <tr>
-                      <th>Trade Ref ID</th>
-                      <th>Time</th>
-                      <th>Symbol</th>
-                      <th>Type</th>
-                      <th>Executed Qty</th>
-                      <th>Executed Price</th>
-                      <th>Brokerage & Statutory</th>
-                      <th>Net Value</th>
-                      <th>Contract Note</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {trades.map(tb => (
-                      <tr key={tb.id}>
-                        <td className="font-mono text-xs text-[var(--text-muted)]">{tb.id}</td>
-                        <td className="font-mono text-xs text-[var(--text-secondary)]">{tb.time}</td>
-                        <td className="font-mono font-bold text-[var(--text-primary)]">{tb.ticker}</td>
-                        <td className={`font-bold text-xs ${tb.action === 'BUY' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                          {tb.action}
-                        </td>
-                        <td className="font-mono font-bold text-[var(--text-primary)]">{tb.qty}</td>
-                        <td className="font-mono text-[var(--text-secondary)]">₹{tb.price.toFixed(2)}</td>
-                        <td className="font-mono text-[var(--text-muted)]">₹{tb.charges.totalCharges.toFixed(2)}</td>
-                        <td className="font-mono font-bold text-[var(--text-primary)]">{formatCompactCurrency(tb.netValue, currency)}</td>
-                        <td>
-                          <button
-                            onClick={() => exportContractNotePDF(tb, currentUser)}
-                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[var(--bg-tertiary)] hover:bg-[var(--bg-card-hover)] text-xs font-bold text-[var(--icici-orange)] border border-[var(--border-color)] cursor-pointer"
-                            title="Download Digital Contract Note"
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                            <span>PDF</span>
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <div className="p-8 text-center text-xs text-[var(--text-muted)] font-bold bg-[var(--bg-tertiary)] rounded-2xl border border-[var(--border-subtle)]">
-                  No executed trades found in current session.
-                </div>
-              )}
-            </div>
-          </div>
+          <Suspense fallback={<div className="p-12 text-center text-xs text-[var(--text-muted)] font-mono animate-pulse">Loading Trade Book...</div>}>
+            <TradeBookView />
+          </Suspense>
         )}
 
         {/* SECTION 5: FUNDS & LIQUIDITY */}
         {activeTabId === 'funds' && (
-          <div className="space-y-6">
-            <div className="border-b border-[var(--border-color)] pb-4">
-              <h3 className="text-lg font-extrabold flex items-center gap-2 text-[var(--text-primary)]">
-                <CreditCard className="w-5 h-5 text-[var(--icici-orange)]" />
-                Funds & 3-in-1 Integrated Banking Ecosystem
-              </h3>
-              <p className="text-xs text-[var(--text-secondary)]">Liquid trading margin, Demat collateral haircut pledging, auto-sweep FD @ 7.1% p.a., and ASBA lien</p>
-            </div>
-
-            {fundSuccessMsg && (
-              <div className="p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-300 text-xs font-bold flex items-center gap-2 animate-pulse">
-                <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                Funds Added Successfully via UPI Instant Transfer! Liquid margin updated.
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
-                <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">AVAILABLE MARGIN</div>
-                <div className="text-xl font-mono font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
-                  {formatCompactCurrency(wallet.availableMargin, currency)}
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
-                <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">USED MARGIN</div>
-                <div className="text-xl font-mono font-extrabold text-amber-600 dark:text-amber-400 mt-1">
-                  {formatCompactCurrency(wallet.usedMargin, currency)}
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
-                <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">CASH BALANCE</div>
-                <div className="text-xl font-mono font-extrabold text-[var(--text-primary)] mt-1">
-                  {formatCompactCurrency(wallet.cashBalance, currency)}
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
-                <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">DEMAT COLLATERAL</div>
-                <div className="text-xl font-mono font-extrabold text-blue-600 dark:text-blue-400 mt-1">
-                  {formatCompactCurrency(wallet.dematCollateral, currency)}
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
-                <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">AUTO-SWEEP FD (7.1%)</div>
-                <div className="text-xl font-mono font-extrabold text-purple-600 dark:text-purple-400 mt-1">
-                  {formatCompactCurrency(wallet.autoSweepBalance, currency)}
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
-                <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">ASBA BLOCKED LIEN</div>
-                <div className="text-xl font-mono font-extrabold text-rose-500 mt-1">
-                  {formatCompactCurrency(wallet.asbaBlockedLien, currency)}
-                </div>
-              </div>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] space-y-4">
-              <h4 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
-                <Plus className="w-4 h-4 text-[var(--icici-orange)]" />
-                Instant UPI / NetBanking Deposit (Zero Gateway Fee)
-              </h4>
-
-              <form onSubmit={handleAddFundsSubmit} className="flex flex-wrap items-center gap-4">
-                <input
-                  type="number"
-                  min="100"
-                  step="100"
-                  value={addFundsAmount}
-                  onChange={(e) => setAddFundsAmount(Number(e.target.value))}
-                  className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)] w-48"
-                  placeholder="Amount in ₹"
-                />
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-[var(--icici-orange)] hover:bg-[var(--icici-orange-hover)] text-white font-extrabold text-xs shadow-md cursor-pointer transition-all"
-                >
-                  ADD FUNDS VIA UPI INSTANT
-                </button>
-              </form>
-            </div>
-          </div>
+          <Suspense fallback={<div className="p-12 text-center text-xs text-[var(--text-muted)] font-mono animate-pulse">Loading Funds...</div>}>
+            <FundsView />
+          </Suspense>
         )}
 
-        {/* SECTION 6: DEMAT HOLDINGS */}
+        {/* SECTION 6: DEMAT HOLDINGS & CORPORATE ACTIONS */}
         {activeTabId === 'demat_holdings' && (
-          <div className="space-y-6">
-            <div className="border-b border-[var(--border-color)] pb-4">
-              <h3 className="text-lg font-extrabold flex items-center gap-2 text-[var(--text-primary)]">
-                <Building2 className="w-5 h-5 text-blue-500" />
-                CDSL / NSDL Demat Holdings Statement & Corporate Actions
-              </h3>
-              <p className="text-xs text-[var(--text-secondary)]">Verified depository holdings statement, valuation, pledge margin benefits (20% haircut), and corporate action yield</p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
-                <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">INVESTED VALUE</div>
-                <div className="text-2xl font-mono font-extrabold text-[var(--text-primary)] mt-1">
-                  {formatCompactCurrency(totalInvestedValue, currency)}
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
-                <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">CURRENT VALUE</div>
-                <div className="text-2xl font-mono font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
-                  {formatCompactCurrency(totalHoldingsValue, currency)}
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                <div className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase">OVERALL GAIN / (LOSS)</div>
-                <div className={`text-2xl font-mono font-extrabold mt-1 ${totalUnrealizedPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                  {totalUnrealizedPnl >= 0 ? '+' : ''}{formatCompactCurrency(totalUnrealizedPnl, currency)}
-                </div>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto w-full">
-              {dematHoldings.length > 0 ? (
-                <table className="fin-table">
-                  <thead>
-                    <tr>
-                      <th>Stock Symbol</th>
-                      <th>Category</th>
-                      <th>Demat Qty</th>
-                      <th>Avg Cost</th>
-                      <th>Live LTP</th>
-                      <th>Current Value ({currency})</th>
-                      <th>Overall P&L</th>
-                      <th>Collateral Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dematHoldings.map(dh => (
-                      <tr key={dh.ticker}>
-                        <td className="font-mono font-bold text-[var(--text-primary)]">
-                          {dh.ticker}
-                          <div className="text-[10px] text-[var(--text-muted)] font-sans">{dh.name}</div>
-                        </td>
-                        <td>
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--bg-tertiary)] text-[var(--text-secondary)]">
-                            {dh.category}
-                          </span>
-                        </td>
-                        <td className="font-mono font-bold text-[var(--text-primary)]">{dh.qty}</td>
-                        <td className="font-mono text-[var(--text-secondary)]">₹{dh.avgCost.toFixed(2)}</td>
-                        <td className="font-mono font-bold text-[var(--text-primary)]">₹{dh.ltp.toFixed(2)}</td>
-                        <td className="font-mono font-bold text-[var(--text-primary)]">{formatCompactCurrency(dh.currentValue, currency)}</td>
-                        <td className={`font-mono font-bold ${dh.pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                          {dh.pnl >= 0 ? '+' : ''}{formatCompactCurrency(dh.pnl, currency)} ({dh.pnlPct.toFixed(2)}%)
-                        </td>
-                        <td>
-                          <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${
-                            dh.pledgedStatus === 'Pledged (Collateral)'
-                              ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
-                              : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border border-[var(--border-color)]'
-                          }`}>
-                            {dh.pledgedStatus === 'Pledged (Collateral)' ? `Pledged (₹${Math.round((dh.pledgedQty || dh.qty) * dh.ltp * 0.8).toLocaleString()})` : 'Unpledged'}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="flex items-center gap-1.5">
-                            {dh.pledgedStatus === 'Pledged (Collateral)' ? (
-                              <button
-                                onClick={() => unpledgeShares(dh.ticker, dh.qty)}
-                                className="px-2 py-1 rounded text-[11px] font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 border border-amber-500/30 cursor-pointer"
-                                title="Unpledge collateral"
-                              >
-                                Unpledge
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => pledgeShares(dh.ticker, dh.qty)}
-                                className="px-2 py-1 rounded text-[11px] font-bold bg-blue-500/15 hover:bg-blue-500/25 text-blue-600 border border-blue-500/30 cursor-pointer"
-                                title="Pledge for trading margin (20% haircut)"
-                              >
-                                Pledge
-                              </button>
-                            )}
-                            <button
-                              onClick={() => triggerCorporateAction('DIVIDEND', dh.ticker, Math.round(dh.ltp * 0.025))}
-                              className="px-2 py-1 rounded text-[11px] font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 border border-emerald-500/30 cursor-pointer"
-                              title="Simulate Corporate Action Dividend Yield"
-                            >
-                              Dividend Yield
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <div className="p-8 text-center text-xs text-[var(--text-muted)] font-bold bg-[var(--bg-tertiary)] rounded-2xl border border-[var(--border-subtle)]">
-                  No securities held in Demat account. Buy delivery shares or subscribe to SGB/Bonds.
-                </div>
-              )}
-            </div>
-          </div>
+          <Suspense fallback={<div className="p-12 text-center text-xs text-[var(--text-muted)] font-mono animate-pulse">Loading Demat Holdings...</div>}>
+            <DematHoldingsView />
+          </Suspense>
         )}
 
         {/* SECTION 7: SOVEREIGN GOLD & ETF */}
@@ -2257,7 +1579,7 @@ export const TradingConsolePage: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {ipoApplications.map(app => (
+                      {ipoApplications.map((app: any) => (
                         <tr key={app.id}>
                           <td className="font-mono text-xs text-[var(--text-muted)]">{app.id}</td>
                           <td className="font-mono font-bold text-[var(--text-primary)]">{app.ipoName}</td>
@@ -3750,7 +3072,7 @@ export const TradingConsolePage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {familyTaxProfiles.map(member => {
+                    {familyTaxProfiles.map((member: any) => {
                       const formType = member.isSeniorCitizen ? 'Form 15H' : 'Form 15G';
                       const hasFormFiled = member.formFiled !== 'None';
                       return (
@@ -3857,71 +3179,9 @@ export const TradingConsolePage: React.FC = () => {
 
         {/* SECTION 14: TAX & P&L REPORTS */}
         {activeTabId === 'reports' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-4">
-              <div>
-                <h3 className="text-lg font-extrabold flex items-center gap-2 text-[var(--text-primary)]">
-                  <FileText className="w-5 h-5 text-purple-500" />
-                  Tax Statements & P&L Reports
-                </h3>
-                <p className="text-xs text-[var(--text-secondary)]">Institutional capital gains statement (STCG/LTCG) and exportable ledger audit</p>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={exportReportCSV}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs border border-emerald-500/30 transition-all cursor-pointer shadow-xs"
-                >
-                  <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
-                  <span>Download Excel (CSV)</span>
-                </button>
-                <button
-                  onClick={exportReportPDF}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-600/15 hover:bg-rose-600/25 text-rose-600 dark:text-rose-400 font-extrabold text-xs border border-rose-500/30 transition-all cursor-pointer shadow-xs"
-                >
-                  <Download className="w-4 h-4 text-rose-500" />
-                  <span>Download PDF Report</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] space-y-4">
-              <h4 className="font-bold text-sm text-[var(--text-primary)]">FY 2025-26 Tax P&L Statement</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div className="p-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)]">
-                  <span className="text-[var(--text-muted)] block text-[10px] font-bold uppercase">Short Term Capital Gains (STCG @ 20%)</span>
-                  <span className="font-mono font-extrabold text-lg text-emerald-600 dark:text-emerald-400">+₹1,45,200.00</span>
-                </div>
-                <div className="p-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)]">
-                  <span className="text-[var(--text-muted)] block text-[10px] font-bold uppercase">Long Term Capital Gains (LTCG @ 12.5%)</span>
-                  <span className="font-mono font-extrabold text-lg text-emerald-600 dark:text-emerald-400">+₹4,85,000.00</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-blue-500/10 border border-purple-500/30 space-y-4">
-              <div>
-                <h4 className="font-extrabold text-sm text-[var(--text-primary)]">Download Instant Institutional Reports</h4>
-                <p className="text-xs text-[var(--text-secondary)]">Export complete holdings, transaction history, and tax statements in Excel or PDF format.</p>
-              </div>
-              <div className="flex items-center gap-4 pt-1">
-                <button
-                  onClick={exportReportCSV}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md transition-all cursor-pointer"
-                >
-                  <FileSpreadsheet className="w-4 h-4" />
-                  <span>Export Excel Spreadsheet (.csv)</span>
-                </button>
-                <button
-                  onClick={exportReportPDF}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs shadow-md transition-all cursor-pointer"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Export Institutional PDF Report (.pdf)</span>
-                </button>
-              </div>
-            </div>
-          </div>
+          <Suspense fallback={<div className="p-12 text-center text-xs text-[var(--text-muted)] font-mono animate-pulse">Loading Institutional Reports & Trade Journal...</div>}>
+            <ReportsView />
+          </Suspense>
         )}
 
         {/* SECTION 15: SERVICES */}
@@ -3951,8 +3211,81 @@ export const TradingConsolePage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Feature 6: Universal Spotlight Search Modal (Ctrl+K) */}
+      <SpotlightSearchModal
+        isOpen={isSpotlightOpen}
+        onClose={() => setIsSpotlightOpen(false)}
+        onSelectInstrument={(ticker) => handleSelectAsset(ticker)}
+        onNavigateTab={(tabId) => setActiveSubTab(tabId)}
+        onTriggerPanic={() => setShowPanicModal(true)}
+      />
+
+      {/* Feature 6: SEBI Panic Square-Off Confirmation Modal (Shift+S) */}
+      {showPanicModal && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-[var(--bg-card)] border-2 border-rose-500/50 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-2xl bg-rose-500/20 text-rose-500">
+                <AlertTriangle className="w-7 h-7" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-[var(--text-primary)]">
+                  SEBI Emergency Panic Square-Off
+                </h3>
+                <p className="text-xs text-rose-500 font-bold">
+                  Immediate Market Liquidation [Shift+S]
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+              Are you sure you want to trigger emergency square-off? This will immediately place counter market orders to close <strong>{positions.length} active intraday positions</strong> to preserve capital.
+            </p>
+
+            <div className="p-3 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] text-xs font-mono space-y-1">
+              <div className="flex justify-between">
+                <span className="text-[var(--text-muted)]">Open MIS Positions:</span>
+                <strong className="text-[var(--text-primary)]">{positions.length}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--text-muted)]">Current MTM P&L:</span>
+                <strong className={totalMtmPnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}>
+                  {totalMtmPnl >= 0 ? '+' : ''}{formatCompactCurrency(totalMtmPnl, currency)}
+                </strong>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowPanicModal(false)}
+                className="px-4 py-2.5 rounded-xl bg-[var(--bg-tertiary)] hover:bg-[var(--bg-card-hover)] text-[var(--text-secondary)] font-bold text-xs transition-colors cursor-pointer"
+              >
+                Cancel / Abort
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  panicSquareOffAllIntraday();
+                  setShowPanicModal(false);
+                  setOrderFeedback({
+                    type: 'success',
+                    message: 'Emergency Panic Square-Off triggered! All intraday positions liquidated at market price.'
+                  });
+                  setTimeout(() => setOrderFeedback(null), 5000);
+                }}
+                className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs shadow-lg shadow-rose-600/30 transition-all cursor-pointer"
+              >
+                LIQUIDATE ALL POSITIONS
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default TradingConsolePage;
+

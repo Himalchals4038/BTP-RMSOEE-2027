@@ -1,4 +1,3 @@
-import jsPDF from 'jspdf';
 import type { Asset, KRIMetrics, BacktestResult } from '../types/portfolio';
 
 export function exportPortfolioToCSV(assets: Asset[], kri: KRIMetrics, backtest?: BacktestResult) {
@@ -42,7 +41,8 @@ export function exportPortfolioToCSV(assets: Asset[], kri: KRIMetrics, backtest?
   document.body.removeChild(link);
 }
 
-export function exportPortfolioToPDF(assets: Asset[], kri: KRIMetrics, backtest?: BacktestResult) {
+export async function exportPortfolioToPDF(assets: Asset[], kri: KRIMetrics, backtest?: BacktestResult) {
+  const { default: jsPDF } = await import('jspdf');
   const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
   const activeAssets = assets.filter(a => a.weight > 0);
 
@@ -221,7 +221,7 @@ export function calculateStatutoryCharges(
 /**
  * Generates an official, institutional SEBI Digital Electronic Contract Note PDF
  */
-export function exportContractNotePDF(trade: {
+export async function exportContractNotePDF(trade: {
   id: string;
   orderId: string;
   time: string;
@@ -247,6 +247,7 @@ export function exportContractNotePDF(trade: {
   dpId?: string;
   email?: string;
 }) {
+  const { default: jsPDF } = await import('jspdf');
   const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
 
   // Header Banner
@@ -386,7 +387,7 @@ export function exportContractNotePDF(trade: {
 /**
  * Generates an official Form 15G / 15H Section 197A Non-Deduction Declaration PDF
  */
-export function exportForm15DeclarationPDF(data: {
+export async function exportForm15DeclarationPDF(data: {
   formType: 'Form 15G' | 'Form 15H';
   declarantName: string;
   pan: string;
@@ -400,6 +401,7 @@ export function exportForm15DeclarationPDF(data: {
   bondOrFdName: string;
   taxSavedEstimate: number;
 }) {
+  const { default: jsPDF } = await import('jspdf');
   const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
 
   // Header

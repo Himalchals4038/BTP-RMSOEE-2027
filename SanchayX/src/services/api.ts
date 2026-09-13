@@ -1,6 +1,7 @@
 import type { Asset, KRIMetrics, FrontierPoint, CorrelationMatrixData, BacktestConfig, BacktestResult } from '../types/portfolio';
 import { INITIAL_ASSET_CATALOG, generateHistoricalPrices, type HistoricalDataPoint } from './mockData';
-import { computeKRIMetrics, optimizeWeights, generateEfficientFrontier, computeCorrelationMatrix, runStrategyBacktest } from '../utils/financialMath';
+import { computeKRIMetrics, optimizeWeights, runStrategyBacktest } from '../utils/financialMath';
+import { calculateFrontierAsync, calculateCorrelationAsync } from './workerClient';
 
 let isLiveApiMode = false;
 let historicalDataCache: HistoricalDataPoint[] | null = null;
@@ -50,20 +51,20 @@ export const PortfolioApiService = {
     return optimizeWeights(assets, mode);
   },
 
-  // Generate Efficient Frontier scatter plot data
+  // Generate Efficient Frontier scatter plot data (Offloaded to Web Worker)
   async getEfficientFrontier(assets: Asset[]): Promise<FrontierPoint[]> {
     if (isLiveApiMode) {
       await new Promise(res => setTimeout(res, 500));
     }
-    return generateEfficientFrontier(assets);
+    return calculateFrontierAsync(assets, 500);
   },
 
-  // Compute Cross-Asset Correlation Matrix
+  // Compute Cross-Asset Correlation Matrix (Offloaded to Web Worker)
   async getCorrelationMatrix(assets: Asset[]): Promise<CorrelationMatrixData> {
     if (isLiveApiMode) {
       await new Promise(res => setTimeout(res, 300));
     }
-    return computeCorrelationMatrix(assets);
+    return calculateCorrelationAsync(assets);
   },
 
   // Run Strategy Backtest simulator
