@@ -1,5 +1,6 @@
-import type { Asset, FrontierPoint, CorrelationMatrixData } from '../types/portfolio';
-import { generateEfficientFrontier, computeCorrelationMatrix } from '../utils/financialMath';
+import type { Asset, FrontierPoint, CorrelationMatrixData, BacktestConfig, BacktestResult } from '../types/portfolio';
+import type { HistoricalDataPoint } from '../services/mockData';
+import { generateEfficientFrontier, computeCorrelationMatrix, runStrategyBacktest } from '../utils/financialMath';
 
 let mathWorker: Worker | null = null;
 
@@ -74,3 +75,40 @@ export function calculateCorrelationAsync(assets: Asset[]): Promise<CorrelationM
     }, 2500);
   });
 }
+
+/**
+ * Optimization 2: Offload 20-Year Historical Strategy Backtester to Web Worker
+ * Offloads daily portfolio rebalances & drawdown simulations from main UI thread.
+ */
+export function runBacktestAsync(
+  assets: Asset[],
+  config: BacktestConfig,
+  history: HistoricalDataPoint[]
+): Promise<BacktestResult> {
+  return new Promise((resolve) => {
+    const worker = getMathWorker();
+    if (!worker) {
+      return resolve(runStrategyBacktest(assets, history, config));
+    }
+
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === 'BACKTEST_RESULT') {
+        worker.removeEventListener('message', handler);
+        resolve(e.data.result);
+      }
+    };
+
+    worker.addEventListener('message', handler);
+    worker.postMessage({
+      type: 'RUN_BACKTEST',
+      payload: { assets, history, config }
+    });
+
+    // Fallback if worker takes unexpectedly long
+    setTimeout(() => {
+      worker.removeEventListener('message', handler);
+      resolve(runStrategyBacktest(assets, history, config));
+    }, 4000);
+  });
+}
+

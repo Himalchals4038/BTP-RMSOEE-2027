@@ -1,4 +1,5 @@
 import type { Asset, FrontierPoint, CorrelationMatrixData } from '../types/portfolio';
+import { runStrategyBacktest } from '../utils/financialMath';
 
 // Self-contained mathematical functions for worker thread
 const RISK_FREE_RATE = 0.045; // 4.5% Risk-free rate
@@ -156,5 +157,9 @@ self.onmessage = (e: MessageEvent) => {
     };
 
     self.postMessage({ type: 'CORRELATION_RESULT', matrix: result });
+  } else if (type === 'RUN_BACKTEST') {
+    const { assets, history, config } = payload;
+    const result = runStrategyBacktest(assets, history, config);
+    self.postMessage({ type: 'BACKTEST_RESULT', result });
   }
 };

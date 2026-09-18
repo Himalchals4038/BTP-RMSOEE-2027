@@ -93,6 +93,7 @@ interface TradingSimulationContextType {
   squareOffPosition: (ticker: string) => { success: boolean; message: string };
   panicSquareOffAllIntraday: () => { success: boolean; count: number; message: string };
   cancelOrder: (orderId: string) => { success: boolean; message: string };
+  modifyOrderPrice: (orderId: string, newPrice: number) => { success: boolean; message: string };
   addFunds: (amount: number, paymentMethod?: string) => void;
   pledgeShares: (ticker: string, qty: number) => { success: boolean; message: string };
   unpledgeShares: (ticker: string, qty: number) => { success: boolean; message: string };
@@ -1065,6 +1066,64 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
     return { success: true, message: `Cancelled Order ${orderId}. Margin released.` };
   }, [ledger.orders]);
 
+  // Feature 4: Interactive Level-2 DOM Drag-to-Modify Order Placement
+  const modifyOrderPrice = useCallback((orderId: string, newPrice: number) => {
+    let amended = false;
+    let errMessage = '';
+
+    setLedger((prev: typeof ledger) => {
+      const order = prev.orders.find((o: SimulatedOrder) => o.id === orderId && o.status === 'PENDING');
+      if (!order) {
+        errMessage = 'Order not found or already executed/cancelled';
+        return prev;
+      }
+
+      const isMIS = order.product.includes('MIS') || order.product.includes('Intraday');
+      const marginFactor = isMIS ? 0.20 : 1.0;
+
+      const oldMargin = order.qty * order.price * marginFactor;
+      const newMargin = order.qty * newPrice * marginFactor;
+      const marginDiff = newMargin - oldMargin;
+
+      // Margin re-validation
+      if (marginDiff > 0 && prev.wallet.availableMargin < marginDiff) {
+        errMessage = `Insufficient margin to amend order price to ₹${newPrice.toFixed(2)}. Required margin: ₹${marginDiff.toFixed(2)}, Available: ₹${prev.wallet.availableMargin.toFixed(2)}`;
+        return prev;
+      }
+
+      amended = true;
+      const updatedOrders = prev.orders.map((o: SimulatedOrder) => {
+        if (o.id === orderId) {
+          return {
+            ...o,
+            price: Number(newPrice.toFixed(2))
+          };
+        }
+        return o;
+      });
+
+      const nextWallet = {
+        ...prev.wallet,
+        availableMargin: Number((prev.wallet.availableMargin - marginDiff).toFixed(2)),
+        usedMargin: Number(Math.max(0, prev.wallet.usedMargin + marginDiff).toFixed(2))
+      };
+
+      const nextLedger = {
+        ...prev,
+        wallet: nextWallet,
+        orders: updatedOrders
+      };
+      persistLedger(nextLedger, true);
+      return nextLedger;
+    });
+
+    if (amended) {
+      soundService.playExecutionChime();
+      return { success: true, message: `Order ${orderId} amended to ₹${newPrice.toFixed(2)} with instantaneous margin re-validation!` };
+    }
+    return { success: false, message: errMessage || 'Failed to modify order price.' };
+  }, [persistLedger]);
+
   // Add Funds via UPI / Netbanking
   const addFunds = useCallback((amount: number) => {
     if (amount <= 0) return;
@@ -1504,6 +1563,7 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
         squareOffPosition,
         panicSquareOffAllIntraday,
         cancelOrder,
+        modifyOrderPrice,
         addFunds,
         pledgeShares,
         unpledgeShares,

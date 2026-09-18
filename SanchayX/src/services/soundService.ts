@@ -141,6 +141,21 @@ class SoundService {
       // AudioContext unavailable
     }
   }
+
+  /**
+   * Aliases for intuitive semantic sound playback
+   */
+  public playSuccess(): void {
+    this.playExecutionChime();
+  }
+
+  public playOrderPlaced(): void {
+    this.playExecutionChime();
+  }
+
+  public playOrderCancel(): void {
+    this.playOrderRejectionClick();
+  }
 }
 
 export const soundService = new SoundService();

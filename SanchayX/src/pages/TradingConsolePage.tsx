@@ -11,6 +11,7 @@ import type { BondFDItem } from '../services/bondsExtendedDataset';
 import { INDIAN_BONDS_CATALOG, US_BONDS_CATALOG } from '../services/bondsExtendedDataset';
 import { SpotlightSearchModal } from '../components/trading/SpotlightSearchModal';
 import { soundService } from '../services/soundService';
+import { VirtualTable } from '../components/common/VirtualTable';
 import {
   TrendingUp,
   Clock,
@@ -59,6 +60,10 @@ const TradeBookView = React.lazy(() => import('./console/TradeBookView'));
 const DematHoldingsView = React.lazy(() => import('./console/DematHoldingsView'));
 const FundsView = React.lazy(() => import('./console/FundsView'));
 const ReportsView = React.lazy(() => import('./console/ReportsView'));
+const OptionsStrategyBuilder = React.lazy(() => import('../components/trading/OptionsStrategyBuilder'));
+const SipMandatesEngine = React.lazy(() => import('../components/trading/SipMandatesEngine'));
+const SubAccountVaults = React.lazy(() => import('../components/trading/SubAccountVaults'));
+const CapitalGainsTaxAuditor = React.lazy(() => import('../components/trading/CapitalGainsTaxAuditor'));
 
 export const TradingConsolePage: React.FC = () => {
   const { assets, currency, activeSubTab, setActiveSubTab, exportReportCSV, exportReportPDF } = usePortfolio();
@@ -100,7 +105,11 @@ export const TradingConsolePage: React.FC = () => {
     reports: 'Tax & P&L Reports',
     loans: 'Loans Against Shares',
     smart_tools: 'Smart Tools',
-    services: 'Account Services'
+    services: 'Account Services',
+    options_builder: 'Options Strategy Builder',
+    sip_mandates: 'Systematic Investment (SIP)',
+    portfolio_vaults: 'Goal Sub-Account Vaults',
+    tax_auditor: 'Capital Gains Tax Auditor'
   };
 
   // State for Place Order Form
@@ -395,6 +404,7 @@ export const TradingConsolePage: React.FC = () => {
   const [bondTenorFilter, setBondTenorFilter] = useState<'ALL' | 'SHORT' | 'MEDIUM' | 'LONG'>('ALL');
   const [bondTypeFilter, setBondTypeFilter] = useState<string>('ALL');
   const [bondRatingFilter, setBondRatingFilter] = useState<string>('ALL');
+  const [bondViewMode, setBondViewMode] = useState<'cards' | 'table'>('table');
   const [selectedBondDetail, setSelectedBondDetail] = useState<BondFDItem | null>(null);
 
   // Filtered bond list according to sidebar control parameters
@@ -1832,10 +1842,107 @@ export const TradingConsolePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* CATEGORIZED INSTRUMENT CARDS (Top 2-3 Per Rating Tier) */}
+              {/* CATEGORIZED INSTRUMENT CARDS & VIRTUAL TABLE */}
               <div className="lg:col-span-3 space-y-6">
-                {Object.keys(groupedBondsByRating).length > 0 ? (
-                  (Object.keys(groupedBondsByRating) as Array<'AAA' | 'AA' | 'A' | 'BBB' | 'BB'>).map(rating => (
+                {/* View Switcher Bar */}
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-[var(--bg-tertiary)] p-3 rounded-2xl border border-[var(--border-color)]">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-[var(--text-primary)]">
+                      Catalog: {filteredBondList.length} Listed Bonds & Debentures
+                    </span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                      <Zap className="w-3 h-3" /> Virtualized O(1) DOM
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1 bg-[var(--bg-card)] p-1 rounded-xl border border-[var(--border-color)] text-xs font-bold">
+                    <button
+                      onClick={() => setBondViewMode('table')}
+                      className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${
+                        bondViewMode === 'table' ? 'bg-[var(--icici-orange)] text-white shadow-xs' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                      }`}
+                    >
+                      Virtual Table ({filteredBondList.length})
+                    </button>
+                    <button
+                      onClick={() => setBondViewMode('cards')}
+                      className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${
+                        bondViewMode === 'cards' ? 'bg-[var(--icici-orange)] text-white shadow-xs' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                      }`}
+                    >
+                      Tier Cards
+                    </button>
+                  </div>
+                </div>
+
+                {bondViewMode === 'table' ? (
+                  <VirtualTable
+                    items={filteredBondList}
+                    rowHeight={58}
+                    viewportHeight={520}
+                    keyExtractor={(b) => b.id}
+                    emptyState={
+                      <div className="p-12 text-center rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] space-y-3">
+                        <ShieldAlert className="w-10 h-10 text-[var(--text-muted)] mx-auto" />
+                        <h4 className="font-bold text-sm text-[var(--text-primary)]">No Fixed Income Instruments Match Filter Criteria</h4>
+                        <p className="text-xs text-[var(--text-secondary)]">Try clearing company search query or lowering minimum yield/coupon thresholds.</p>
+                      </div>
+                    }
+                    renderHeader={() => (
+                      <tr>
+                        <th>ISIN & Instrument Name</th>
+                        <th>Issuer</th>
+                        <th>Rating</th>
+                        <th>YTM Yield (% p.a.)</th>
+                        <th>Coupon (% p.a.)</th>
+                        <th>Tenor</th>
+                        <th>Traded Price</th>
+                        <th>Action</th>
+                      </tr>
+                    )}
+                    renderRow={(bond) => (
+                      <tr key={bond.id} className="hover:bg-[var(--bg-card-hover)] transition-colors">
+                        <td>
+                          <span className="font-mono text-xs font-extrabold text-[var(--text-primary)] block truncate max-w-[220px]" title={bond.name}>
+                            {bond.name}
+                          </span>
+                          <span className="font-mono text-[10px] text-[var(--text-muted)]">
+                            ISIN: {bond.isin}
+                          </span>
+                        </td>
+                        <td className="text-xs font-semibold text-[var(--text-secondary)] truncate max-w-[140px]">{bond.issuer}</td>
+                        <td>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[var(--bg-tertiary)] text-[var(--text-primary)] border border-[var(--border-color)]">
+                            {bond.agencyRating}
+                          </span>
+                        </td>
+                        <td className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                          {bond.ytmPct}%
+                        </td>
+                        <td className="font-mono font-bold text-[var(--text-primary)]">
+                          {bond.couponRatePct}%
+                        </td>
+                        <td className="font-mono text-xs text-[var(--text-secondary)]">
+                          {bond.tenorYears} Yrs
+                        </td>
+                        <td className="font-mono font-bold text-[var(--text-primary)]">
+                          {bond.currency}{bond.tradedPrice.toLocaleString()}
+                        </td>
+                        <td>
+                          <button
+                            onClick={() => setSelectedBondDetail(bond)}
+                            className="px-3 py-1 rounded-lg bg-[var(--icici-orange)] hover:bg-[var(--icici-orange-hover)] text-white font-extrabold text-xs transition-all shadow-xs cursor-pointer"
+                          >
+                            Inspect & Buy
+                          </button>
+                        </td>
+                      </tr>
+                    )}
+                  />
+                ) : (
+                  <>
+                    {Object.keys(groupedBondsByRating).length > 0 ? (
+                      (Object.keys(groupedBondsByRating) as Array<'AAA' | 'AA' | 'A' | 'BBB' | 'BB'>).map(rating => (
                     <div key={rating} className="space-y-3">
                       {/* Rating Tier Header */}
                       <div className="flex items-center gap-2 border-b border-[var(--border-color)] pb-2">
@@ -1939,10 +2046,11 @@ export const TradingConsolePage: React.FC = () => {
                   <div className="p-12 text-center rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] space-y-3">
                     <ShieldAlert className="w-10 h-10 text-[var(--text-muted)] mx-auto" />
                     <h4 className="font-bold text-sm text-[var(--text-primary)]">No Fixed Income Instruments Match Filter Criteria</h4>
-                    <p className="text-xs text-[var(--text-secondary)]">Try clearing company search query or lowering minimum yield/coupon thresholds.</p>
                   </div>
                 )}
-              </div>
+              </>
+            )}
+          </div>
 
             </div>
 
@@ -2165,22 +2273,22 @@ export const TradingConsolePage: React.FC = () => {
 
               {/* Tier Valuation Summary */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-amber-500/20">
-                <div className="p-3.5 rounded-xl bg-slate-900/80 border border-amber-500/20">
-                  <span className="text-[10px] font-bold text-amber-300/70 uppercase block">TIER-I PENSION VALUATION</span>
-                  <div className="text-2xl font-mono font-black text-amber-400 mt-0.5">₹6,45,000</div>
-                  <span className="text-[10px] font-semibold text-emerald-400 block">XIRR: +14.85% p.a.</span>
+                <div className="p-3.5 rounded-xl bg-[var(--bg-tertiary)] border border-amber-500/20">
+                  <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase block">TIER-I PENSION VALUATION</span>
+                  <div className="text-2xl font-mono font-black text-amber-500 mt-0.5">₹6,45,000</div>
+                  <span className="text-[10px] font-semibold text-emerald-500 block">XIRR: +14.85% p.a.</span>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-slate-900/80 border border-amber-500/20">
-                  <span className="text-[10px] font-bold text-amber-300/70 uppercase block">TIER-II LIQUID VALUATION</span>
-                  <div className="text-2xl font-mono font-black text-white mt-0.5">₹1,85,000</div>
-                  <span className="text-[10px] font-semibold text-amber-300/80 block">Zero Lock-in (Instant Withdrawal)</span>
+                <div className="p-3.5 rounded-xl bg-[var(--bg-tertiary)] border border-amber-500/20">
+                  <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase block">TIER-II LIQUID VALUATION</span>
+                  <div className="text-2xl font-mono font-black text-[var(--text-primary)] mt-0.5">₹1,85,000</div>
+                  <span className="text-[10px] font-semibold text-amber-500 block">Zero Lock-in (Instant Withdrawal)</span>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-slate-900/80 border border-amber-500/20">
-                  <span className="text-[10px] font-bold text-amber-300/70 uppercase block">TOTAL NPS WEALTH</span>
-                  <div className="text-2xl font-mono font-black text-emerald-400 mt-0.5">₹8,30,000</div>
-                  <span className="text-[10px] font-semibold text-amber-300/80 block">Total Tax Saved: ₹1,42,000</span>
+                <div className="p-3.5 rounded-xl bg-[var(--bg-tertiary)] border border-amber-500/20">
+                  <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase block">TOTAL NPS WEALTH</span>
+                  <div className="text-2xl font-mono font-black text-emerald-500 mt-0.5">₹8,30,000</div>
+                  <span className="text-[10px] font-semibold text-amber-500 block">Total Tax Saved: ₹1,42,000</span>
                 </div>
               </div>
             </div>
@@ -3149,28 +3257,76 @@ export const TradingConsolePage: React.FC = () => {
             </div>
 
             {/* Other Quant Tools */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="p-6 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] space-y-3">
-                <h4 className="font-bold text-base text-[var(--icici-orange)] flex items-center gap-2">
-                  <Sliders className="w-5 h-5" /> Option Chain & Black-Scholes Greeks Calculator
-                </h4>
-                <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                  Compute real-time implied volatility (IV), Delta, Gamma, Theta, and Vega for NIFTY, BANKNIFTY, and stock option strikes.
-                </p>
-                <button onClick={() => alert("Option Greeks Calculator Initialized")} className="px-4 py-2 rounded-xl bg-[var(--icici-orange)] text-white text-xs font-bold cursor-pointer shadow-md">
-                  Open Option Chain Tool
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-5 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] space-y-3 flex flex-col justify-between">
+                <div>
+                  <h4 className="font-bold text-sm text-[var(--icici-orange)] flex items-center gap-2">
+                    <Sliders className="w-4 h-4" /> Options Strategy Builder
+                  </h4>
+                  <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed">
+                    Sensibull-style multi-leg builder, real-time Black-Scholes Greeks (Δ, Γ, Θ, ν), and interactive payoff curve.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveSubTab('options_builder')}
+                  className="px-4 py-2 rounded-xl bg-[var(--icici-orange)] hover:opacity-90 text-white text-xs font-bold cursor-pointer shadow-md transition-all text-center"
+                >
+                  Launch Strategy Builder
                 </button>
               </div>
 
-              <div className="p-6 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] space-y-3">
-                <h4 className="font-bold text-base text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
-                  <RefreshCw className="w-5 h-5" /> Multi-Asset Stock Basket & Equity SIP
-                </h4>
-                <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                  Automated monthly SIP orders across diversified multi-asset stock baskets with algorithmic rebalancing execution.
-                </p>
-                <button onClick={() => alert("Equity SIP Creator Initialized")} className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold cursor-pointer shadow-md">
-                  Create Stock Basket SIP
+              <div className="p-5 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] space-y-3 flex flex-col justify-between">
+                <div>
+                  <h4 className="font-bold text-sm text-emerald-400 flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4" /> Systematic SIP Mandates
+                  </h4>
+                  <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed">
+                    Automated bank e-mandates, recurring sweeps, and Rupee-Cost Averaging (RCA) vs lump-sum simulation.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveSubTab('sip_mandates')}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer shadow-md transition-all text-center"
+                >
+                  Manage Recurring SIPs
+                </button>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] space-y-3 flex flex-col justify-between">
+                <div>
+                  <h4 className="font-bold text-sm text-indigo-400 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" /> Multi-Goal Vaults
+                  </h4>
+                  <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed">
+                    Sub-account capital partitioning (Retirement, Alpha, Education) with independent Sharpe, MDD, and SEBI ring-fencing.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveSubTab('portfolio_vaults')}
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold cursor-pointer shadow-md transition-all text-center"
+                >
+                  Open Goal Vaults
+                </button>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] space-y-3 flex flex-col justify-between">
+                <div>
+                  <h4 className="font-bold text-sm text-blue-400 flex items-center gap-2">
+                    <FileCheck className="w-4 h-4" /> Capital Gains Tax Auditor
+                  </h4>
+                  <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed">
+                    Budget 2024-2026 Section 112A/111A compliance, ITR Schedule CG computation, and March 31 tax-loss harvesting.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveSubTab('tax_auditor')}
+                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold cursor-pointer shadow-md transition-all text-center"
+                >
+                  Audit Schedule CG
                 </button>
               </div>
             </div>
@@ -3209,6 +3365,34 @@ export const TradingConsolePage: React.FC = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* SECTION 16: OPTIONS STRATEGY BUILDER */}
+        {activeTabId === 'options_builder' && (
+          <Suspense fallback={<div className="p-12 text-center text-xs text-[var(--text-muted)] font-mono animate-pulse">Loading Options Strategy Builder & Payoff Engine...</div>}>
+            <OptionsStrategyBuilder />
+          </Suspense>
+        )}
+
+        {/* SECTION 17: SIP MANDATES ENGINE */}
+        {activeTabId === 'sip_mandates' && (
+          <Suspense fallback={<div className="p-12 text-center text-xs text-[var(--text-muted)] font-mono animate-pulse">Loading Systematic Investment Mandate Engine...</div>}>
+            <SipMandatesEngine />
+          </Suspense>
+        )}
+
+        {/* SECTION 18: MULTI-GOAL SUB-ACCOUNT VAULTS */}
+        {activeTabId === 'portfolio_vaults' && (
+          <Suspense fallback={<div className="p-12 text-center text-xs text-[var(--text-muted)] font-mono animate-pulse">Loading Multi-Goal Sub-Account Vaults...</div>}>
+            <SubAccountVaults />
+          </Suspense>
+        )}
+
+        {/* SECTION 19: CAPITAL GAINS TAX AUDITOR */}
+        {activeTabId === 'tax_auditor' && (
+          <Suspense fallback={<div className="p-12 text-center text-xs text-[var(--text-muted)] font-mono animate-pulse">Loading Capital Gains Tax Auditor & ITR Schedule CG Engine...</div>}>
+            <CapitalGainsTaxAuditor />
+          </Suspense>
         )}
       </div>
 

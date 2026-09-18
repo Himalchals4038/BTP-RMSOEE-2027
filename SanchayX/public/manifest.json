@@ -1,0 +1,19 @@
+{
+  "name": "SanchayX Terminal: Next-Gen Financial Engineering OS",
+  "short_name": "SanchayX",
+  "description": "Institutional Multi-Asset Portfolio Engineering, Modern Portfolio Theory (MPT), Options Strategy Greeks Engine, and High-Frequency Virtual Ledger",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#090d16",
+  "theme_color": "#f97316",
+  "categories": ["finance", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

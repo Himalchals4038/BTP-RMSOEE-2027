@@ -8,6 +8,7 @@ import { usePortfolio } from '../../context/PortfolioContext';
 import { formatCompactCurrency } from '../../utils/financialMath';
 import { LivePriceCell } from '../../components/common/LivePriceCell';
 import { CorporateActionsCalendar } from '../../components/trading/CorporateActionsCalendar';
+import { VirtualTable } from '../../components/common/VirtualTable';
 
 export const DematHoldingsView: React.FC = () => {
   const {
@@ -93,93 +94,92 @@ export const DematHoldingsView: React.FC = () => {
             </div>
           </div>
 
-          {/* Holdings Table with LivePriceCell */}
-          <div className="overflow-x-auto w-full">
-            {dematHoldings.length > 0 ? (
-              <table className="fin-table">
-                <thead>
-                  <tr>
-                    <th>Stock Symbol</th>
-                    <th>Category</th>
-                    <th>Demat Qty</th>
-                    <th>Avg Cost</th>
-                    <th>Live LTP</th>
-                    <th>Current Value ({currency})</th>
-                    <th>Overall P&L</th>
-                    <th>Collateral Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dematHoldings.map(dh => (
-                    <tr key={dh.ticker}>
-                      <td className="font-mono font-bold text-[var(--text-primary)]">
-                        {dh.ticker}
-                        <div className="text-[10px] text-[var(--text-muted)] font-sans">{dh.name}</div>
-                      </td>
-                      <td>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--bg-tertiary)] text-[var(--text-secondary)]">
-                          {dh.category}
-                        </span>
-                      </td>
-                      <td className="font-mono font-bold text-[var(--text-primary)]">{dh.qty}</td>
-                      <td className="font-mono text-[var(--text-secondary)]">₹{dh.avgCost.toFixed(2)}</td>
-                      <td>
-                        <LivePriceCell ticker={dh.ticker} initialPrice={dh.ltp} prefix="₹" />
-                      </td>
-                      <td className="font-mono font-bold text-[var(--text-primary)]">
-                        {formatCompactCurrency(dh.currentValue, currency)}
-                      </td>
-                      <td className={`font-mono font-bold ${dh.pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                        {dh.pnl >= 0 ? '+' : ''}{formatCompactCurrency(dh.pnl, currency)} ({dh.pnlPct.toFixed(2)}%)
-                      </td>
-                      <td>
-                        <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${
-                          dh.pledgedStatus === 'Pledged (Collateral)'
-                            ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
-                            : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border border-[var(--border-color)]'
-                        }`}>
-                          {dh.pledgedStatus === 'Pledged (Collateral)' ? `Pledged (₹${Math.round((dh.pledgedQty || dh.qty) * dh.ltp * 0.8).toLocaleString()})` : 'Unpledged'}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="flex items-center gap-1.5">
-                          {dh.pledgedStatus === 'Pledged (Collateral)' ? (
-                            <button
-                              onClick={() => unpledgeShares(dh.ticker, dh.qty)}
-                              className="px-2 py-1 rounded text-[11px] font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 border border-amber-500/30 cursor-pointer"
-                              title="Unpledge collateral"
-                            >
-                              Unpledge
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => pledgeShares(dh.ticker, dh.qty)}
-                              className="px-2 py-1 rounded text-[11px] font-bold bg-blue-500/15 hover:bg-blue-500/25 text-blue-600 border border-blue-500/30 cursor-pointer"
-                              title="Pledge for trading margin (20% haircut)"
-                            >
-                              Pledge
-                            </button>
-                          )}
-                          <button
-                            onClick={() => triggerCorporateAction('DIVIDEND', dh.ticker, Math.round(dh.ltp * 0.025))}
-                            className="px-2 py-1 rounded text-[11px] font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 border border-emerald-500/30 cursor-pointer"
-                            title="Simulate Corporate Action Dividend Yield"
-                          >
-                            Dividend
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
+          {/* Holdings Virtual Table with LivePriceCell */}
+          <VirtualTable
+            items={dematHoldings}
+            rowHeight={58}
+            viewportHeight={480}
+            keyExtractor={(dh) => dh.ticker}
+            emptyState={
               <div className="p-8 text-center text-xs text-[var(--text-muted)] font-bold bg-[var(--bg-tertiary)] rounded-2xl border border-[var(--border-subtle)]">
                 No securities held in Demat account. Buy delivery shares or subscribe to SGB/Bonds.
               </div>
+            }
+            renderHeader={() => (
+              <tr>
+                <th>Stock Symbol</th>
+                <th>Category</th>
+                <th>Demat Qty</th>
+                <th>Avg Cost</th>
+                <th>Live LTP</th>
+                <th>Current Value ({currency})</th>
+                <th>Overall P&L</th>
+                <th>Collateral Status</th>
+                <th>Actions</th>
+              </tr>
             )}
-          </div>
+            renderRow={(dh) => (
+              <tr key={dh.ticker}>
+                <td className="font-mono font-bold text-[var(--text-primary)]">
+                  {dh.ticker}
+                  <div className="text-[10px] text-[var(--text-muted)] font-sans">{dh.name}</div>
+                </td>
+                <td>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--bg-tertiary)] text-[var(--text-secondary)]">
+                    {dh.category}
+                  </span>
+                </td>
+                <td className="font-mono font-bold text-[var(--text-primary)]">{dh.qty}</td>
+                <td className="font-mono text-[var(--text-secondary)]">₹{dh.avgCost.toFixed(2)}</td>
+                <td>
+                  <LivePriceCell ticker={dh.ticker} initialPrice={dh.ltp} prefix="₹" />
+                </td>
+                <td className="font-mono font-bold text-[var(--text-primary)]">
+                  {formatCompactCurrency(dh.currentValue, currency)}
+                </td>
+                <td className={`font-mono font-bold ${dh.pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                  {dh.pnl >= 0 ? '+' : ''}{formatCompactCurrency(dh.pnl, currency)} ({dh.pnlPct.toFixed(2)}%)
+                </td>
+                <td>
+                  <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${
+                    dh.pledgedStatus === 'Pledged (Collateral)'
+                      ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                      : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border border-[var(--border-color)]'
+                  }`}>
+                    {dh.pledgedStatus === 'Pledged (Collateral)' ? `Pledged (₹${Math.round((dh.pledgedQty || dh.qty) * dh.ltp * 0.8).toLocaleString()})` : 'Unpledged'}
+                  </span>
+                </td>
+                <td>
+                  <div className="flex items-center gap-1.5">
+                    {dh.pledgedStatus === 'Pledged (Collateral)' ? (
+                      <button
+                        onClick={() => unpledgeShares(dh.ticker, dh.qty)}
+                        className="px-2 py-1 rounded text-[11px] font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 border border-amber-500/30 cursor-pointer"
+                        title="Unpledge collateral"
+                      >
+                        Unpledge
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => pledgeShares(dh.ticker, dh.qty)}
+                        className="px-2 py-1 rounded text-[11px] font-bold bg-blue-500/15 hover:bg-blue-500/25 text-blue-600 border border-blue-500/30 cursor-pointer"
+                        title="Pledge for trading margin (20% haircut)"
+                      >
+                        Pledge
+                      </button>
+                    )}
+                    <button
+                      onClick={() => triggerCorporateAction('DIVIDEND', dh.ticker, Math.round(dh.ltp * 0.025))}
+                      className="px-2 py-1 rounded text-[11px] font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 border border-emerald-500/30 cursor-pointer"
+                      title="Simulate Corporate Action Dividend Yield"
+                    >
+                      Dividend
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            )}
+          />
         </div>
       )}
     </div>

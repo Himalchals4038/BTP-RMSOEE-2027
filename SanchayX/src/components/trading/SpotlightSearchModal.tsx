@@ -57,6 +57,10 @@ export const SpotlightSearchModal: React.FC<SpotlightSearchModalProps> = ({
     // 1. Navigation items
     const consoleTabs = [
       { id: 'place_order', label: 'Place Order Form', sub: 'Direct Market Access DMA multi-asset entry' },
+      { id: 'options_builder', label: 'Options Strategy Builder & Greeks', sub: 'Sensibull payoff curve, multi-leg spreads, Δ Γ Θ ν' },
+      { id: 'sip_mandates', label: 'Systematic Investment Plans (SIP Mandates)', sub: 'Recurring bank sweeps & Rupee-Cost Averaging (RCA)' },
+      { id: 'portfolio_vaults', label: 'Multi-Goal Sub-Account Vaults', sub: 'Retirement, Alpha & Education partitioned capital' },
+      { id: 'tax_auditor', label: 'Capital Gains Tax Auditor (ITR Schedule CG)', sub: 'Budget 2024-26 Sec 112A/111A & Tax-Loss Harvesting' },
       { id: 'open_positions', label: 'Open Positions (MIS / MTF)', sub: 'Live MTM tracking, trailing SL & square-off' },
       { id: 'order_book', label: 'Order Book', sub: 'Pending limit, trigger & OCO orders' },
       { id: 'trade_book', label: 'Trade Book', sub: 'Audited execution history & contract notes' },

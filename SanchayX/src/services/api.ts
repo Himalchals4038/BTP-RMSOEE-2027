@@ -1,7 +1,7 @@
 import type { Asset, KRIMetrics, FrontierPoint, CorrelationMatrixData, BacktestConfig, BacktestResult } from '../types/portfolio';
 import { INITIAL_ASSET_CATALOG, generateHistoricalPrices, type HistoricalDataPoint } from './mockData';
-import { computeKRIMetrics, optimizeWeights, runStrategyBacktest } from '../utils/financialMath';
-import { calculateFrontierAsync, calculateCorrelationAsync } from './workerClient';
+import { computeKRIMetrics, optimizeWeights } from '../utils/financialMath';
+import { calculateFrontierAsync, calculateCorrelationAsync, runBacktestAsync } from './workerClient';
 
 let isLiveApiMode = false;
 let historicalDataCache: HistoricalDataPoint[] | null = null;
@@ -67,12 +67,12 @@ export const PortfolioApiService = {
     return calculateCorrelationAsync(assets);
   },
 
-  // Run Strategy Backtest simulator
+  // Run Strategy Backtest simulator (Offloaded to Web Worker)
   async runBacktest(assets: Asset[], config: BacktestConfig): Promise<BacktestResult> {
     if (isLiveApiMode) {
       await new Promise(res => setTimeout(res, 700));
     }
     const history = getHistoricalPrices();
-    return runStrategyBacktest(assets, history, config);
+    return runBacktestAsync(assets, config, history);
   }
 };

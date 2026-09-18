@@ -882,9 +882,21 @@ export const MASTER_TICK_CATALOG: Record<string, LiveTick> = {
 };
 
 // Current dynamic state of ticks
+import { CircularRingBuffer } from '../utils/circularBuffer';
+
 let activeTicksState: Record<string, LiveTick> = { ...MASTER_TICK_CATALOG };
 const tickListeners: Set<(ticks: Record<string, LiveTick>) => void> = new Set();
 let tickIntervalId: ReturnType<typeof setInterval> | null = null;
+
+// Optimization 3: Fixed-Capacity Circular Ring Buffer for 24/7 Tick Streams (under 5 MB)
+const tickHistoryBuffers = new Map<string, CircularRingBuffer<LiveTick>>();
+
+// Pre-initialize buffers with master catalog
+Object.entries(MASTER_TICK_CATALOG).forEach(([ticker, tick]) => {
+  const buf = new CircularRingBuffer<LiveTick>(500);
+  buf.push(tick);
+  tickHistoryBuffers.set(ticker, buf);
+});
 
 function broadcastTickUpdates() {
   const updatedTicks: Record<string, LiveTick> = {};
@@ -904,7 +916,7 @@ function broadcastTickUpdates() {
     const newBid = Number((newLtp - spread / 2).toFixed(2));
     const newAsk = Number((newLtp + spread / 2).toFixed(2));
 
-    updatedTicks[ticker] = {
+    const updatedTick: LiveTick = {
       ...current,
       ltp: newLtp,
       change: newChange,
@@ -916,6 +928,16 @@ function broadcastTickUpdates() {
       volume: current.volume + Math.floor(Math.random() * 50),
       timestamp: new Date().toLocaleTimeString()
     };
+
+    updatedTicks[ticker] = updatedTick;
+
+    // Push into circular ring buffer (capped at 500 ticks per asset)
+    let buf = tickHistoryBuffers.get(ticker);
+    if (!buf) {
+      buf = new CircularRingBuffer<LiveTick>(500);
+      tickHistoryBuffers.set(ticker, buf);
+    }
+    buf.push(updatedTick);
   });
 
   activeTicksState = updatedTicks;
@@ -947,6 +969,10 @@ export function getLatestTick(ticker: string): LiveTick | undefined {
 
 export function getAllLatestTicks(): Record<string, LiveTick> {
   return activeTicksState;
+}
+
+export function getTickHistory(ticker: string): LiveTick[] {
+  return tickHistoryBuffers.get(ticker)?.toArray() || [];
 }
 
 /**

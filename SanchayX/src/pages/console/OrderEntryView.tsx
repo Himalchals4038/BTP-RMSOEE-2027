@@ -7,7 +7,8 @@ import {
   ShieldCheck,
   AlertTriangle,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  GripVertical
 } from 'lucide-react';
 import { useTradingSimulation } from '../../context/TradingSimulationContext';
 import { usePortfolio } from '../../context/PortfolioContext';
@@ -93,12 +94,15 @@ export const OrderEntryView: React.FC<OrderEntryViewProps> = ({
   exchangeOptions,
   l2Depth
 }) => {
-  const { wallet, orders, cancelOrder } = useTradingSimulation();
+  const { wallet, orders, cancelOrder, modifyOrderPrice } = useTradingSimulation();
   const { currency } = usePortfolio();
 
   const [orderSearchQuery, setOrderSearchQuery] = useState<string>('');
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState<boolean>(false);
   const [activeRightTab, setActiveRightTab] = useState<'depth' | 'chart'>('chart');
+  const [draggedOrderId, setDraggedOrderId] = useState<string | null>(null);
+  const [dropTargetPrice, setDropTargetPrice] = useState<number | null>(null);
+  const [dragModifyMessage, setDragModifyMessage] = useState<string | null>(null);
 
   const estOrderVal = quantity * price;
 
@@ -577,6 +581,22 @@ export const OrderEntryView: React.FC<OrderEntryViewProps> = ({
                 </div>
               </div>
 
+              {/* Drag to modify instructions & feedback message */}
+              {dragModifyMessage && (
+                <div className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-1.5 animate-in fade-in">
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  <span>{dragModifyMessage}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between text-[10px] text-[var(--text-muted)] bg-[var(--bg-tertiary)] px-3 py-1.5 rounded-xl border border-[var(--border-subtle)]">
+                <span className="flex items-center gap-1">
+                  <GripVertical className="w-3 h-3 text-[var(--icici-orange)]" />
+                  Drag <strong className="text-[var(--text-primary)]">YOURS</strong> tag up/down ladder to re-quote price
+                </span>
+                <span className="font-mono text-emerald-500 font-bold">Live Margin Validated</span>
+              </div>
+
               <div className="grid grid-cols-2 gap-3 text-xs">
                 {/* BIDS (BUYERS) */}
                 <div className="space-y-1.5">
@@ -589,6 +609,7 @@ export const OrderEntryView: React.FC<OrderEntryViewProps> = ({
                       const depthPct = Math.min(100, Math.round((b.qty / (l2Depth.totalBidQty || 1)) * 100));
                       // Check if user has a pending order at this exact price
                       const matchingUserOrder = userPendingOrders.find(o => Math.abs(o.price - b.price) < 0.01 && o.action === 'BUY');
+                      const isDropTarget = dropTargetPrice === b.price;
 
                       return (
                         <div
@@ -597,8 +618,28 @@ export const OrderEntryView: React.FC<OrderEntryViewProps> = ({
                             setPrice(b.price);
                             setQuantity(b.qty);
                           }}
-                          className="relative p-1.5 rounded-lg hover:bg-emerald-500/15 cursor-pointer transition-colors overflow-hidden flex items-center justify-between font-mono text-[11px]"
-                          title="Click to fill price and quantity"
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            setDropTargetPrice(b.price);
+                          }}
+                          onDragLeave={() => {
+                            if (dropTargetPrice === b.price) setDropTargetPrice(null);
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const ordId = e.dataTransfer.getData('text/plain') || draggedOrderId;
+                            if (ordId) {
+                              const res = modifyOrderPrice(ordId, b.price);
+                              setDragModifyMessage(res.message);
+                              setTimeout(() => setDragModifyMessage(null), 4000);
+                            }
+                            setDraggedOrderId(null);
+                            setDropTargetPrice(null);
+                          }}
+                          className={`relative p-1.5 rounded-lg hover:bg-emerald-500/15 cursor-pointer transition-all overflow-hidden flex items-center justify-between font-mono text-[11px] ${
+                            isDropTarget ? 'ring-2 ring-emerald-400 bg-emerald-500/25 scale-[1.02]' : ''
+                          }`}
+                          title="Click to fill price & qty, or drop pending order here to modify price"
                         >
                           <div
                             className="absolute inset-y-0 left-0 bg-emerald-500/15 pointer-events-none transition-all duration-300"
@@ -607,8 +648,51 @@ export const OrderEntryView: React.FC<OrderEntryViewProps> = ({
                           <div className="flex items-center gap-1 relative z-10">
                             <span className="font-bold text-emerald-600 dark:text-emerald-400">₹{b.price.toFixed(2)}</span>
                             {matchingUserOrder && (
-                              <span className="px-1 py-0.2 rounded text-[8px] font-black bg-blue-500 text-white flex items-center gap-0.5">
-                                YOURS ({matchingUserOrder.qty ?? matchingUserOrder.quantity})
+                              <span
+                                draggable={true}
+                                onDragStart={(e) => {
+                                  e.stopPropagation();
+                                  e.dataTransfer.setData('text/plain', matchingUserOrder.id);
+                                  setDraggedOrderId(matchingUserOrder.id);
+                                }}
+                                onDragEnd={() => {
+                                  setDraggedOrderId(null);
+                                  setDropTargetPrice(null);
+                                }}
+                                className="px-1.5 py-0.5 rounded text-[8px] font-black bg-blue-600 text-white flex items-center gap-0.5 cursor-grab active:cursor-grabbing shadow-xs select-none"
+                                title="Drag to another rung or use +/- to amend price"
+                              >
+                                <GripVertical className="w-2.5 h-2.5 opacity-80" />
+                                <span>YOURS ({matchingUserOrder.qty ?? matchingUserOrder.quantity})</span>
+                                
+                                {/* Micro Nudge Price Adjustment Buttons */}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const res = modifyOrderPrice(matchingUserOrder.id, Number((matchingUserOrder.price + 0.50).toFixed(2)));
+                                    setDragModifyMessage(res.message);
+                                    setTimeout(() => setDragModifyMessage(null), 4000);
+                                  }}
+                                  className="ml-0.5 px-0.5 hover:bg-blue-700 rounded font-mono font-black text-[9px]"
+                                  title="Nudge price +₹0.50"
+                                >
+                                  +
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const res = modifyOrderPrice(matchingUserOrder.id, Math.max(0.50, Number((matchingUserOrder.price - 0.50).toFixed(2))));
+                                    setDragModifyMessage(res.message);
+                                    setTimeout(() => setDragModifyMessage(null), 4000);
+                                  }}
+                                  className="px-0.5 hover:bg-blue-700 rounded font-mono font-black text-[9px]"
+                                  title="Nudge price -₹0.50"
+                                >
+                                  -
+                                </button>
+                                
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -644,6 +728,7 @@ export const OrderEntryView: React.FC<OrderEntryViewProps> = ({
                     {l2Depth.asks.map((a, idx) => {
                       const depthPct = Math.min(100, Math.round((a.qty / (l2Depth.totalAskQty || 1)) * 100));
                       const matchingUserOrder = userPendingOrders.find(o => Math.abs(o.price - a.price) < 0.01 && o.action === 'SELL');
+                      const isDropTarget = dropTargetPrice === a.price;
 
                       return (
                         <div
@@ -652,8 +737,28 @@ export const OrderEntryView: React.FC<OrderEntryViewProps> = ({
                             setPrice(a.price);
                             setQuantity(a.qty);
                           }}
-                          className="relative p-1.5 rounded-lg hover:bg-rose-500/15 cursor-pointer transition-colors overflow-hidden flex items-center justify-between font-mono text-[11px]"
-                          title="Click to fill price and quantity"
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            setDropTargetPrice(a.price);
+                          }}
+                          onDragLeave={() => {
+                            if (dropTargetPrice === a.price) setDropTargetPrice(null);
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const ordId = e.dataTransfer.getData('text/plain') || draggedOrderId;
+                            if (ordId) {
+                              const res = modifyOrderPrice(ordId, a.price);
+                              setDragModifyMessage(res.message);
+                              setTimeout(() => setDragModifyMessage(null), 4000);
+                            }
+                            setDraggedOrderId(null);
+                            setDropTargetPrice(null);
+                          }}
+                          className={`relative p-1.5 rounded-lg hover:bg-rose-500/15 cursor-pointer transition-all overflow-hidden flex items-center justify-between font-mono text-[11px] ${
+                            isDropTarget ? 'ring-2 ring-rose-400 bg-rose-500/25 scale-[1.02]' : ''
+                          }`}
+                          title="Click to fill price & qty, or drop pending order here to modify price"
                         >
                           <div
                             className="absolute inset-y-0 right-0 bg-rose-500/15 pointer-events-none transition-all duration-300"
@@ -662,8 +767,50 @@ export const OrderEntryView: React.FC<OrderEntryViewProps> = ({
                           <span className="text-[var(--text-primary)] relative z-10">{a.qty.toLocaleString()} / {a.orders}</span>
                           <div className="flex items-center gap-1 relative z-10">
                             {matchingUserOrder && (
-                              <span className="px-1 py-0.2 rounded text-[8px] font-black bg-purple-500 text-white flex items-center gap-0.5">
-                                YOURS ({matchingUserOrder.qty ?? matchingUserOrder.quantity})
+                              <span
+                                draggable={true}
+                                onDragStart={(e) => {
+                                  e.stopPropagation();
+                                  e.dataTransfer.setData('text/plain', matchingUserOrder.id);
+                                  setDraggedOrderId(matchingUserOrder.id);
+                                }}
+                                onDragEnd={() => {
+                                  setDraggedOrderId(null);
+                                  setDropTargetPrice(null);
+                                }}
+                                className="px-1.5 py-0.5 rounded text-[8px] font-black bg-purple-600 text-white flex items-center gap-0.5 cursor-grab active:cursor-grabbing shadow-xs select-none"
+                                title="Drag to another rung or use +/- to amend price"
+                              >
+                                <GripVertical className="w-2.5 h-2.5 opacity-80" />
+                                <span>YOURS ({matchingUserOrder.qty ?? matchingUserOrder.quantity})</span>
+                                
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const res = modifyOrderPrice(matchingUserOrder.id, Number((matchingUserOrder.price + 0.50).toFixed(2)));
+                                    setDragModifyMessage(res.message);
+                                    setTimeout(() => setDragModifyMessage(null), 4000);
+                                  }}
+                                  className="ml-0.5 px-0.5 hover:bg-purple-700 rounded font-mono font-black text-[9px]"
+                                  title="Nudge price +₹0.50"
+                                >
+                                  +
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const res = modifyOrderPrice(matchingUserOrder.id, Math.max(0.50, Number((matchingUserOrder.price - 0.50).toFixed(2))));
+                                    setDragModifyMessage(res.message);
+                                    setTimeout(() => setDragModifyMessage(null), 4000);
+                                  }}
+                                  className="px-0.5 hover:bg-purple-700 rounded font-mono font-black text-[9px]"
+                                  title="Nudge price -₹0.50"
+                                >
+                                  -
+                                </button>
+
                                 <button
                                   type="button"
                                   onClick={(e) => {

@@ -32,34 +32,55 @@ const PageLoaderFallback = () => (
 const MainContent: React.FC = () => {
   const { activeTab, activeSubTab } = usePortfolio();
 
+  // Dynamic Page Pattern Background Class
+  const pagePatternClass = activeSubTab
+    ? 'pattern-console'
+    : activeTab === 'dashboard'
+    ? 'pattern-dashboard'
+    : activeTab === 'builder'
+    ? 'pattern-builder'
+    : activeTab === 'smart_engine'
+    ? 'pattern-smart-engine'
+    : activeTab === 'safe_investment'
+    ? 'pattern-safe-investment'
+    : activeTab === 'frontier'
+    ? 'pattern-frontier'
+    : activeTab === 'backtest'
+    ? 'pattern-backtest'
+    : activeTab === 'explorer'
+    ? 'pattern-explorer'
+    : 'pattern-dashboard';
+
   return (
-    <main className="w-full max-w-[1700px] mx-auto min-h-[calc(100vh-140px)] relative">
-      <Suspense fallback={<PageLoaderFallback />}>
-        {/* If a dedicated sub-tab option (e.g. Place Order, Open Positions, Order Book, Funds, Holdings, Gold, IPO, FD/Bonds) is selected, render dedicated Trading Console Page */}
-        {activeSubTab ? (
-          <TradingConsolePage />
-        ) : (
-          <>
-            {activeTab === 'dashboard' && <ExecutiveDashboard />}
-            {activeTab === 'builder' && <PortfolioBuilder />}
-            {activeTab === 'smart_engine' && <DualShieldSmartEngine />}
-            {activeTab === 'safe_investment' && <SafeInvestmentEngine />}
-            {activeTab === 'frontier' && <EfficientFrontierPage />}
-            {activeTab === 'backtest' && <BacktesterPage />}
-            {activeTab === 'explorer' && <MarketExplorerPage />}
-          </>
-        )}
+    <div className={`w-full flex-1 transition-all duration-300 ${pagePatternClass}`}>
+      <main className="w-full max-w-[1750px] mx-auto min-h-[calc(100vh-140px)] relative px-3 lg:px-5 py-3.5">
+        <Suspense fallback={<PageLoaderFallback />}>
+          {/* If a dedicated sub-tab option (e.g. Place Order, Open Positions, Order Book, Funds, Holdings, Gold, IPO, FD/Bonds) is selected, render dedicated Trading Console Page */}
+          {activeSubTab ? (
+            <TradingConsolePage />
+          ) : (
+            <>
+              {activeTab === 'dashboard' && <ExecutiveDashboard />}
+              {activeTab === 'builder' && <PortfolioBuilder />}
+              {activeTab === 'smart_engine' && <DualShieldSmartEngine />}
+              {activeTab === 'safe_investment' && <SafeInvestmentEngine />}
+              {activeTab === 'frontier' && <EfficientFrontierPage />}
+              {activeTab === 'backtest' && <BacktesterPage />}
+              {activeTab === 'explorer' && <MarketExplorerPage />}
+            </>
+          )}
 
-        {/* Floating Free AI Chatbot Widget */}
-        <FloatingAIChatbot />
-      </Suspense>
+          {/* Floating Free AI Chatbot Widget */}
+          <FloatingAIChatbot />
+        </Suspense>
 
-      {/* User Login, Password Reset, Edit Profile & Switch User Modal */}
-      <UserAuthModal />
+        {/* User Login, Password Reset, Edit Profile & Switch User Modal */}
+        <UserAuthModal />
 
-      {/* Floating Global Market Heatmap Drawer (Accessible from all pages) */}
-      <FloatingHeatmapDrawer />
-    </main>
+        {/* Floating Global Market Heatmap Drawer (Accessible from all pages) */}
+        <FloatingHeatmapDrawer />
+      </main>
+    </div>
   );
 };
 
@@ -81,7 +102,7 @@ const AppShell: React.FC = () => {
       <Navigation />
 
       {/* Module Content */}
-      <div className="flex-1 w-full max-w-[1750px] mx-auto">
+      <div className="flex-1 w-full flex flex-col">
         <MainContent />
       </div>
 

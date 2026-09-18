@@ -377,3 +377,261 @@ input[type=range]::-webkit-slider-thumb:hover {
   animation-play-state: paused !important;
   -webkit-animation-play-state: paused !important; /* Safari support */
 }
+
+/* ==========================================================================
+   SANCHAYX BESPOKE DUAL-MODE PATTERNS & UNIQUE AESTHETIC PALETTES
+   Vibrant, high-contrast, institutional visual personality for every module
+   (Explicitly styled for both Light Mode and Dark Mode — zero blandness)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   LIGHT MODE PATTERNS (Vibrant, airy, bespoke palettes with micro-grids)
+   -------------------------------------------------------------------------- */
+
+/* 1. EXECUTIVE DASHBOARD — Ice Azure & Precision Matrix */
+.pattern-dashboard {
+  background-color: #f1f5f9;
+  background-image: 
+    radial-gradient(ellipse 85% 60% at 50% -10%, rgba(14, 165, 233, 0.16), transparent 70%),
+    radial-gradient(ellipse 60% 45% at 95% 95%, rgba(59, 130, 246, 0.10), transparent 60%),
+    radial-gradient(rgba(14, 165, 233, 0.22) 1.2px, transparent 1.2px);
+  background-size: 100% 100%, 100% 100%, 22px 22px;
+}
+.accent-dashboard {
+  border-color: rgba(14, 165, 233, 0.35) !important;
+}
+
+/* 2. STOCKS & ALLOCATION (PortfolioBuilder) — Golden Topaz & Isometric Grid */
+.pattern-builder {
+  background-color: #fcf9f2;
+  background-image: 
+    radial-gradient(ellipse 85% 55% at 50% -10%, rgba(245, 158, 11, 0.15), transparent 65%),
+    radial-gradient(ellipse 50% 40% at 10% 85%, rgba(234, 88, 12, 0.08), transparent 60%),
+    linear-gradient(rgba(217, 119, 6, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(217, 119, 6, 0.06) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 24px 24px, 24px 24px;
+}
+.accent-builder {
+  border-color: rgba(245, 158, 11, 0.35) !important;
+}
+
+/* 3. SMART INVESTMENT OPTION (DualShieldSmartEngine) — Mint Opal & Bioluminescent Hex */
+.pattern-smart-engine {
+  background-color: #f0faf5;
+  background-image: 
+    radial-gradient(ellipse 85% 55% at 50% -10%, rgba(16, 185, 129, 0.17), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 85% 75%, rgba(20, 184, 166, 0.10), transparent 60%),
+    radial-gradient(circle, rgba(16, 185, 129, 0.18) 1.4px, transparent 1.4px);
+  background-size: 100% 100%, 100% 100%, 20px 20px;
+}
+.accent-smart-engine {
+  border-color: rgba(16, 185, 129, 0.35) !important;
+}
+
+/* 4. 100% SAFE INVESTMENT (SafeInvestmentEngine) — Sovereign Gold Silk & Royal Lattice */
+.pattern-safe-investment {
+  background-color: #fdfbf5;
+  background-image: 
+    radial-gradient(ellipse 85% 55% at 50% -10%, rgba(217, 119, 6, 0.16), transparent 65%),
+    radial-gradient(ellipse 45% 40% at 15% 90%, rgba(245, 158, 11, 0.10), transparent 60%),
+    linear-gradient(45deg, rgba(217, 119, 6, 0.055) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(217, 119, 6, 0.055) 25%, transparent 25%);
+  background-size: 100% 100%, 100% 100%, 28px 28px, 28px 28px;
+}
+.accent-safe-investment {
+  border-color: rgba(217, 119, 6, 0.35) !important;
+}
+
+/* 5. MUTUAL FUNDS & MPT (EfficientFrontier) — Quantum Violet & Lavender Aurora */
+.pattern-frontier {
+  background-color: #f8f5fe;
+  background-image: 
+    radial-gradient(ellipse 85% 55% at 50% -10%, rgba(168, 85, 247, 0.16), transparent 65%),
+    radial-gradient(ellipse 50% 40% at 85% 85%, rgba(139, 92, 246, 0.10), transparent 60%),
+    radial-gradient(rgba(147, 51, 234, 0.18) 1.2px, transparent 1.2px);
+  background-size: 100% 100%, 100% 100%, 22px 22px;
+}
+.accent-frontier {
+  border-color: rgba(168, 85, 247, 0.35) !important;
+}
+
+/* 6. F&O STRATEGIES & BACKTESTER (Backtester) — Crimson Pulse & Precision Millimeter Graph */
+.pattern-backtest {
+  background-color: #fdf4f6;
+  background-image: 
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(244, 63, 94, 0.16), transparent 65%),
+    radial-gradient(ellipse 50% 40% at 15% 85%, rgba(239, 68, 68, 0.09), transparent 60%),
+    linear-gradient(rgba(225, 29, 72, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(225, 29, 72, 0.055) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 20px 20px, 20px 20px;
+}
+.accent-backtest {
+  border-color: rgba(244, 63, 94, 0.35) !important;
+}
+
+/* 7. COMMODITY & MARKETS (MarketExplorer) — Deep Ocean Cyan & Nautical Sonar Grid */
+.pattern-explorer {
+  background-color: #f0fbfb;
+  background-image: 
+    radial-gradient(ellipse 85% 55% at 50% -10%, rgba(6, 182, 212, 0.17), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 85% 85%, rgba(14, 165, 233, 0.09), transparent 60%),
+    radial-gradient(rgba(8, 145, 178, 0.18) 1.2px, transparent 1.2px);
+  background-size: 100% 100%, 100% 100%, 24px 24px;
+}
+.accent-explorer {
+  border-color: rgba(6, 182, 212, 0.35) !important;
+}
+
+/* 8. DEDICATED TRADING CONSOLE — Clean Institutional Terminal Slate / Orange */
+.pattern-console {
+  background-color: #f3f6fa;
+  background-image: 
+    radial-gradient(ellipse 85% 55% at 50% -15%, rgba(242, 101, 34, 0.11), transparent 65%),
+    radial-gradient(ellipse 50% 40% at 85% 85%, rgba(59, 130, 246, 0.08), transparent 60%),
+    linear-gradient(rgba(15, 23, 42, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.045) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 20px 20px, 20px 20px;
+}
+.accent-console {
+  border-color: rgba(242, 101, 34, 0.35) !important;
+}
+
+/* --------------------------------------------------------------------------
+   DARK MODE OVERRIDES (Obsidian, Cyber Neon & Deep Cosmic Radiance)
+   -------------------------------------------------------------------------- */
+
+.dark .pattern-dashboard,
+[data-theme="dark"] .pattern-dashboard {
+  background-color: #060911;
+  background-image: 
+    radial-gradient(ellipse 85% 55% at 50% -20%, rgba(14, 165, 233, 0.20), transparent 70%),
+    radial-gradient(ellipse 60% 45% at 95% 95%, rgba(59, 130, 246, 0.14), transparent 60%),
+    radial-gradient(rgba(14, 165, 233, 0.16) 1.2px, transparent 1.2px);
+  background-size: 100% 100%, 100% 100%, 20px 20px;
+}
+
+.dark .pattern-builder,
+[data-theme="dark"] .pattern-builder {
+  background-color: #080c14;
+  background-image: 
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(245, 158, 11, 0.16), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 10% 80%, rgba(234, 88, 12, 0.10), transparent 60%),
+    linear-gradient(rgba(245, 158, 11, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245, 158, 11, 0.045) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 24px 24px, 24px 24px;
+}
+
+.dark .pattern-smart-engine,
+[data-theme="dark"] .pattern-smart-engine {
+  background-color: #03120c;
+  background-image: 
+    radial-gradient(ellipse 85% 55% at 50% 0%, rgba(16, 185, 129, 0.20), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 85% 75%, rgba(20, 184, 166, 0.12), transparent 60%),
+    radial-gradient(circle, rgba(16, 185, 129, 0.15) 1.5px, transparent 1.5px);
+  background-size: 100% 100%, 100% 100%, 18px 18px;
+}
+
+.dark .pattern-safe-investment,
+[data-theme="dark"] .pattern-safe-investment {
+  background-color: #0d0a05;
+  background-image: 
+    radial-gradient(ellipse 85% 55% at 50% -10%, rgba(217, 119, 6, 0.22), transparent 65%),
+    radial-gradient(ellipse 45% 40% at 15% 90%, rgba(245, 158, 11, 0.14), transparent 60%),
+    linear-gradient(45deg, rgba(217, 119, 6, 0.045) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(217, 119, 6, 0.045) 25%, transparent 25%);
+  background-size: 100% 100%, 100% 100%, 28px 28px, 28px 28px;
+}
+
+.dark .pattern-frontier,
+[data-theme="dark"] .pattern-frontier {
+  background-color: #090614;
+  background-image: 
+    radial-gradient(ellipse 80% 50% at 50% -15%, rgba(168, 85, 247, 0.20), transparent 65%),
+    radial-gradient(ellipse 50% 40% at 85% 85%, rgba(139, 92, 246, 0.14), transparent 60%),
+    radial-gradient(rgba(168, 85, 247, 0.15) 1.2px, transparent 1.2px);
+  background-size: 100% 100%, 100% 100%, 22px 22px;
+}
+
+.dark .pattern-backtest,
+[data-theme="dark"] .pattern-backtest {
+  background-color: #100407;
+  background-image: 
+    radial-gradient(ellipse 75% 45% at 50% 0%, rgba(244, 63, 94, 0.18), transparent 65%),
+    radial-gradient(ellipse 50% 40% at 15% 85%, rgba(239, 68, 68, 0.12), transparent 60%),
+    linear-gradient(rgba(244, 63, 94, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(244, 63, 94, 0.05) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 20px 20px, 20px 20px;
+}
+
+.dark .pattern-explorer,
+[data-theme="dark"] .pattern-explorer {
+  background-color: #030d14;
+  background-image: 
+    radial-gradient(ellipse 85% 55% at 50% -10%, rgba(6, 182, 212, 0.20), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 85% 85%, rgba(14, 165, 233, 0.12), transparent 60%),
+    radial-gradient(rgba(6, 182, 212, 0.14) 1.2px, transparent 1.2px);
+  background-size: 100% 100%, 100% 100%, 24px 24px;
+}
+
+.dark .pattern-console,
+[data-theme="dark"] .pattern-console {
+  background-color: #05080e;
+  background-image: 
+    radial-gradient(ellipse 85% 55% at 50% -15%, rgba(249, 115, 22, 0.14), transparent 65%),
+    radial-gradient(ellipse 50% 40% at 80% 85%, rgba(59, 130, 246, 0.08), transparent 60%),
+    linear-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 18px 18px, 18px 18px;
+}
+
+/* ==========================================================================
+   HIGH-DENSITY COMPACT TERMINAL SPACING UTILITIES
+   Eliminates the "AI-generated empty spaces" with professional density
+   ========================================================================== */
+
+.density-compact {
+  padding: 0.75rem 1rem !important;
+  gap: 0.75rem !important;
+}
+
+.density-card {
+  padding: 0.85rem 1rem !important;
+  border-radius: 10px !important;
+}
+
+.density-tile {
+  padding: 0.65rem 0.85rem !important;
+  border-radius: 8px !important;
+}
+
+.density-table th {
+  padding: 6px 10px !important;
+  font-size: 0.72rem !important;
+  letter-spacing: 0.04em !important;
+}
+
+.density-table td {
+  padding: 6px 10px !important;
+  font-size: 0.8rem !important;
+}
+
+.density-input {
+  padding: 0.35rem 0.65rem !important;
+  font-size: 0.78rem !important;
+  height: 2rem !important;
+}
+
+.density-btn {
+  padding: 0.4rem 0.75rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+}
+
+/* Micro Glowing Rings for Live Status */
+.ring-glow-cyan { box-shadow: 0 0 10px rgba(14, 165, 233, 0.35); }
+.ring-glow-amber { box-shadow: 0 0 10px rgba(245, 158, 11, 0.35); }
+.ring-glow-emerald { box-shadow: 0 0 10px rgba(16, 185, 129, 0.35); }
+.ring-glow-gold { box-shadow: 0 0 10px rgba(217, 119, 6, 0.4); }
+.ring-glow-purple { box-shadow: 0 0 10px rgba(168, 85, 247, 0.35); }
+.ring-glow-crimson { box-shadow: 0 0 10px rgba(244, 63, 94, 0.35); }
+

@@ -7,8 +7,20 @@ import {
   LineChart,
   Globe,
   Sparkles,
-  ShieldCheck
+  ShieldCheck,
+  FileText
 } from 'lucide-react';
+import {
+  NseBseEmblem,
+  SovereignGoldCoin,
+  SecuredBondShield,
+  Level2DepthLadder,
+  ZeroTdsCertificate,
+  OptionDeltaGreeks,
+  BankAutoSweepVault,
+  IpoAllotmentLottery,
+  CandlestickTerminal
+} from '../icons/MarketIcons';
 
 export const Navigation: React.FC = () => {
   const { activeTab, setActiveTab, activeSubTab, setActiveSubTab } = usePortfolio();
@@ -24,19 +36,20 @@ export const Navigation: React.FC = () => {
   ];
 
   const secondaryNavItems = [
-    { id: 'portfolio_summary', label: 'Portfolio', targetTab: 'dashboard' },
-    { id: 'place_order', label: 'Place Order', targetTab: 'builder' },
-    { id: 'open_positions', label: 'Open Positions', targetTab: 'dashboard' },
-    { id: 'order_book', label: 'Order Book', targetTab: 'backtest' },
-    { id: 'trade_book', label: 'Trade Book', targetTab: 'backtest' },
-    { id: 'funds', label: 'Funds & Liquidity', targetTab: 'builder' },
-    { id: 'demat_holdings', label: 'Demat Holdings', targetTab: 'builder' },
-    { id: 'gold', label: 'Sovereign Gold', badge: 'SGB', targetTab: 'safe_investment' },
-    { id: 'ipo', label: 'IPO & NFO', badge: 'Hot', targetTab: 'explorer' },
-    { id: 'fd_bonds', label: 'FD & Bonds', badge: '8.8%', targetTab: 'safe_investment' },
-    { id: 'insurance', label: 'Insurance', targetTab: 'safe_investment' },
-    { id: 'nps', label: 'NPS Pension', targetTab: 'safe_investment' },
-    { id: 'reports', label: 'Reports', targetTab: 'builder' }
+    { id: 'portfolio_summary', label: 'Portfolio', icon: LayoutDashboard, targetTab: 'dashboard' },
+    { id: 'place_order', label: 'Place Order', icon: Level2DepthLadder, targetTab: 'builder' },
+    { id: 'options_builder', label: 'Options Builder', icon: OptionDeltaGreeks, badge: 'GREEKS', targetTab: 'backtest' },
+    { id: 'sip_mandates', label: 'SIP Mandates', icon: BankAutoSweepVault, badge: 'AUTO', targetTab: 'safe_investment' },
+    { id: 'open_positions', label: 'Open Positions', icon: CandlestickTerminal, targetTab: 'dashboard' },
+    { id: 'order_book', label: 'Order Book', icon: NseBseEmblem, targetTab: 'backtest' },
+    { id: 'trade_book', label: 'Trade Book', icon: FileText, targetTab: 'backtest' },
+    { id: 'funds', label: 'Funds & Liquidity', icon: BankAutoSweepVault, targetTab: 'builder' },
+    { id: 'demat_holdings', label: 'Demat Holdings', icon: NseBseEmblem, targetTab: 'builder' },
+    { id: 'gold', label: 'Sovereign Gold', icon: SovereignGoldCoin, badge: 'SGB', targetTab: 'safe_investment' },
+    { id: 'ipo', label: 'IPO & NFO', icon: IpoAllotmentLottery, badge: 'Hot', targetTab: 'explorer' },
+    { id: 'fd_bonds', label: 'FD & Bonds', icon: SecuredBondShield, badge: '8.8%', targetTab: 'safe_investment' },
+    { id: 'tax_auditor', label: 'Tax Auditor', icon: ZeroTdsCertificate, badge: 'FY25-26', targetTab: 'builder' },
+    { id: 'reports', label: 'Reports', icon: FileText, targetTab: 'builder' }
   ];
 
   return (
@@ -108,6 +121,7 @@ export const Navigation: React.FC = () => {
         <div className="max-w-[1750px] mx-auto flex items-center justify-center divide-x divide-[var(--border-subtle)] text-xs font-semibold text-[var(--text-secondary)] whitespace-nowrap">
           {secondaryNavItems.map((sItem) => {
             const isSubActive = activeSubTab === sItem.id;
+            const Icon = sItem.icon;
 
             return (
               <button
@@ -116,15 +130,16 @@ export const Navigation: React.FC = () => {
                   setActiveSubTab(sItem.id);
                   if (sItem.targetTab) setActiveTab(sItem.targetTab);
                 }}
-                className={`px-3 py-1 flex items-center gap-1 transition-colors cursor-pointer ${
+                className={`px-2.5 py-1 flex items-center gap-1.5 transition-colors cursor-pointer text-[11px] ${
                   isSubActive
                     ? 'text-[var(--icici-orange)] font-bold bg-[var(--bg-card)] rounded shadow-2xs border border-[var(--border-color)]'
                     : 'hover:text-[var(--text-primary)]'
                 }`}
               >
+                {Icon && <Icon className={`w-3.5 h-3.5 shrink-0 ${isSubActive ? 'text-[var(--icici-orange)]' : 'text-[var(--text-muted)]'}`} />}
                 <span>{sItem.label}</span>
                 {sItem.badge && (
-                  <span className="text-[9px] bg-red-500 text-white px-1.5 py-0.2 rounded font-extrabold">
+                  <span className="text-[8.5px] bg-red-500 text-white px-1.5 py-0.2 rounded font-extrabold">
                     {sItem.badge}
                   </span>
                 )}
