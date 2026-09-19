@@ -188,7 +188,7 @@ export const ExecutiveDashboard: React.FC = () => {
       {/* Top Banner: Total Portfolio Value & 24h PnL */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-2.5 w-full">
         {/* Total Net Worth Card (Dynamic from Trading Ledger) */}
-        <div className="glass-card density-card p-3.5 border-l-4 border-l-[var(--icici-orange)] flex flex-col justify-between accent-dashboard ring-glow-cyan">
+        <div className="glass-card density-card p-3.5 border-l-4 border-l-[var(--icici-orange)] flex flex-col justify-between accent-dashboard ring-glow-cyan hover-scale-102 ambient-aura-4s cursor-pointer">
           <div className="flex items-center justify-between text-[var(--text-secondary)] text-[11px] font-bold">
             <span className="flex items-center gap-1.5">
               <BankAutoSweepVault size={16} className="text-[var(--icici-orange)]" />
@@ -214,7 +214,7 @@ export const ExecutiveDashboard: React.FC = () => {
         </div>
 
         {/* Sharpe Ratio Card */}
-        <div className="glass-card density-card p-3.5 border-l-4 border-l-emerald-500 flex flex-col justify-between accent-dashboard">
+        <div className="glass-card density-card p-3.5 border-l-4 border-l-emerald-500 flex flex-col justify-between accent-dashboard hover-scale-102 cursor-pointer">
           <div className="flex items-center justify-between text-[var(--text-secondary)] text-[11px] font-bold">
             <span className="flex items-center gap-1.5">
               <RebalanceCompass size={16} className="text-emerald-500" />
@@ -238,7 +238,7 @@ export const ExecutiveDashboard: React.FC = () => {
         </div>
 
         {/* Value at Risk (VaR) Card */}
-        <div className="glass-card density-card p-3.5 border-l-4 border-l-amber-500 flex flex-col justify-between accent-dashboard">
+        <div className="glass-card density-card p-3.5 border-l-4 border-l-amber-500 flex flex-col justify-between accent-dashboard hover-scale-102 cursor-pointer">
           <div className="flex items-center justify-between text-[var(--text-secondary)] text-[11px] font-bold">
             <span className="flex items-center gap-1.5">
               <RiskVaRGauge size={16} className="text-amber-500" />
@@ -259,7 +259,7 @@ export const ExecutiveDashboard: React.FC = () => {
         </div>
 
         {/* Beta & Alpha Card */}
-        <div className="glass-card density-card p-3.5 border-l-4 border-l-[var(--icici-red)] flex flex-col justify-between accent-dashboard">
+        <div className="glass-card density-card p-3.5 border-l-4 border-l-[var(--icici-red)] flex flex-col justify-between accent-dashboard hover-scale-102 cursor-pointer">
           <div className="flex items-center justify-between text-[var(--text-secondary)] text-[11px] font-bold">
             <span className="flex items-center gap-1.5">
               <NseBseEmblem size={16} className="text-[var(--icici-red)]" />

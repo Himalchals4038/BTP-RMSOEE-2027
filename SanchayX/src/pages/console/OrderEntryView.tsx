@@ -103,6 +103,13 @@ export const OrderEntryView: React.FC<OrderEntryViewProps> = ({
   const [draggedOrderId, setDraggedOrderId] = useState<string | null>(null);
   const [dropTargetPrice, setDropTargetPrice] = useState<number | null>(null);
   const [dragModifyMessage, setDragModifyMessage] = useState<string | null>(null);
+  const searchedSecurities = React.useMemo(() => {
+    if (!orderSearchQuery.trim()) return filteredAssets;
+    const q = orderSearchQuery.toLowerCase().trim();
+    return filteredAssets.filter(a =>
+      a.ticker.toLowerCase().includes(q) || a.name.toLowerCase().includes(q)
+    );
+  }, [filteredAssets, orderSearchQuery]);
 
   const estOrderVal = quantity * price;
 
@@ -194,8 +201,8 @@ export const OrderEntryView: React.FC<OrderEntryViewProps> = ({
 
               {isSearchDropdownOpen && (
                 <div className="absolute left-0 right-0 top-full mt-1 max-h-64 overflow-y-auto bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-2xl z-30 divide-y divide-[var(--border-subtle)]">
-                  {filteredAssets.length > 0 ? (
-                    filteredAssets.map(a => (
+                  {searchedSecurities.length > 0 ? (
+                    searchedSecurities.map(a => (
                       <div
                         key={a.ticker}
                         onClick={() => {

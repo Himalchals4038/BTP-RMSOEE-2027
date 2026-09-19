@@ -4,7 +4,7 @@ import {
   Minimize2,
   Layers
 } from 'lucide-react';
-import { useTradingSimulation } from '../../context/TradingSimulationContext';
+import { useTradingSimulation, subscribeToTicker } from '../../context/TradingSimulationContext';
 
 interface CandlestickData {
   time: string;
@@ -25,6 +25,55 @@ interface InteractiveCandlestickChartProps {
 
 type Timeframe = '1m' | '5m' | '15m' | '1h' | '1D';
 
+// Deterministic baseline candle generator
+function generateInitialCandles(ticker: string, basePrice: number, timeframe: Timeframe): CandlestickData[] {
+  const data: CandlestickData[] = [];
+  const count = 60;
+  let currentPrice = Math.max(10, basePrice);
+  const now = Date.now();
+  const intervalMinutes = timeframe === '1m' ? 1 : timeframe === '5m' ? 5 : timeframe === '15m' ? 15 : timeframe === '1h' ? 60 : 1440;
+  const intervalMs = intervalMinutes * 60 * 1000;
+
+  let seed = 0;
+  for (let i = 0; i < ticker.length; i++) {
+    seed = (seed * 31 + ticker.charCodeAt(i)) % 10000;
+  }
+
+  const seededRandom = () => {
+    seed = (seed * 9301 + 49297) % 233280;
+    return seed / 233280;
+  };
+
+  for (let i = count - 1; i >= 0; i--) {
+    const timeMs = now - i * intervalMs;
+    const dateObj = new Date(timeMs);
+    const timeStr = timeframe === '1D'
+      ? dateObj.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })
+      : dateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+    const volatility = currentPrice * 0.007;
+    const change = (seededRandom() - 0.49) * volatility * 2;
+    const open = Math.round(currentPrice * 100) / 100;
+    const close = Math.round(Math.max(1, open + change) * 100) / 100;
+    const high = Math.round(Math.max(open, close) + seededRandom() * volatility * 1.2 * 100) / 100;
+    const low = Math.round(Math.max(0.5, Math.min(open, close) - seededRandom() * volatility * 1.2) * 100) / 100;
+    const volume = Math.floor(1000 + seededRandom() * 25000);
+
+    data.push({
+      time: timeStr,
+      timestamp: timeMs,
+      open,
+      high,
+      low,
+      close,
+      volume
+    });
+
+    currentPrice = close;
+  }
+  return data;
+}
+
 export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartProps> = ({
   ticker,
   basePrice = 2500,
@@ -42,59 +91,58 @@ export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartPr
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [hoveredCandle, setHoveredCandle] = useState<CandlestickData | null>(null);
 
+  const [candles, setCandles] = useState<CandlestickData[]>(() =>
+    generateInitialCandles(ticker, basePrice, timeframe)
+  );
+  const [liveLtp, setLiveLtp] = useState<number>(() => {
+    const init = generateInitialCandles(ticker, basePrice, timeframe);
+    return init.length > 0 ? init[init.length - 1].close : basePrice;
+  });
+
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rsiCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Generate deterministic synthetic candlestick data for this ticker & timeframe
-  const candles = useMemo(() => {
-    const data: CandlestickData[] = [];
-    const count = 60;
-    let currentPrice = Math.max(10, basePrice);
-    const now = Date.now();
-    const intervalMinutes = timeframe === '1m' ? 1 : timeframe === '5m' ? 5 : timeframe === '15m' ? 15 : timeframe === '1h' ? 60 : 1440;
-    const intervalMs = intervalMinutes * 60 * 1000;
-
-    // Seeded random walk
-    let seed = 0;
-    for (let i = 0; i < ticker.length; i++) {
-      seed = (seed * 31 + ticker.charCodeAt(i)) % 10000;
-    }
-
-    const seededRandom = () => {
-      seed = (seed * 9301 + 49297) % 233280;
-      return seed / 233280;
-    };
-
-    for (let i = count - 1; i >= 0; i--) {
-      const timeMs = now - i * intervalMs;
-      const dateObj = new Date(timeMs);
-      const timeStr = timeframe === '1D'
-        ? dateObj.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })
-        : dateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
-
-      const volatility = currentPrice * 0.007;
-      const change = (seededRandom() - 0.49) * volatility * 2;
-      const open = Math.round(currentPrice * 100) / 100;
-      const close = Math.round(Math.max(1, open + change) * 100) / 100;
-      const high = Math.round(Math.max(open, close) + seededRandom() * volatility * 1.2 * 100) / 100;
-      const low = Math.round(Math.max(0.5, Math.min(open, close) - seededRandom() * volatility * 1.2) * 100) / 100;
-      const volume = Math.floor(1000 + seededRandom() * 25000);
-
-      data.push({
-        time: timeStr,
-        timestamp: timeMs,
-        open,
-        high,
-        low,
-        close,
-        volume
-      });
-
-      currentPrice = close;
-    }
-    return data;
+  // Sync historical baseline on ticker, basePrice, or timeframe change
+  useEffect(() => {
+    const init = generateInitialCandles(ticker, basePrice, timeframe);
+    setCandles(init);
+    setLiveLtp(init.length > 0 ? init[init.length - 1].close : basePrice);
   }, [ticker, basePrice, timeframe]);
+
+  // Connect to 5 Hz fast live tick stream to dynamically mutate the active candle and wicks
+  useEffect(() => {
+    const unsubscribe = subscribeToTicker(ticker, (tick) => {
+      const tickPrice = tick?.ltp;
+      if (typeof tickPrice !== 'number') return;
+      setLiveLtp(tickPrice);
+
+      setCandles(prev => {
+        if (prev.length === 0) return prev;
+        const lastIdx = prev.length - 1;
+        const last = prev[lastIdx];
+
+        const newClose = tickPrice;
+        const newHigh = Math.max(last.high, newClose);
+        const newLow = Math.min(last.low, newClose);
+        const newVolume = last.volume + (tick.volume ? Math.max(1, Math.floor(tick.volume / 100)) : 12);
+
+        const updatedLast: CandlestickData = {
+          ...last,
+          close: newClose,
+          high: newHigh,
+          low: newLow,
+          volume: newVolume
+        };
+
+        const updated = [...prev];
+        updated[lastIdx] = updatedLast;
+        return updated;
+      });
+    });
+
+    return unsubscribe;
+  }, [ticker]);
 
   // Calculate EMA indicator series
   const calculateEMA = useCallback((period: number) => {
@@ -403,6 +451,28 @@ export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartPr
       }
     }
 
+    // Feature 3: Real-Time Pulsing Horizontal LTP Crosshair Line & Dynamic Badge
+    const activeLtp = liveLtp || (candles.length > 0 ? candles[candles.length - 1].close : basePrice);
+    if (activeLtp >= minPrice && activeLtp <= maxPrice) {
+      const ltpY = getY(activeLtp);
+
+      ctx.setLineDash([4, 3]);
+      ctx.strokeStyle = '#f26522'; // ICICI Orange / Terminal Accent
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(paddingLeft, ltpY);
+      ctx.lineTo(width - paddingRight, ltpY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Dynamic Axis Badge with live LTP
+      ctx.fillStyle = '#f26522';
+      ctx.fillRect(width - paddingRight + 2, ltpY - 9, 62, 18);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 9px "JetBrains Mono", monospace';
+      ctx.fillText(`${currency}${activeLtp.toFixed(2)}`, width - paddingRight + 5, ltpY + 4);
+    }
+
     // Time Axis Labels
     ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
     ctx.font = '10px "JetBrains Mono", monospace';
@@ -414,6 +484,7 @@ export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartPr
     }
   }, [
     candles,
+    liveLtp,
     timeframe,
     showEMA20,
     showEMA50,
@@ -540,8 +611,12 @@ export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartPr
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <span className="font-mono font-extrabold text-sm text-[var(--text-primary)]">{ticker}</span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-[var(--icici-orange)]/15 text-[var(--icici-orange)] uppercase">
-              Live Feed
+            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 uppercase flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+              5 Hz LIVE
+            </span>
+            <span className="font-mono text-xs font-black text-[var(--text-primary)] px-2 py-0.5 rounded bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
+              {currency}{liveLtp.toFixed(2)}
             </span>
           </div>
 

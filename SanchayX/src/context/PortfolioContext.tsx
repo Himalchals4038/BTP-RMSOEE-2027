@@ -129,6 +129,9 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [isMarketDataLoading, setIsMarketDataLoading] = useState<boolean>(false);
 
   useEffect(() => {
+    // Initial sync of real-world quotes & IndexedDB cache
+    refreshMarketData();
+
     // Keep market hours status and live rates synchronized every 10 seconds
     const interval = setInterval(() => {
       setMarketHours(getMarketHoursStatus());

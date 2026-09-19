@@ -1,7 +1,7 @@
-import React, { memo, useEffect, useRef, useState } from 'react';
-import { useLiveTickerPrice } from '../../context/TradingSimulationContext';
+import React, { memo } from 'react';
+import { useFastTickCell } from '../trading/useFastTickCell';
 
-interface LivePriceCellProps {
+export interface LivePriceCellProps {
   ticker: string;
   fallbackPrice?: number;
   initialPrice?: number;
@@ -18,35 +18,22 @@ export const LivePriceCell: React.FC<LivePriceCellProps> = memo(({
   formatDecimals = 2,
   prefix = '₹',
   className = '',
-  showChangeColor = true
 }) => {
-  const tick = useLiveTickerPrice(ticker);
-  const price = tick?.ltp ?? fallbackPrice ?? initialPrice ?? 0;
-  const prevPriceRef = useRef<number>(price);
-  const [flashClass, setFlashClass] = useState<string>('');
-
-  useEffect(() => {
-    if (showChangeColor && price !== prevPriceRef.current) {
-      if (price > prevPriceRef.current) {
-        setFlashClass('text-emerald-500 bg-emerald-500/10 transition-all duration-300');
-      } else {
-        setFlashClass('text-rose-500 bg-rose-500/10 transition-all duration-300');
-      }
-      prevPriceRef.current = price;
-
-      const timer = setTimeout(() => {
-        setFlashClass('');
-      }, 700);
-
-      return () => clearTimeout(timer);
-    }
-  }, [price, showChangeColor]);
+  const seedPrice = initialPrice ?? fallbackPrice ?? 0;
+  const { priceRef, containerRef } = useFastTickCell(ticker, formatDecimals);
 
   return (
-    <span className={`inline-block px-1.5 py-0.5 rounded font-mono font-bold ${flashClass || className}`}>
-      {prefix}{price.toFixed(formatDecimals)}
+    <span
+      ref={containerRef}
+      className={`inline-block px-1.5 py-0.5 rounded font-mono font-bold tabular-nums transition-colors duration-150 ${className}`}
+    >
+      <span className="text-[var(--text-muted)] text-[11px] font-sans mr-0.5">{prefix}</span>
+      <span ref={priceRef} className="tabular-nums">
+        {seedPrice > 0 ? seedPrice.toFixed(formatDecimals) : '---'}
+      </span>
     </span>
   );
 });
 
 LivePriceCell.displayName = 'LivePriceCell';
+

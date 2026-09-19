@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { usePortfolio } from '../../context/PortfolioContext';
+import { useTradingSimulation } from '../../context/TradingSimulationContext';
 import { CURRENCY_MAP } from '../../utils/financialMath';
 import type { CurrencyCode } from '../../utils/financialMath';
 import {
@@ -45,6 +46,7 @@ export const Header: React.FC = () => {
     marketHours,
     liveMarketQuotes
   } = usePortfolio();
+  const { setSelectedOrderTicker } = useTradingSimulation();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
@@ -111,13 +113,13 @@ export const Header: React.FC = () => {
                   <span className="text-[10px] text-slate-600 dark:text-slate-300 font-bold uppercase tracking-wider">NIFTY 50</span>
                 </div>
                 <span className="font-mono text-xs font-extrabold text-slate-900 dark:text-white">
-                  {(liveMarketQuotes?.NIFTY_50?.price ?? 24520.40).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  {(liveMarketQuotes?.NIFTY_50?.price ?? 23346.40).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-1 font-mono text-[9px] font-bold mt-0.5">
                 <span className="text-[8px] text-slate-400 font-sans uppercase">{marketHours?.india?.isOpen ? 'LIVE' : 'CLOSED'}</span>
                 <span className="text-emerald-600 dark:text-emerald-400 flex items-center">
-                  <TrendingUp className="w-2.5 h-2.5 mr-0.5" />+{(liveMarketQuotes?.NIFTY_50?.change ?? 185.30)} (+{(liveMarketQuotes?.NIFTY_50?.changePct ?? 0.76)}%)
+                  <TrendingUp className="w-2.5 h-2.5 mr-0.5" />+{(liveMarketQuotes?.NIFTY_50?.change ?? 56.25).toFixed(2)} (+{(liveMarketQuotes?.NIFTY_50?.changePct ?? 0.24).toFixed(2)}%)
                 </span>
               </div>
             </div>
@@ -182,8 +184,10 @@ export const Header: React.FC = () => {
                 <div
                   key={res.ticker}
                   onMouseDown={() => {
+                    setSelectedOrderTicker(res.ticker);
                     setActiveSubTab('place_order');
                     setSearchQuery('');
+                    setShowSearchDropdown(false);
                   }}
                   className="px-3.5 py-2 text-xs hover:bg-orange-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between transition-colors border-b border-slate-50 dark:border-slate-800/50 last:border-0"
                 >

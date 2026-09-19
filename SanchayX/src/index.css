@@ -2,84 +2,139 @@
 
 :root,
 :root[data-theme="light"] {
-  --bg-main: #f4f6f9;
-  --bg-card: #ffffff;
-  --bg-card-hover: #fafcfd;
-  --bg-input: #ffffff;
-  --bg-subnav: #fbf5ee;
-  --bg-subnav-active: #ffffff;
-  --bg-tertiary: #edf1f7;
+  /* LIGHT MODE (Studio Porcelain) - Ergonomic Office Executive Theme */
+  --bg-main: #F4F6FB;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #F8FAFC;
+  --bg-input: #FFFFFF;
+  --bg-subnav: #EDF2F9;
+  --bg-subnav-active: #FFFFFF;
+  --bg-tertiary: #F1F5F9;
   
-  --border-color: #cbd5e1;
-  --border-subtle: #94a3b8;
-  --border-focus: #f26522;
+  --border-color: #E2E8F0;
+  --border-subtle: #CBD5E1;
+  --border-focus: #4F46E5;
 
-  --text-primary: #020617;
-  --text-secondary: #1e293b;
-  --text-muted: #334155;
-  --text-inverse: #ffffff;
+  --text-primary: #090D1A;    /* 17:1 WCAG AAA */
+  --text-secondary: #334155;  /* 9.5:1 WCAG AAA */
+  --text-muted: #64748B;
+  --text-inverse: #FFFFFF;
 
-  --icici-orange: #f26522;
-  --icici-orange-hover: #d94e0e;
-  --icici-red: #c4161c;
-  --icici-red-hover: #9e0e13;
-  --icici-black: #111827;
-  --icici-cream: #fffaf3;
-  --icici-gradient: linear-gradient(135deg, #b71c1c 0%, #d32f2f 30%, #e65100 70%, #f26522 100%);
+  --tick-up-flash: #16A34A;
+  --tick-up-flash-bg: rgba(22, 163, 74, 0.12);
+  --tick-down-flash: #DC2626;
+  --tick-down-flash-bg: rgba(220, 38, 38, 0.12);
 
-  --accent-emerald: #16a34a;
-  --accent-emerald-bg: #dcfce7;
+  /* Gen-Z Bold Accent Tokens */
+  --accent-electric-indigo: #4F46E5;
+  --accent-hyper-violet: #8B5CF6;
+  --accent-cyber-mint: #10B981;
+  --accent-hot-rose: #F43F5E;
+  --accent-solar-amber: #F59E0B;
+  --accent-electric-cyan: #06B6D4;
+
+  --icici-orange: #F26522;
+  --icici-orange-hover: #D94E0E;
+  --icici-red: #C4161C;
+  --icici-red-hover: #9E0E13;
+  --icici-black: #090D1A;
+  --icici-cream: #FFFDF9;
+  --icici-gradient: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #F26522 100%);
+
+  --accent-emerald: #16A34A;
+  --accent-emerald-bg: #DCFCE7;
   --accent-emerald-glow: rgba(22, 163, 74, 0.15);
-  --accent-blue: #2563eb;
-  --accent-blue-bg: #dbeafe;
-  --accent-amber: #d97706;
-  --accent-amber-bg: #fef3c7;
-  --accent-crimson: #dc2626;
-  --accent-crimson-bg: #fee2e2;
+  --accent-blue: #4F46E5;
+  --accent-blue-bg: #EEF2FF;
+  --accent-amber: #F59E0B;
+  --accent-amber-bg: #FEF3C7;
+  --accent-crimson: #DC2626;
+  --accent-crimson-bg: #FEE2E2;
 
-  --card-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.1), 0 1px 4px -1px rgba(15, 23, 42, 0.06);
-  --glass-header-bg: rgba(255, 255, 255, 0.95);
+  --card-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  --glass-header-bg: rgba(244, 246, 251, 0.92);
 }
 
 :root[data-theme="dark"],
 .dark {
-  --bg-main: #0b0f19;
-  --bg-card: #131b2e;
-  --bg-card-hover: #1c2742;
-  --bg-input: #0f172a;
-  --bg-subnav: #121824;
-  --bg-subnav-active: #1e293b;
-  --bg-tertiary: #1e293b;
+  /* DARK MODE (Obsidian Velvet) - Algorithmic Trading Desk Theme */
+  --bg-main: #0B0E17;
+  --bg-card: #131927;
+  --bg-card-hover: #1A2236;
+  --bg-input: #0B0E17;
+  --bg-subnav: #0F1422;
+  --bg-subnav-active: #1A2236;
+  --bg-tertiary: #161E31;
 
-  --border-color: #1e293b;
-  --border-subtle: #334155;
-  --border-focus: #ff7d3b;
+  --border-color: #243048;
+  --border-subtle: #1E293B;
+  --border-focus: #4F46E5;
 
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
-  --text-inverse: #0f172a;
+  --text-primary: #FFFFFF;    /* 16:1 WCAG AAA */
+  --text-secondary: #CBD5E1;  /* 11:1 WCAG AAA */
+  --text-muted: #94A3B8;
+  --text-inverse: #0B0E17;
 
-  --icici-orange: #ff7d3b;
-  --icici-orange-hover: #f26522;
-  --icici-red: #ef4444;
-  --icici-red-hover: #dc2626;
-  --icici-black: #0b0f19;
-  --icici-cream: #1e293a;
-  --icici-gradient: linear-gradient(135deg, #991b1b 0%, #c2410c 40%, #ea580c 80%, #f97316 100%);
+  --tick-up-flash: #10B981;
+  --tick-up-flash-bg: rgba(16, 185, 129, 0.20);
+  --tick-down-flash: #F43F5E;
+  --tick-down-flash-bg: rgba(244, 63, 94, 0.20);
 
-  --accent-emerald: #10b981;
+  /* Gen-Z Bold Accent Tokens */
+  --accent-electric-indigo: #4F46E5;
+  --accent-hyper-violet: #8B5CF6;
+  --accent-cyber-mint: #10B981;
+  --accent-hot-rose: #F43F5E;
+  --accent-solar-amber: #F59E0B;
+  --accent-electric-cyan: #06B6D4;
+
+  --icici-orange: #FF7D3B;
+  --icici-orange-hover: #F26522;
+  --icici-red: #F43F5E;
+  --icici-red-hover: #DC2626;
+  --icici-black: #0B0E17;
+  --icici-cream: #1A2236;
+  --icici-gradient: linear-gradient(135deg, #4F46E5 0%, #8B5CF6 50%, #FF7D3B 100%);
+
+  --accent-emerald: #10B981;
   --accent-emerald-bg: rgba(16, 185, 129, 0.15);
   --accent-emerald-glow: rgba(16, 185, 129, 0.25);
-  --accent-blue: #3b82f6;
-  --accent-blue-bg: rgba(59, 130, 246, 0.15);
-  --accent-amber: #f59e0b;
+  --accent-blue: #4F46E5;
+  --accent-blue-bg: rgba(79, 70, 229, 0.18);
+  --accent-amber: #F59E0B;
   --accent-amber-bg: rgba(245, 158, 11, 0.15);
-  --accent-crimson: #ef4444;
-  --accent-crimson-bg: rgba(239, 68, 68, 0.15);
+  --accent-crimson: #F43F5E;
+  --accent-crimson-bg: rgba(244, 63, 94, 0.15);
 
-  --card-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.35);
-  --glass-header-bg: rgba(11, 15, 25, 0.95);
+  --card-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.45);
+  --glass-header-bg: rgba(11, 14, 23, 0.94);
+}
+
+/* GPU-Accelerated 5 Hz Tick Flash Micro-Animations (Zero Repaint Overhead) */
+.tick-flash-up {
+  background-color: var(--tick-up-flash-bg) !important;
+  color: var(--tick-up-flash) !important;
+  transform: translateZ(0) scale(1.02);
+  will-change: transform, background-color, color;
+  transition: transform 0.12s cubic-bezier(0, 0, 0.2, 1), background-color 0.15s ease;
+}
+
+.tick-flash-down {
+  background-color: var(--tick-down-flash-bg) !important;
+  color: var(--tick-down-flash) !important;
+  transform: translateZ(0) scale(0.98);
+  will-change: transform, background-color, color;
+  transition: transform 0.12s cubic-bezier(0, 0, 0.2, 1), background-color 0.15s ease;
+}
+
+/* Enforce tabular-nums across all financial figures to eliminate layout jitter */
+.tabular-nums,
+.fin-table td,
+.fin-table th,
+[data-tabular="true"] {
+  font-variant-numeric: tabular-nums lining-nums;
+  -webkit-font-feature-settings: "tnum" 1, "lnum" 1;
+  font-feature-settings: "tnum" 1, "lnum" 1;
 }
 
 html, body, #root {
@@ -388,17 +443,17 @@ input[type=range]::-webkit-slider-thumb:hover {
    LIGHT MODE PATTERNS (Vibrant, airy, bespoke palettes with micro-grids)
    -------------------------------------------------------------------------- */
 
-/* 1. EXECUTIVE DASHBOARD — Ice Azure & Precision Matrix */
+/* 1. EXECUTIVE DASHBOARD — Studio Porcelain & Titanium Slate Micro-Grid */
 .pattern-dashboard {
-  background-color: #f1f5f9;
+  background-color: #f8fafc;
   background-image: 
-    radial-gradient(ellipse 85% 60% at 50% -10%, rgba(14, 165, 233, 0.16), transparent 70%),
-    radial-gradient(ellipse 60% 45% at 95% 95%, rgba(59, 130, 246, 0.10), transparent 60%),
-    radial-gradient(rgba(14, 165, 233, 0.22) 1.2px, transparent 1.2px);
+    radial-gradient(ellipse 85% 60% at 50% -10%, rgba(79, 70, 229, 0.07), transparent 70%),
+    radial-gradient(ellipse 60% 45% at 95% 95%, rgba(14, 165, 233, 0.05), transparent 60%),
+    radial-gradient(rgba(148, 163, 184, 0.16) 1.1px, transparent 1.1px);
   background-size: 100% 100%, 100% 100%, 22px 22px;
 }
 .accent-dashboard {
-  border-color: rgba(14, 165, 233, 0.35) !important;
+  border-color: rgba(226, 232, 240, 0.8) !important;
 }
 
 /* 2. STOCKS & ALLOCATION (PortfolioBuilder) — Golden Topaz & Isometric Grid */
@@ -415,17 +470,17 @@ input[type=range]::-webkit-slider-thumb:hover {
   border-color: rgba(245, 158, 11, 0.35) !important;
 }
 
-/* 3. SMART INVESTMENT OPTION (DualShieldSmartEngine) — Mint Opal & Bioluminescent Hex */
+/* 3. SMART INVESTMENT OPTION (DualShieldSmartEngine) — Studio Porcelain & Slate Grid */
 .pattern-smart-engine {
-  background-color: #f0faf5;
+  background-color: #f8fafc;
   background-image: 
-    radial-gradient(ellipse 85% 55% at 50% -10%, rgba(16, 185, 129, 0.17), transparent 70%),
-    radial-gradient(ellipse 50% 40% at 85% 75%, rgba(20, 184, 166, 0.10), transparent 60%),
-    radial-gradient(circle, rgba(16, 185, 129, 0.18) 1.4px, transparent 1.4px);
+    radial-gradient(ellipse 85% 55% at 50% -10%, rgba(79, 70, 229, 0.08), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 85% 75%, rgba(14, 165, 233, 0.06), transparent 60%),
+    radial-gradient(circle, rgba(148, 163, 184, 0.15) 1.2px, transparent 1.2px);
   background-size: 100% 100%, 100% 100%, 20px 20px;
 }
 .accent-smart-engine {
-  border-color: rgba(16, 185, 129, 0.35) !important;
+  border-color: rgba(226, 232, 240, 0.8) !important;
 }
 
 /* 4. 100% SAFE INVESTMENT (SafeInvestmentEngine) — Sovereign Gold Silk & Royal Lattice */
@@ -502,11 +557,11 @@ input[type=range]::-webkit-slider-thumb:hover {
 
 .dark .pattern-dashboard,
 [data-theme="dark"] .pattern-dashboard {
-  background-color: #060911;
+  background-color: #0b0e17;
   background-image: 
-    radial-gradient(ellipse 85% 55% at 50% -20%, rgba(14, 165, 233, 0.20), transparent 70%),
-    radial-gradient(ellipse 60% 45% at 95% 95%, rgba(59, 130, 246, 0.14), transparent 60%),
-    radial-gradient(rgba(14, 165, 233, 0.16) 1.2px, transparent 1.2px);
+    radial-gradient(ellipse 85% 55% at 50% -20%, rgba(79, 70, 229, 0.14), transparent 70%),
+    radial-gradient(ellipse 60% 45% at 95% 95%, rgba(14, 165, 233, 0.08), transparent 60%),
+    radial-gradient(rgba(148, 163, 184, 0.09) 1.1px, transparent 1.1px);
   background-size: 100% 100%, 100% 100%, 20px 20px;
 }
 
@@ -523,12 +578,12 @@ input[type=range]::-webkit-slider-thumb:hover {
 
 .dark .pattern-smart-engine,
 [data-theme="dark"] .pattern-smart-engine {
-  background-color: #03120c;
+  background-color: #0b0e17;
   background-image: 
-    radial-gradient(ellipse 85% 55% at 50% 0%, rgba(16, 185, 129, 0.20), transparent 70%),
-    radial-gradient(ellipse 50% 40% at 85% 75%, rgba(20, 184, 166, 0.12), transparent 60%),
-    radial-gradient(circle, rgba(16, 185, 129, 0.15) 1.5px, transparent 1.5px);
-  background-size: 100% 100%, 100% 100%, 18px 18px;
+    radial-gradient(ellipse 85% 55% at 50% 0%, rgba(79, 70, 229, 0.12), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 85% 75%, rgba(14, 165, 233, 0.08), transparent 60%),
+    radial-gradient(circle, rgba(148, 163, 184, 0.08) 1.2px, transparent 1.2px);
+  background-size: 100% 100%, 100% 100%, 20px 20px;
 }
 
 .dark .pattern-safe-investment,
@@ -634,4 +689,28 @@ input[type=range]::-webkit-slider-thumb:hover {
 .ring-glow-gold { box-shadow: 0 0 10px rgba(217, 119, 6, 0.4); }
 .ring-glow-purple { box-shadow: 0 0 10px rgba(168, 85, 247, 0.35); }
 .ring-glow-crimson { box-shadow: 0 0 10px rgba(244, 63, 94, 0.35); }
+
+/* Gen-Z Fast Spring Scale & Ambient Radiance */
+.scale-102 {
+  transform: scale(1.02);
+}
+.hover-scale-102 {
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease-out;
+}
+.hover-scale-102:hover {
+  transform: scale(1.02);
+}
+
+@keyframes ambientAuraPulse {
+  0%, 100% {
+    box-shadow: 0 0 15px -2px rgba(79, 70, 229, 0.08);
+  }
+  50% {
+    box-shadow: 0 0 25px 3px rgba(79, 70, 229, 0.18);
+  }
+}
+
+.ambient-aura-4s {
+  animation: ambientAuraPulse 4s ease-in-out infinite alternate;
+}
 

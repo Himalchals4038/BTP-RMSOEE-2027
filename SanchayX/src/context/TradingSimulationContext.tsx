@@ -106,6 +106,8 @@ interface TradingSimulationContextType {
   executeRebalanceBasket: (rebalanceOrders: { ticker: string; name: string; action: OrderAction; qty: number; price: number }[]) => { executedCount: number; message: string };
   triggerCorporateAction: (type: 'DIVIDEND' | 'COUPON', ticker: string, amount: number) => void;
   resetAccountData: () => void;
+  selectedOrderTicker: string;
+  setSelectedOrderTicker: (ticker: string) => void;
 }
 
 const TradingSimulationContext = createContext<TradingSimulationContextType | undefined>(undefined);
@@ -303,6 +305,9 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
     }
     return getInitialLedgerForUser(currentUser.id, currentUser.accountType);
   });
+
+  // Globally selected order ticker for DMA execution
+  const [selectedOrderTicker, setSelectedOrderTicker] = useState<string>('RELIANCE.NS');
 
   // Re-sync when currentUser changes (User Account Isolation & Switching)
   useEffect(() => {
@@ -1575,7 +1580,9 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
         updateFamilyProfile,
         executeRebalanceBasket,
         triggerCorporateAction,
-        resetAccountData
+        resetAccountData,
+        selectedOrderTicker,
+        setSelectedOrderTicker
       }}
     >
       {children}

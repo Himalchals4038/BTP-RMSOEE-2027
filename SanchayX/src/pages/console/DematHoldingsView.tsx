@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import {
   Building2,
-  Calendar
+  Calendar,
+  Coins
 } from 'lucide-react';
 import { useTradingSimulation } from '../../context/TradingSimulationContext';
 import { usePortfolio } from '../../context/PortfolioContext';
 import { formatCompactCurrency } from '../../utils/financialMath';
 import { LivePriceCell } from '../../components/common/LivePriceCell';
 import { CorporateActionsCalendar } from '../../components/trading/CorporateActionsCalendar';
+import { SgbArbitrageTracker } from '../../components/trading/SgbArbitrageTracker';
 import { VirtualTable } from '../../components/common/VirtualTable';
 
 export const DematHoldingsView: React.FC = () => {
@@ -22,7 +24,7 @@ export const DematHoldingsView: React.FC = () => {
   } = useTradingSimulation();
   const { currency } = usePortfolio();
 
-  const [activeSubSection, setActiveSubSection] = useState<'holdings' | 'corporate_actions'>('holdings');
+  const [activeSubSection, setActiveSubSection] = useState<'holdings' | 'corporate_actions' | 'sgb_arbitrage'>('holdings');
 
   return (
     <div className="space-y-6">
@@ -63,11 +65,25 @@ export const DematHoldingsView: React.FC = () => {
             <Calendar className="w-3.5 h-3.5" />
             <span>Corporate Actions Schedule</span>
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveSubSection('sgb_arbitrage')}
+            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              activeSubSection === 'sgb_arbitrage'
+                ? 'bg-[var(--icici-orange)] text-white shadow-sm'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            <Coins className="w-3.5 h-3.5 text-amber-500" />
+            <span>SGB Gold Arbitrage</span>
+          </button>
         </div>
       </div>
 
       {activeSubSection === 'corporate_actions' ? (
         <CorporateActionsCalendar />
+      ) : activeSubSection === 'sgb_arbitrage' ? (
+        <SgbArbitrageTracker />
       ) : (
         <div className="space-y-6">
           {/* Summary Cards */}

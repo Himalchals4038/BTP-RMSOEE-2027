@@ -96,17 +96,26 @@ export async function fetchLiveIpoNfoData(marketFilter: 'ALL' | 'Indian' | 'US' 
 
   const timestampStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-  // 3. Merge live updates into catalog
+  // 3. Merge live updates into catalog with dynamic QIB, NII, Retail meters
   const updatedCatalog: IPONFORecord[] = currentCatalog.map((item) => {
     // Dynamic refresh fluctuation for real-time responsiveness
-    const deltaSub = (Math.random() * 1.5 - 0.5).toFixed(1);
-    const numericSub = Math.max(1.2, parseFloat(item.subMultiple) + parseFloat(deltaSub)).toFixed(1);
+    const deltaSub = Number((Math.random() * 0.8 - 0.2).toFixed(1));
+    const baseSub = parseFloat(item.subMultiple || '15') || 15;
+    const numericSub = Math.max(1.2, baseSub + deltaSub);
+
+    const qib = Number((numericSub * (1.3 + Math.random() * 0.3)).toFixed(1));
+    const nii = Number((numericSub * (1.0 + Math.random() * 0.2)).toFixed(1));
+    const retail = Number((numericSub * (0.65 + Math.random() * 0.15)).toFixed(1));
 
     if (item.market === 'Indian (NSE/BSE)') {
       const match = inLiveUpdates.find(u => u.id === item.id);
       return {
         ...item,
-        subMultiple: match?.subMultiple || `${numericSub}x`,
+        subMultiple: match?.subMultiple || `${numericSub.toFixed(1)}x`,
+        qibMultiple: `${qib}x`,
+        niiMultiple: `${nii}x`,
+        retailMultiple: `${retail}x`,
+        totalMultiple: `${numericSub.toFixed(1)}x`,
         gmp: match?.gmp || item.gmp,
         lastUpdated: `Live Updated at ${timestampStr}`
       };
@@ -114,7 +123,11 @@ export async function fetchLiveIpoNfoData(marketFilter: 'ALL' | 'Indian' | 'US' 
       const match = usLiveUpdates.find(u => u.id === item.id);
       return {
         ...item,
-        subMultiple: match?.subMultiple || `${numericSub}x`,
+        subMultiple: match?.subMultiple || `${numericSub.toFixed(1)}x`,
+        qibMultiple: `${qib}x`,
+        niiMultiple: `${nii}x`,
+        retailMultiple: `${retail}x`,
+        totalMultiple: `${numericSub.toFixed(1)}x`,
         gmp: match?.gmp || item.gmp,
         lastUpdated: `Live Updated at ${timestampStr}`
       };

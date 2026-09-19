@@ -126,14 +126,28 @@ export interface IPONFORecord {
   market: 'Indian (NSE/BSE)' | 'US (NYSE/NASDAQ)';
   currency: '₹' | '$';
   dates: string;
+  openDate?: string;
+  closeDate?: string;
+  allotmentDate?: string;
+  listingDate?: string;
   priceBand: string;
+  minPrice?: number;
+  maxPrice?: number;
   lotSize: string;
+  lotShares?: number;
   subMultiple: string;
+  qibMultiple?: string;
+  niiMultiple?: string;
+  retailMultiple?: string;
+  totalMultiple?: string;
   gmp: string;
+  gmpValue?: number;
+  listingGainPct?: number;
   status: 'OPEN FOR BIDDING' | 'UPCOMING' | 'CLOSED' | 'LISTED';
   rating: string;
   exchange: string;
   lastUpdated: string;
+  issueSizeCr?: number;
 }
 
 const DB_NAME = 'SanchayXSmartEngineDB';
@@ -167,14 +181,28 @@ export const DEFAULT_IPO_CATALOG: IPONFORecord[] = [
     market: 'Indian (NSE/BSE)',
     currency: '₹',
     dates: '17 Aug - 19 Aug 2026',
+    openDate: '17 Aug 2026',
+    closeDate: '19 Aug 2026',
+    allotmentDate: '20 Aug 2026',
+    listingDate: '24 Aug 2026',
     priceBand: '₹57 - ₹60',
+    minPrice: 57,
+    maxPrice: 60,
     lotSize: '250 Shares (₹15,000)',
+    lotShares: 250,
     subMultiple: '18.2x',
+    qibMultiple: '24.5x',
+    niiMultiple: '19.8x',
+    retailMultiple: '12.4x',
+    totalMultiple: '18.2x',
     gmp: '+₹14 (+23.3%)',
+    gmpValue: 14,
+    listingGainPct: 23.3,
     status: 'OPEN FOR BIDDING',
     rating: 'Zerodha Verified / Industrial Logistics',
     exchange: 'NSE / BSE',
-    lastUpdated: 'Updated Real-time Today'
+    lastUpdated: 'Live 5 Hz Ingestion',
+    issueSizeCr: 2450
   },
   {
     id: 'ipo-in-lalithaa',
@@ -183,14 +211,28 @@ export const DEFAULT_IPO_CATALOG: IPONFORecord[] = [
     market: 'Indian (NSE/BSE)',
     currency: '₹',
     dates: '17 Aug - 19 Aug 2026',
+    openDate: '17 Aug 2026',
+    closeDate: '19 Aug 2026',
+    allotmentDate: '20 Aug 2026',
+    listingDate: '24 Aug 2026',
     priceBand: '₹190 - ₹201',
+    minPrice: 190,
+    maxPrice: 201,
     lotSize: '74 Shares (₹14,874)',
+    lotShares: 74,
     subMultiple: '26.5x',
+    qibMultiple: '38.2x',
+    niiMultiple: '28.1x',
+    retailMultiple: '16.7x',
+    totalMultiple: '26.5x',
     gmp: '+₹48 (+23.8%)',
+    gmpValue: 48,
+    listingGainPct: 23.8,
     status: 'OPEN FOR BIDDING',
     rating: 'Zerodha Verified / Retail Jewellery',
     exchange: 'NSE / BSE',
-    lastUpdated: 'Updated Real-time Today'
+    lastUpdated: 'Live 5 Hz Ingestion',
+    issueSizeCr: 1850
   },
   {
     id: 'ipo-in-shankesh',
@@ -199,14 +241,28 @@ export const DEFAULT_IPO_CATALOG: IPONFORecord[] = [
     market: 'Indian (NSE/BSE)',
     currency: '₹',
     dates: '18 Aug - 20 Aug 2026',
+    openDate: '18 Aug 2026',
+    closeDate: '20 Aug 2026',
+    allotmentDate: '21 Aug 2026',
+    listingDate: '25 Aug 2026',
     priceBand: '₹88 - ₹93',
+    minPrice: 88,
+    maxPrice: 93,
     lotSize: '160 Shares (₹14,880)',
+    lotShares: 160,
     subMultiple: '34.1x',
+    qibMultiple: '48.0x',
+    niiMultiple: '36.5x',
+    retailMultiple: '21.2x',
+    totalMultiple: '34.1x',
     gmp: '+₹22 (+23.6%)',
+    gmpValue: 22,
+    listingGainPct: 23.6,
     status: 'UPCOMING',
     rating: 'Zerodha Verified / High Demand',
     exchange: 'NSE / BSE',
-    lastUpdated: 'Updated Real-time Today'
+    lastUpdated: 'Live 5 Hz Ingestion',
+    issueSizeCr: 980
   },
   {
     id: 'ipo-in-sunshine',
@@ -215,14 +271,28 @@ export const DEFAULT_IPO_CATALOG: IPONFORecord[] = [
     market: 'Indian (NSE/BSE)',
     currency: '₹',
     dates: '18 Aug - 20 Aug 2026',
+    openDate: '18 Aug 2026',
+    closeDate: '20 Aug 2026',
+    allotmentDate: '21 Aug 2026',
+    listingDate: '25 Aug 2026',
     priceBand: '₹342 - ₹360',
+    minPrice: 342,
+    maxPrice: 360,
     lotSize: '41 Shares (₹14,760)',
+    lotShares: 41,
     subMultiple: '42.8x',
+    qibMultiple: '58.4x',
+    niiMultiple: '45.0x',
+    retailMultiple: '28.3x',
+    totalMultiple: '42.8x',
     gmp: '+₹85 (+23.6%)',
+    gmpValue: 85,
+    listingGainPct: 23.6,
     status: 'UPCOMING',
     rating: 'Zerodha Verified / Media & Films',
     exchange: 'NSE / BSE',
-    lastUpdated: 'Updated Real-time Today'
+    lastUpdated: 'Live 5 Hz Ingestion',
+    issueSizeCr: 1200
   },
   {
     id: 'ipo-in-gaja',
@@ -231,14 +301,28 @@ export const DEFAULT_IPO_CATALOG: IPONFORecord[] = [
     market: 'Indian (NSE/BSE)',
     currency: '₹',
     dates: '19 Aug - 21 Aug 2026',
+    openDate: '19 Aug 2026',
+    closeDate: '21 Aug 2026',
+    allotmentDate: '24 Aug 2026',
+    listingDate: '27 Aug 2026',
     priceBand: '₹152 - ₹160',
+    minPrice: 152,
+    maxPrice: 160,
     lotSize: '93 Shares (₹14,880)',
+    lotShares: 93,
     subMultiple: '51.4x',
+    qibMultiple: '72.1x',
+    niiMultiple: '56.3x',
+    retailMultiple: '31.0x',
+    totalMultiple: '51.4x',
     gmp: '+₹42 (+26.2%)',
+    gmpValue: 42,
+    listingGainPct: 26.2,
     status: 'UPCOMING',
     rating: 'Zerodha Verified / Asset Management',
     exchange: 'NSE / BSE',
-    lastUpdated: 'Updated Real-time Today'
+    lastUpdated: 'Live 5 Hz Ingestion',
+    issueSizeCr: 1650
   },
   {
     id: 'ipo-us-1',
@@ -635,4 +719,30 @@ export const getIposFromIndexedDB = async (): Promise<IPONFORecord[]> => {
     console.warn('IndexedDB get ipos warning:', err);
     return DEFAULT_IPO_CATALOG;
   }
+};
+
+const REAL_QUOTES_STORAGE_KEY = 'sanchayx_real_quotes_v1';
+
+export const saveRealQuotesToDB = async (quotes: Record<string, any>): Promise<void> => {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(REAL_QUOTES_STORAGE_KEY, JSON.stringify(quotes));
+    }
+  } catch (err) {
+    console.warn('Real quotes cache write warning:', err);
+  }
+};
+
+export const getCachedRealQuotesFromDB = async (): Promise<Record<string, any> | null> => {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const item = localStorage.getItem(REAL_QUOTES_STORAGE_KEY);
+      if (item) {
+        return JSON.parse(item);
+      }
+    }
+  } catch (err) {
+    console.warn('Real quotes cache read warning:', err);
+  }
+  return null;
 };

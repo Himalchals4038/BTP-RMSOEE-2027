@@ -20,6 +20,12 @@ export interface BondFDItem {
   taxStatus: string;
   isSeniorSecured: boolean;
   summary: string;
+  cleanPrice?: number;
+  accruedInterest?: number;
+  dirtyPrice?: number;
+  benchmarkSpreadBps?: number;
+  isSovereign?: boolean;
+  dayCountConvention?: string;
 }
 
 export const INDIAN_BONDS_CATALOG: BondFDItem[] = [

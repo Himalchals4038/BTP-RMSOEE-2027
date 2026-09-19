@@ -10,6 +10,9 @@ import { fetchLiveIpoNfoData } from '../services/ipoService';
 import type { BondFDItem } from '../services/bondsExtendedDataset';
 import { INDIAN_BONDS_CATALOG, US_BONDS_CATALOG } from '../services/bondsExtendedDataset';
 import { SpotlightSearchModal } from '../components/trading/SpotlightSearchModal';
+import { AsbaUpiMandateModal } from '../components/trading/AsbaUpiMandateModal';
+import { SgbArbitrageTracker } from '../components/trading/SgbArbitrageTracker';
+import { BondPricingCalculator } from '../components/trading/BondPricingCalculator';
 import { soundService } from '../services/soundService';
 import { VirtualTable } from '../components/common/VirtualTable';
 import {
@@ -51,6 +54,7 @@ import {
   VolumeX,
   Command
 } from 'lucide-react';
+import { getStocksFromIndexedDB, type StockItemRecord } from '../services/indexedDBService';
 
 // Code-split Trading Console sub-views via React.lazy() (Optimization 2)
 const OrderEntryView = React.lazy(() => import('./console/OrderEntryView'));
@@ -80,11 +84,11 @@ export const TradingConsolePage: React.FC = () => {
     panicSquareOffAllIntraday,
     buySgbTranche,
     investCorporateBond,
-    applyIpoAsba,
     runIpoAllotmentLottery,
     preTradeAnalyze,
     updateFamilyProfile,
-    executeRebalanceBasket
+    executeRebalanceBasket,
+    selectedOrderTicker
   } = useTradingSimulation();
 
   // Active sub-section on the dedicated page (defaults to 'place_order' if activeSubTab is null)
@@ -114,7 +118,8 @@ export const TradingConsolePage: React.FC = () => {
 
   // State for Place Order Form
   const [orderAction, setOrderAction] = useState<'BUY' | 'SELL'>('BUY');
-  const [selectedAsset, setSelectedAsset] = useState<string>(assets[0]?.ticker || 'RELIANCE.NS');
+  const [selectedAsset, setSelectedAsset] = useState<string>(selectedOrderTicker || 'RELIANCE.NS');
+  const [stocksMasterList, setStocksMasterList] = useState<StockItemRecord[]>([]);
   const [exchange, setExchange] = useState<string>('NSE — National Stock Exchange');
   const [productType, setProductType] = useState<string>('Delivery (CNC)');
   const [orderType, setOrderType] = useState<string>('Limit Order');
@@ -188,6 +193,17 @@ export const TradingConsolePage: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [setActiveSubTab]);
 
+  // Load stocks master dataset from IndexedDB for comprehensive multi-asset routing
+  useEffect(() => {
+    getStocksFromIndexedDB().then(data => {
+      if (data && data.length > 0) {
+        setStocksMasterList(data);
+      }
+    }).catch(err => {
+      console.warn('Failed to load stocks master list in TradingConsole:', err);
+    });
+  }, []);
+
   // Helper to handle selecting asset and auto-routing appropriate Exchange
   const handleSelectAsset = (assetTicker: string) => {
     setSelectedAsset(assetTicker);
@@ -196,13 +212,31 @@ export const TradingConsolePage: React.FC = () => {
       setPrice(found.price);
       if (found.category === 'Crypto') {
         setExchange('Binance Exchange');
-      } else if (found.currency === '$' || found.market.includes('NASDAQ') || found.market.includes('NYSE')) {
+      } else if (found.currency === '$' || found.market?.includes('NASDAQ') || found.market?.includes('NYSE')) {
         setExchange('NYSE — New York Stock Exchange');
       } else {
         setExchange('NSE — National Stock Exchange');
       }
+      return;
+    }
+
+    const inMaster = stocksMasterList.find(s => s.ticker === assetTicker);
+    if (inMaster) {
+      setPrice(inMaster.price);
+      if (inMaster.index?.includes('NIFTY') || inMaster.ticker?.endsWith('.NS')) {
+        setExchange('NSE — National Stock Exchange');
+      } else {
+        setExchange('NYSE — New York Stock Exchange');
+      }
     }
   };
+
+  // Sync selectedOrderTicker whenever clicked from global header search
+  useEffect(() => {
+    if (selectedOrderTicker) {
+      handleSelectAsset(selectedOrderTicker);
+    }
+  }, [selectedOrderTicker, stocksMasterList]);
 
   // Innovation 8: Dual Viewport Terminal Mode (Desktop Bloomberg vs Mobile Native)
   const [viewportMode, setViewportMode] = useState<'desktop' | 'mobile'>('desktop');
@@ -222,6 +256,8 @@ export const TradingConsolePage: React.FC = () => {
   const [ipoLastUpdated, setIpoLastUpdated] = useState<string>('Just now');
   const [ipoAppliedMsg, setIpoAppliedMsg] = useState<string | null>(null);
   const [ipoList, setIpoList] = useState<IPONFORecord[]>(DEFAULT_IPO_CATALOG);
+  const [asbaModalIpo, setAsbaModalIpo] = useState<IPONFORecord | null>(null);
+  const [isAsbaModalOpen, setIsAsbaModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -600,8 +636,75 @@ export const TradingConsolePage: React.FC = () => {
     }
   };
 
-  const selectedAssetObj = assets.find(a => a.ticker === selectedAsset) || assets[0];
-  const filteredAssets = assets;
+  const selectedAssetObj = useMemo(() => {
+    const found = assets.find(a => a.ticker === selectedAsset);
+    if (found) return found;
+
+    const inMaster = stocksMasterList.find(s => s.ticker === selectedAsset);
+    if (inMaster) {
+      return {
+        id: inMaster.ticker.toLowerCase().replace(/[^a-z0-9]/g, ''),
+        ticker: inMaster.ticker,
+        name: inMaster.name,
+        category: inMaster.index === 'NIFTY 50' ? 'Equities' : 'US Equities',
+        market: inMaster.index === 'NIFTY 50' ? 'NSE India' : 'US Markets',
+        price: inMaster.price,
+        change24h: 0.5,
+        change24hAmount: Number((inMaster.price * 0.005).toFixed(2)),
+        annualizedReturn: 16.2,
+        annualizedVol: 21.4,
+        beta: 1.05,
+        weight: 0,
+        color: '#f97316',
+        currency: inMaster.index?.includes('NIFTY') || inMaster.ticker?.endsWith('.NS') ? '₹' : '$'
+      };
+    }
+
+    return (
+      assets.find(a => a.ticker === 'RELIANCE.NS') ||
+      assets[0] || {
+        id: 'reliance',
+        ticker: 'RELIANCE.NS',
+        name: 'Reliance Industries Ltd',
+        category: 'Equities',
+        market: 'NSE India',
+        price: 2450.0,
+        change24h: 0.8,
+        change24hAmount: 19.5,
+        annualizedReturn: 16.5,
+        annualizedVol: 22.0,
+        beta: 1.05,
+        weight: 0,
+        color: '#f97316',
+        currency: '₹'
+      }
+    );
+  }, [assets, selectedAsset, stocksMasterList]);
+
+  const allTradableAssets = useMemo(() => {
+    const existing = new Set(assets.map(a => a.ticker));
+    const convertedFromMaster = stocksMasterList
+      .filter(s => !existing.has(s.ticker))
+      .map(s => ({
+        id: s.ticker.toLowerCase().replace(/[^a-z0-9]/g, ''),
+        ticker: s.ticker,
+        name: s.name,
+        category: s.index === 'NIFTY 50' ? 'Equities' : 'US Equities',
+        market: s.index === 'NIFTY 50' ? 'NSE India' : 'US Markets',
+        price: s.price,
+        change24h: 0.5,
+        change24hAmount: Number((s.price * 0.005).toFixed(2)),
+        annualizedReturn: 16.2,
+        annualizedVol: 21.4,
+        beta: 1.05,
+        weight: 0,
+        color: '#f97316',
+        currency: s.index?.includes('NIFTY') || s.ticker?.endsWith('.NS') ? '₹' : '$'
+      }));
+    return [...assets, ...convertedFromMaster];
+  }, [assets, stocksMasterList]);
+
+  const filteredAssets = allTradableAssets;
 
   const getExchangeOptions = () => {
     if (selectedAssetObj.category === 'Crypto') {
@@ -638,28 +741,6 @@ export const TradingConsolePage: React.FC = () => {
       setFdLastUpdated(new Date().toLocaleTimeString());
       setIsFdRefreshing(false);
     }, 1000);
-  };
-
-  const handleApplyIpoAsba = (ipo: IPONFORecord) => {
-    const numericPrice = typeof ipo.priceBand === 'string'
-      ? Number(ipo.priceBand.replace(/[^0-9.]/g, '').split('-')[0]) || 450
-      : 450;
-    const lotSize = Number(ipo.lotSize) || 30;
-    const res = applyIpoAsba({
-      id: ipo.id || `IPO-${Date.now()}`,
-      name: ipo.name,
-      category: ipo.category || 'Mainboard IPO',
-      price: numericPrice,
-      lotSize: lotSize,
-      gmp: typeof ipo.gmp === 'string' ? ipo.gmp : '+₹50',
-      subMultiple: ipo.subMultiple || '12.4x'
-    });
-    if (res.success) {
-      setIpoAppliedMsg(`ASBA Bid Submitted for ${ipo.name}! ₹${(lotSize * numericPrice).toLocaleString()} lien-blocked in Demat.`);
-    } else {
-      setIpoAppliedMsg(`ASBA Application Rejected: ${res.message}`);
-    }
-    setTimeout(() => setIpoAppliedMsg(null), 4500);
   };
 
   const exchangeOptions = getExchangeOptions();
@@ -1483,9 +1564,9 @@ export const TradingConsolePage: React.FC = () => {
                     <th>Market Segment</th>
                     <th>Price Band</th>
                     <th>Lot Size</th>
-                    <th>Subscription</th>
-                    <th>Grey Market Premium (GMP)</th>
-                    <th>Rating</th>
+                    <th>Subscription Multiples</th>
+                    <th>Schedule Dates</th>
+                    <th>Live GMP & Listing Gain</th>
                     <th>Status</th>
                     <th>Action</th>
                   </tr>
@@ -1500,7 +1581,7 @@ export const TradingConsolePage: React.FC = () => {
                             <span>{ipo.name}</span>
                           </div>
                           <div className="text-[10px] text-[var(--text-muted)] font-sans mt-0.5">
-                            {ipo.category} • {ipo.dates}
+                            {ipo.category} {ipo.issueSizeCr ? `• ₹${ipo.issueSizeCr} Cr` : ''}
                           </div>
                         </td>
                         <td>
@@ -1512,14 +1593,37 @@ export const TradingConsolePage: React.FC = () => {
                             {ipo.exchange || ipo.market}
                           </span>
                         </td>
-                        <td className="font-mono font-bold text-[var(--text-primary)]">{ipo.priceBand}</td>
-                        <td className="text-xs font-semibold text-[var(--text-secondary)]">{ipo.lotSize}</td>
-                        <td className="font-mono font-bold text-blue-600 dark:text-blue-400">{ipo.subMultiple}</td>
-                        <td className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{ipo.gmp}</td>
+                        <td className="font-mono font-bold text-[var(--text-primary)] tabular-nums">{ipo.priceBand}</td>
+                        <td className="text-xs font-semibold text-[var(--text-secondary)] tabular-nums">{ipo.lotSize}</td>
                         <td>
-                          <span className="text-[11px] font-semibold text-[var(--text-secondary)]">
-                            {ipo.rating}
-                          </span>
+                          <div className="font-mono font-bold text-blue-600 dark:text-blue-400 tabular-nums">
+                            Total: {ipo.subMultiple}
+                          </div>
+                          <div className="text-[10px] text-[var(--text-muted)] font-mono flex items-center gap-1 mt-0.5">
+                            <span title="Retail Individual Investor">RII: {ipo.retailMultiple || '12.4x'}</span>
+                            <span>•</span>
+                            <span title="Qualified Institutional Buyer">QIB: {ipo.qibMultiple || '24.5x'}</span>
+                            <span>•</span>
+                            <span title="Non-Institutional Investor">NII: {ipo.niiMultiple || '19.8x'}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="text-xs font-semibold text-[var(--text-primary)]">
+                            {ipo.dates}
+                          </div>
+                          <div className="text-[10px] text-[var(--text-muted)] mt-0.5">
+                            Allotment: <span className="font-semibold text-[var(--text-secondary)]">{ipo.allotmentDate || 'T+1'}</span> • Listing: <span className="font-semibold text-[var(--text-secondary)]">{ipo.listingDate || 'T+3'}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                            {ipo.gmp}
+                          </div>
+                          {ipo.listingGainPct && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-black bg-emerald-500/15 text-emerald-600 dark:text-emerald-300">
+                              +{ipo.listingGainPct}% Est. Gain
+                            </span>
+                          )}
                         </td>
                         <td>
                           <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${
@@ -1534,7 +1638,10 @@ export const TradingConsolePage: React.FC = () => {
                         </td>
                         <td>
                           <button
-                            onClick={() => handleApplyIpoAsba(ipo)}
+                            onClick={() => {
+                              setAsbaModalIpo(ipo);
+                              setIsAsbaModalOpen(true);
+                            }}
                             className={`px-3.5 py-1.5 rounded-lg text-white text-xs font-bold cursor-pointer transition-colors shadow-xs ${
                               ipo.market.includes('US')
                                 ? 'bg-blue-600 hover:bg-blue-700'
@@ -1556,6 +1663,17 @@ export const TradingConsolePage: React.FC = () => {
                 </tbody>
               </table>
             </div>
+
+            {/* Virtual ASBA UPI Mandate Modal */}
+            <AsbaUpiMandateModal
+              ipo={asbaModalIpo}
+              isOpen={isAsbaModalOpen}
+              onClose={() => setIsAsbaModalOpen(false)}
+              onSuccess={(msg) => {
+                setIpoAppliedMsg(msg);
+                setTimeout(() => setIpoAppliedMsg(null), 5000);
+              }}
+            />
 
             {/* Innovation 5: Realistic ASBA IPO / NFO Allotment Lottery Engine */}
             <div className="pt-6 border-t border-[var(--border-color)] space-y-4">
@@ -1693,6 +1811,12 @@ export const TradingConsolePage: React.FC = () => {
                   </span>
                 </button>
               </div>
+            </div>
+
+            {/* Institutional Debt Telemetry: SGB 24K Gold Arbitrage Tracker & Dynamic YTM Solver */}
+            <div className="space-y-6">
+              <SgbArbitrageTracker />
+              <BondPricingCalculator />
             </div>
 
             {/* Layout: Sidebar Filter Module + Category Grouped Cards Grid */}

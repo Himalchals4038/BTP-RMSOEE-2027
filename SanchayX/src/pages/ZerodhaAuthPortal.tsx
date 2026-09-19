@@ -766,9 +766,9 @@ export const ZerodhaAuthPortal: React.FC = () => {
         };
 
         const tickerQuotesList = [
-          getSafeQuote('NIFTY_50', '🇮🇳', 'NIFTY 50', 'Nifty 50 Index', 24520.40, 185.30, 0.76, 'INR', '₹'),
-          getSafeQuote('SENSEX', '🇮🇳', 'SENSEX', 'BSE Sensex', 80436.80, 512.10, 0.64, 'INR', '₹'),
-          getSafeQuote('BANK_NIFTY', '🏦', 'BANK NIFTY', 'Nifty Bank Index', 51840.10, 470.50, 0.92, 'INR', '₹'),
+          getSafeQuote('NIFTY_50', '🇮🇳', 'NIFTY 50', 'Nifty 50 Index', 23346.40, 56.25, 0.24, 'INR', '₹'),
+          getSafeQuote('SENSEX', '🇮🇳', 'SENSEX', 'BSE Sensex', 76820.10, 179.30, 0.23, 'INR', '₹'),
+          getSafeQuote('BANK_NIFTY', '🏦', 'BANK NIFTY', 'Nifty Bank Index', 49850.20, 120.40, 0.24, 'INR', '₹'),
           getSafeQuote('NIFTY_IT', '💻', 'NIFTY IT', 'Nifty IT Index', 41250.00, 380.00, 0.93, 'INR', '₹'),
           getSafeQuote('SP_500', '🇺🇸', 'S&P 500', 'S&P 500 Index', 5540.20, 32.10, 0.58, 'USD', '$'),
           getSafeQuote('NASDAQ_100', '🇺🇸', 'NASDAQ 100', 'Nasdaq 100 Index', 19650.80, 145.20, 0.74, 'USD', '$'),

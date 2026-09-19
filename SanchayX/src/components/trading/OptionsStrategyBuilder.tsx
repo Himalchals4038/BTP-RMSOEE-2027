@@ -47,7 +47,7 @@ export const OptionsStrategyBuilder: React.FC = () => {
 
   // Underlying selection
   const [underlying, setUnderlying] = useState<string>('NIFTY 50');
-  const [spotPrice, setSpotPrice] = useState<number>(24520);
+  const [spotPrice, setSpotPrice] = useState<number>(23346.40);
   const ivPct = 13.8; // India VIX %
   const daysToExpiry = 7;
   const [targetDte, setTargetDte] = useState<number>(0); // T+0 today
@@ -151,7 +151,7 @@ export const OptionsStrategyBuilder: React.FC = () => {
 
   // Active strategy legs state
   const [selectedTemplateName, setSelectedTemplateName] = useState<string>('Bull Call Spread');
-  const [legs, setLegs] = useState<OptionLeg[]>(() => templates[0].generateLegs(24520));
+  const [legs, setLegs] = useState<OptionLeg[]>(() => templates[0].generateLegs(23350));
 
   const handleApplyTemplate = (tpl: StrategyTemplate) => {
     setSelectedTemplateName(tpl.name);
@@ -379,9 +379,9 @@ export const OptionsStrategyBuilder: React.FC = () => {
               key={u}
               onClick={() => {
                 setUnderlying(u);
-                const newSpot = u === 'NIFTY 50' ? 24520 : 51840;
+                const newSpot = u === 'NIFTY 50' ? 23346.40 : 49850.20;
                 setSpotPrice(newSpot);
-                setLegs(templates[0].generateLegs(newSpot));
+                setLegs(templates[0].generateLegs(Math.round(newSpot / 50) * 50));
               }}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 underlying === u
