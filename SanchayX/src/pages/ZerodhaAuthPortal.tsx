@@ -266,7 +266,7 @@ interface CategoryShowcaseItem {
   tag: string;
   metricLabel: string;
   metricValue: string;
-  metricColor: 'emerald' | 'blue' | 'amber' | 'purple';
+  metricColor: 'emerald' | 'blue' | 'amber' | 'purple' | 'cyan';
   description: string;
   brokerageTag: string;
   actionText: string;
@@ -293,7 +293,7 @@ const CATEGORY_SHOWCASE: Record<string, CategoryInfo> = {
     highlightText: 'Trade with mathematical edge.',
     description: 'Online multi-asset platform to invest in Indian Equities, US Tech Stocks, F&O Options, Direct Mutual Funds, Sovereign Gold Bonds, and Money Market Instruments with Nobel-prize winning Markowitz optimization.',
     badge: 'Zero Brokerage • Institutional MPT Engine • 100% Safe Sovereign Shield',
-    badgeColor: 'emerald',
+    badgeColor: 'blue',
     stat1: { label: 'Equity Delivery', value: '₹0 Free' },
     stat2: { label: 'F&O Derivatives', value: 'Flat ₹20' },
     stat3: { label: 'Virtual Sandbox', value: '₹10,00,000' },
@@ -305,14 +305,14 @@ const CATEGORY_SHOWCASE: Record<string, CategoryInfo> = {
     highlightText: 'Zero brokerage on all equity deliveries.',
     description: 'Buy and hold NIFTY 50 Indian bluechips and S&P 500 Global tech equities with automated Markowitz quadratic optimization, real-time covariance matrices, and instant portfolio rebalancing.',
     badge: '₹0 Delivery Brokerage • 5,000+ NSE/BSE & US Stocks • Fractional Units',
-    badgeColor: 'emerald',
+    badgeColor: 'blue',
     stat1: { label: 'Delivery Brokerage', value: '₹0 Free' },
     stat2: { label: 'NIFTY 50 Coverage', value: '100% Live' },
     stat3: { label: 'Execution Speed', value: '< 1ms Engine' },
     items: [
-      { id: 'rel', name: 'Reliance Industries', tickerOrIssuer: 'RELIANCE • NSE', tag: 'Energy & Retail', metricLabel: 'Live Price', metricValue: '₹2,980.50 (+1.2%)', metricColor: 'emerald', description: 'India’s largest conglomerate with dominant retail, telecom, and green energy market share.', brokerageTag: '₹0 Brokerage', actionText: 'Simulate Buy', categoryType: 'stocks' },
-      { id: 'tcs', name: 'Tata Consultancy Services', tickerOrIssuer: 'TCS • NSE', tag: 'IT Services', metricLabel: 'Live Price', metricValue: '₹4,120.00 (+0.8%)', metricColor: 'emerald', description: 'Global digital IT transformation leader with industry-leading operating profit margins.', brokerageTag: '₹0 Brokerage', actionText: 'Simulate Buy', categoryType: 'stocks' },
-      { id: 'hdfc', name: 'HDFC Bank Ltd.', tickerOrIssuer: 'HDFCBANK • NSE', tag: 'Banking & Financials', metricLabel: 'Live Price', metricValue: '₹1,640.20 (+0.5%)', metricColor: 'emerald', description: 'India’s largest private lender with stellar asset quality and fortress balance sheet.', brokerageTag: '₹0 Brokerage', actionText: 'Simulate Buy', categoryType: 'stocks' },
+      { id: 'rel', name: 'Reliance Industries', tickerOrIssuer: 'RELIANCE • NSE', tag: 'Energy & Retail', metricLabel: 'Live Price', metricValue: '₹2,980.50 (+1.2%)', metricColor: 'blue', description: 'India’s largest conglomerate with dominant retail, telecom, and green energy market share.', brokerageTag: '₹0 Brokerage', actionText: 'Simulate Buy', categoryType: 'stocks' },
+      { id: 'tcs', name: 'Tata Consultancy Services', tickerOrIssuer: 'TCS • NSE', tag: 'IT Services', metricLabel: 'Live Price', metricValue: '₹4,120.00 (+0.8%)', metricColor: 'blue', description: 'Global digital IT transformation leader with industry-leading operating profit margins.', brokerageTag: '₹0 Brokerage', actionText: 'Simulate Buy', categoryType: 'stocks' },
+      { id: 'hdfc', name: 'HDFC Bank Ltd.', tickerOrIssuer: 'HDFCBANK • NSE', tag: 'Banking & Financials', metricLabel: 'Live Price', metricValue: '₹1,640.20 (+0.5%)', metricColor: 'blue', description: 'India’s largest private lender with stellar asset quality and fortress balance sheet.', brokerageTag: '₹0 Brokerage', actionText: 'Simulate Buy', categoryType: 'stocks' },
       { id: 'aapl', name: 'Apple Inc. (US Tech)', tickerOrIssuer: 'AAPL • NASDAQ', tag: 'Global Tech', metricLabel: 'Live Price', metricValue: '$225.40 (+1.4%)', metricColor: 'blue', description: 'Consumer tech giant with $3T+ ecosystem, expanding AI devices and high-margin services.', brokerageTag: 'Zero Commission', actionText: 'Simulate Buy', categoryType: 'stocks' }
     ]
   },
@@ -322,14 +322,14 @@ const CATEGORY_SHOWCASE: Record<string, CategoryInfo> = {
     highlightText: 'Flat ₹20 per trade. Zero hidden slippage.',
     description: 'Execute multi-leg options strategies (Iron Condors, Straddles, Bull Spreads) on NIFTY, BANKNIFTY, and FINNIFTY with live Black-Scholes Greeks and 5-year historical tick backtesting.',
     badge: 'Flat ₹20 / Trade • 5-Year Tick Backtester • Real-Time Option Greeks',
-    badgeColor: 'blue',
+    badgeColor: 'purple',
     stat1: { label: 'F&O Brokerage', value: 'Flat ₹20/trade' },
     stat2: { label: 'Option Greeks', value: 'Delta, Gamma, Vega' },
     stat3: { label: 'Backtest History', value: '5+ Years' },
     items: [
       { id: 'ic', name: 'NIFTY Weekly Iron Condor', tickerOrIssuer: 'Options Strategy Template', tag: 'Delta Neutral', metricLabel: 'Win Probability', metricValue: '78.4%', metricColor: 'blue', description: '4-leg options spread generating steady premium decay during market consolidation.', brokerageTag: 'Flat ₹20/Order', actionText: 'Open Backtester', categoryType: 'fno' },
-      { id: 'strad', name: 'BANKNIFTY Expiry Straddle', tickerOrIssuer: 'Volatility Breakout', tag: 'High Gamma', metricLabel: 'Profit Factor', metricValue: '2.14x', metricColor: 'emerald', description: 'Exploits high-volatility directional expansions on weekly index expiry dates.', brokerageTag: 'Flat ₹20/Order', actionText: 'Backtest Strategy', categoryType: 'fno' },
-      { id: 'bull', name: 'NIFTY Bull Call Spread', tickerOrIssuer: 'Directional Momentum', tag: 'Capped Risk', metricLabel: 'Max Risk/Reward', metricValue: '1:3.2', metricColor: 'emerald', description: 'Low margin requirement with predefined maximum profit and strictly capped maximum loss.', brokerageTag: 'Flat ₹20/Order', actionText: 'Simulate in Terminal', categoryType: 'fno' }
+      { id: 'strad', name: 'BANKNIFTY Expiry Straddle', tickerOrIssuer: 'Volatility Breakout', tag: 'High Gamma', metricLabel: 'Profit Factor', metricValue: '2.14x', metricColor: 'purple', description: 'Exploits high-volatility directional expansions on weekly index expiry dates.', brokerageTag: 'Flat ₹20/Order', actionText: 'Backtest Strategy', categoryType: 'fno' },
+      { id: 'bull', name: 'NIFTY Bull Call Spread', tickerOrIssuer: 'Directional Momentum', tag: 'Capped Risk', metricLabel: 'Max Risk/Reward', metricValue: '1:3.2', metricColor: 'purple', description: 'Low margin requirement with predefined maximum profit and strictly capped maximum loss.', brokerageTag: 'Flat ₹20/Order', actionText: 'Simulate in Terminal', categoryType: 'fno' }
     ]
   },
   'Mutual Funds': {
@@ -338,14 +338,14 @@ const CATEGORY_SHOWCASE: Record<string, CategoryInfo> = {
     highlightText: '0% commission direct SIPs.',
     description: 'Invest in direct plan mutual funds with zero distributor commissions, saving up to 1.5% in extra compound returns every single year. Setup automated SIPs and portfolio rebalancing.',
     badge: '0% Commission • 2,000+ Direct Mutual Funds • Automated SIPs',
-    badgeColor: 'emerald',
+    badgeColor: 'cyan',
     stat1: { label: 'Commission', value: '0% Direct Plans' },
     stat2: { label: 'Annual Compound Saving', value: 'Up to 1.5%' },
     stat3: { label: 'Minimum SIP', value: '₹500 / month' },
     items: [
-      { id: 'mf1', name: 'Quant Small Cap Fund (Direct)', tickerOrIssuer: 'Quant AMC', tag: 'Small Cap Growth', metricLabel: '3-Year CAGR Return', metricValue: '+28.4% p.a.', metricColor: 'emerald', description: 'Quantitative predictive momentum strategy capturing high-alpha Indian small caps.', brokerageTag: '0% Commission', actionText: 'Simulate SIP', categoryType: 'mf' },
-      { id: 'mf2', name: 'Parag Parikh Flexi Cap (Direct)', tickerOrIssuer: 'PPFAS AMC', tag: 'Flexi Cap Value', metricLabel: '3-Year CAGR Return', metricValue: '+21.2% p.a.', metricColor: 'emerald', description: 'Veteran value compounder investing across Indian leaders and global technology.', brokerageTag: '0% Commission', actionText: 'Simulate SIP', categoryType: 'mf' },
-      { id: 'mf3', name: 'Mirae Asset Large Cap (Direct)', tickerOrIssuer: 'Mirae Asset AMC', tag: 'Bluechip Equity', metricLabel: '3-Year CAGR Return', metricValue: '+18.6% p.a.', metricColor: 'emerald', description: 'Core large cap portfolio investing in India’s top 100 established market leaders.', brokerageTag: '0% Commission', actionText: 'Simulate SIP', categoryType: 'mf' }
+      { id: 'mf1', name: 'Quant Small Cap Fund (Direct)', tickerOrIssuer: 'Quant AMC', tag: 'Small Cap Growth', metricLabel: '3-Year CAGR Return', metricValue: '+28.4% p.a.', metricColor: 'cyan', description: 'Quantitative predictive momentum strategy capturing high-alpha Indian small caps.', brokerageTag: '0% Commission', actionText: 'Simulate SIP', categoryType: 'mf' },
+      { id: 'mf2', name: 'Parag Parikh Flexi Cap (Direct)', tickerOrIssuer: 'PPFAS AMC', tag: 'Flexi Cap Value', metricLabel: '3-Year CAGR Return', metricValue: '+21.2% p.a.', metricColor: 'cyan', description: 'Veteran value compounder investing across Indian leaders and global technology.', brokerageTag: '0% Commission', actionText: 'Simulate SIP', categoryType: 'mf' },
+      { id: 'mf3', name: 'Mirae Asset Large Cap (Direct)', tickerOrIssuer: 'Mirae Asset AMC', tag: 'Bluechip Equity', metricLabel: '3-Year CAGR Return', metricValue: '+18.6% p.a.', metricColor: 'cyan', description: 'Core large cap portfolio investing in India’s top 100 established market leaders.', brokerageTag: '0% Commission', actionText: 'Simulate SIP', categoryType: 'mf' }
     ]
   },
   'Money Market': {
@@ -359,9 +359,9 @@ const CATEGORY_SHOWCASE: Record<string, CategoryInfo> = {
     stat2: { label: '364-Day T-Bill Yield', value: '7.12% p.a.' },
     stat3: { label: 'Default Risk', value: '0% (RBI Backed)' },
     items: [
-      { id: 'tb91', name: '91-Day Government Treasury Bill', tickerOrIssuer: 'Reserve Bank of India', tag: 'Sovereign Debt', metricLabel: 'Annual Yield (YTM)', metricValue: '6.85% p.a.', metricColor: 'emerald', description: 'Zero default risk short-term debt instrument with 100% capital guarantee by Govt of India.', brokerageTag: 'RBI Sovereign', actionText: 'Inspect Instrument', categoryType: 'money_market' },
-      { id: 'tb364', name: '364-Day Government Treasury Bill', tickerOrIssuer: 'Government of India', tag: 'Sovereign Debt', metricLabel: 'Annual Yield (YTM)', metricValue: '7.12% p.a.', metricColor: 'emerald', description: 'One-year risk-free benchmark instrument exempt from TDS deductions at maturity.', brokerageTag: 'RBI Sovereign', actionText: 'Inspect Instrument', categoryType: 'money_market' },
-      { id: 'cdhdfc', name: 'HDFC Bank Certificate of Deposit', tickerOrIssuer: 'HDFC Bank Ltd.', tag: 'Wholesale Deposit', metricLabel: 'Annual Yield (YTM)', metricValue: '7.45% p.a.', metricColor: 'blue', description: 'Wholesale money market term certificate rated CRISIL A1+ with high secondary liquidity.', brokerageTag: 'CRISIL A1+', actionText: 'Inspect Instrument', categoryType: 'money_market' }
+      { id: 'tb91', name: '91-Day Government Treasury Bill', tickerOrIssuer: 'Reserve Bank of India', tag: 'Sovereign Debt', metricLabel: 'Annual Yield (YTM)', metricValue: '6.85% p.a.', metricColor: 'blue', description: 'Zero default risk short-term debt instrument with 100% capital guarantee by Govt of India.', brokerageTag: 'RBI Sovereign', actionText: 'Inspect Instrument', categoryType: 'money_market' },
+      { id: 'tb364', name: '364-Day Government Treasury Bill', tickerOrIssuer: 'Government of India', tag: 'Sovereign Debt', metricLabel: 'Annual Yield (YTM)', metricValue: '7.12% p.a.', metricColor: 'blue', description: 'One-year risk-free benchmark instrument exempt from TDS deductions at maturity.', brokerageTag: 'RBI Sovereign', actionText: 'Inspect Instrument', categoryType: 'money_market' },
+      { id: 'cdhdfc', name: 'HDFC Bank Certificate of Deposit', tickerOrIssuer: 'HDFC Bank Ltd.', tag: 'Wholesale Deposit', metricLabel: 'Annual Yield (YTM)', metricValue: '7.45% p.a.', metricColor: 'amber', description: 'Wholesale money market term certificate rated CRISIL A1+ with high secondary liquidity.', brokerageTag: 'CRISIL A1+', actionText: 'Inspect Instrument', categoryType: 'money_market' }
     ]
   },
   Gold: {
@@ -376,7 +376,7 @@ const CATEGORY_SHOWCASE: Record<string, CategoryInfo> = {
     stat3: { label: 'Storage & Making Cost', value: '₹0 Zero' },
     items: [
       { id: 'sgb1', name: 'RBI Sovereign Gold Bond (2026 Series)', tickerOrIssuer: 'Reserve Bank of India', tag: 'Gold Security', metricLabel: 'Issue Price / Gram', metricValue: '₹7,185 / gram', metricColor: 'amber', description: 'Government security denominated in grams of gold. Earns 2.5% p.a. + 100% tax-free appreciation.', brokerageTag: '100% Tax Free', actionText: 'Simulate in Terminal', categoryType: 'gold' },
-      { id: 'gldetf', name: 'Nippon India Gold BeES ETF', tickerOrIssuer: 'Nippon Life AMC', tag: 'Gold ETF', metricLabel: 'Live Price', metricValue: '₹64.20 (+0.4%)', metricColor: 'emerald', description: 'Intraday traded physical gold ETF on NSE with real-time liquidity and delivery settlement.', brokerageTag: '₹0 Delivery', actionText: 'Simulate Buy', categoryType: 'gold' },
+      { id: 'gldetf', name: 'Nippon India Gold BeES ETF', tickerOrIssuer: 'Nippon Life AMC', tag: 'Gold ETF', metricLabel: 'Live Price', metricValue: '₹64.20 (+0.4%)', metricColor: 'amber', description: 'Intraday traded physical gold ETF on NSE with real-time liquidity and delivery settlement.', brokerageTag: '₹0 Delivery', actionText: 'Simulate Buy', categoryType: 'gold' },
       { id: 'gsec', name: '7.18% GS 2033 Sovereign Bond', tickerOrIssuer: 'Government of India', tag: 'Central G-Sec', metricLabel: 'Annual Coupon', metricValue: '7.18% p.a.', metricColor: 'blue', description: 'Benchmark 10-year central government sovereign bond with semi-annual coupon payouts.', brokerageTag: 'Zero Risk', actionText: 'Simulate Allocation', categoryType: 'gold' }
     ]
   },
@@ -386,13 +386,13 @@ const CATEGORY_SHOWCASE: Record<string, CategoryInfo> = {
     highlightText: 'Up to 8.85% p.a. guaranteed interest.',
     description: 'High-yield corporate fixed deposits from AAA-rated institutions like Bajaj Finance, HDFC Bank, and Shriram Finance with flexible tenures from 12 to 60 months.',
     badge: 'CRISIL / ICRA AAA Rated • Up to 8.85% Returns • Monthly / Annual Compounding',
-    badgeColor: 'blue',
+    badgeColor: 'amber',
     stat1: { label: 'Highest FD Rate', value: '8.85% p.a.' },
     stat2: { label: 'Safety Rating', value: 'CRISIL AAA' },
     stat3: { label: 'Senior Citizen Extra', value: '+0.25% - 0.50%' },
     items: [
-      { id: 'fd1', name: 'Bajaj Finance Corporate FD', tickerOrIssuer: 'Bajaj Finance Ltd.', tag: 'CRISIL AAA (Highest Safety)', metricLabel: 'Interest Rate', metricValue: '8.85% p.a.', metricColor: 'emerald', description: 'Highest safety rating with flexible monthly, quarterly, or cumulative interest compounding options.', brokerageTag: 'CRISIL AAA', actionText: 'Calculate Returns', categoryType: 'fd' },
-      { id: 'fd2', name: 'Shriram Finance Fixed Deposit', tickerOrIssuer: 'Shriram Finance Ltd.', tag: 'ICRA AA+ (Stable)', metricLabel: 'Interest Rate', metricValue: '8.75% p.a.', metricColor: 'emerald', description: 'Attractive high yield term deposit offering an additional 0.50% p.a. for senior citizens.', brokerageTag: 'High Yield', actionText: 'Calculate Returns', categoryType: 'fd' },
+      { id: 'fd1', name: 'Bajaj Finance Corporate FD', tickerOrIssuer: 'Bajaj Finance Ltd.', tag: 'CRISIL AAA (Highest Safety)', metricLabel: 'Interest Rate', metricValue: '8.85% p.a.', metricColor: 'amber', description: 'Highest safety rating with flexible monthly, quarterly, or cumulative interest compounding options.', brokerageTag: 'CRISIL AAA', actionText: 'Calculate Returns', categoryType: 'fd' },
+      { id: 'fd2', name: 'Shriram Finance Fixed Deposit', tickerOrIssuer: 'Shriram Finance Ltd.', tag: 'ICRA AA+ (Stable)', metricLabel: 'Interest Rate', metricValue: '8.75% p.a.', metricColor: 'amber', description: 'Attractive high yield term deposit offering an additional 0.50% p.a. for senior citizens.', brokerageTag: 'High Yield', actionText: 'Calculate Returns', categoryType: 'fd' },
       { id: 'fd3', name: 'HDFC Bank Special Term Deposit', tickerOrIssuer: 'HDFC Bank Ltd.', tag: 'Scheduled Commercial Bank', metricLabel: 'Interest Rate', metricValue: '7.75% p.a.', metricColor: 'blue', description: 'Secure fixed tenure term deposit backed by India’s largest private banking institution.', brokerageTag: 'DICGC Insured', actionText: 'Calculate Returns', categoryType: 'fd' }
     ]
   }
@@ -618,23 +618,23 @@ export const ZerodhaAuthPortal: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen w-full bg-[var(--bg-main)] text-[var(--text-primary)] font-sans flex flex-col selection:bg-[var(--groww-emerald)] selection:text-black">
+    <div className="min-h-screen w-full bg-[var(--bg-main)] text-[var(--text-primary)] font-sans flex flex-col selection:bg-blue-600 selection:text-white">
       {/* ========================================================================= */}
-      {/* 1. TOP NAVBAR (ZERODHA & GROWW HYBRID STYLE) */}
+      {/* 1. TOP NAVBAR (INSTITUTIONAL DIRECT OS STYLE) */}
       {/* ========================================================================= */}
       <header className="sticky top-0 z-40 bg-[var(--bg-card)]/90 backdrop-blur-md border-b border-[var(--border-color)] transition-colors duration-200 shadow-xs">
         <div className="max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
           {/* Brand Logo & Tagline */}
           <div className="flex items-center gap-3.5 cursor-pointer" onClick={() => { setAuthMode('login'); setLoginStep(1); }}>
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#00d09c] via-[#00b386] to-[#0284c7] text-white flex items-center justify-center font-black text-xl shadow-lg shadow-emerald-500/20 ring-2 ring-emerald-500/30">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-cyan-600 text-white flex items-center justify-center font-black text-xl shadow-lg shadow-blue-500/20 ring-2 ring-blue-500/30">
               <span className="italic font-serif">SX</span>
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xl font-black tracking-tight text-[var(--text-primary)]">
-                  Sanchay<span className="text-[var(--groww-emerald)]">X</span>
+                  Sanchay<span className="text-blue-600 dark:text-blue-400">X</span>
                 </span>
-                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-[var(--groww-emerald)] border border-emerald-500/20 tracking-wider">
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 tracking-wider">
                   DIRECT OS
                 </span>
               </div>
@@ -648,7 +648,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
               onClick={() => { setAuthMode('signup'); setSignupStep(1); }}
               className={`px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
                 authMode === 'signup'
-                  ? 'text-[var(--groww-emerald)] font-bold bg-emerald-500/10'
+                  ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-500/10'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5'
               }`}
             >
@@ -659,7 +659,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
               onClick={() => setActiveNavModal('about')}
               className={`px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
                 activeNavModal === 'about'
-                  ? 'text-[var(--groww-emerald)] font-bold bg-emerald-500/10'
+                  ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-500/10'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5'
               }`}
             >
@@ -670,7 +670,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
               onClick={() => setActiveNavModal('products')}
               className={`px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
                 activeNavModal === 'products'
-                  ? 'text-[var(--groww-emerald)] font-bold bg-emerald-500/10'
+                  ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-500/10'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5'
               }`}
             >
@@ -681,7 +681,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
               onClick={() => setActiveNavModal('pricing')}
               className={`px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
                 activeNavModal === 'pricing'
-                  ? 'text-[var(--groww-emerald)] font-bold bg-emerald-500/10'
+                  ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-500/10'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5'
               }`}
             >
@@ -692,7 +692,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
               onClick={() => setActiveNavModal('support')}
               className={`px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
                 activeNavModal === 'support'
-                  ? 'text-[var(--groww-emerald)] font-bold bg-emerald-500/10'
+                  ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-500/10'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5'
               }`}
             >
@@ -713,10 +713,10 @@ export const ZerodhaAuthPortal: React.FC = () => {
 
             <button
               onClick={() => loginDemoUser('Sandbox Demo')}
-              className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/20 transition-all cursor-pointer"
+              className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 hover:bg-indigo-500/20 transition-all cursor-pointer"
               title="Enter terminal instantly with ₹10L virtual sandbox cash"
             >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+              <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
               <span>Instant Sandbox</span>
             </button>
 
@@ -726,7 +726,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                 setLoginStep(1);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="px-4 py-2 rounded-xl text-xs font-black bg-[var(--groww-emerald)] hover:bg-[var(--groww-emerald-hover)] text-slate-950 shadow-md shadow-emerald-500/20 transition-all cursor-pointer flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl text-xs font-black bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/25 transition-all cursor-pointer flex items-center gap-1.5"
             >
               <User className="w-3.5 h-3.5" />
               <span>Client Login</span>
@@ -828,7 +828,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                   className="p-1 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
                   title="Sync Latest Market Quotes"
                 >
-                  <RefreshCw className={`w-3 h-3 ${isMarketDataLoading ? 'animate-spin text-emerald-500' : ''}`} />
+                  <RefreshCw className={`w-3 h-3 ${isMarketDataLoading ? 'animate-spin text-blue-500' : ''}`} />
                 </button>
               </div>
 
@@ -853,7 +853,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                       <div
                         key={`${quote.symbol}-${idx}`}
                         onClick={() => setActiveNavModal('market_timings')}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-[var(--groww-emerald)] shadow-xs transition-all cursor-pointer shrink-0 hover:scale-105"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-blue-500/50 shadow-xs transition-all cursor-pointer shrink-0 hover:scale-105"
                         title={`${quote.name} • Last session: ${quote.lastUpdated}. Click to view exchange hours.`}
                       >
                         <span className="text-xs">{quote.icon}</span>
@@ -881,10 +881,10 @@ export const ZerodhaAuthPortal: React.FC = () => {
       })()}
 
       {/* ========================================================================= */}
-      {/* 3. HERO & GROWW-INSPIRED DYNAMIC CATEGORY EXPLORER */}
+      {/* 3. HERO & DYNAMIC CATEGORY EXPLORER */}
       {/* ========================================================================= */}
       <section className="w-full max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16 flex flex-col justify-center">
-        {/* Groww-Style Quick Category Filter Navbar */}
+        {/* Quick Category Filter Navbar */}
         <div className="flex items-center justify-center gap-2 flex-wrap mb-8">
           {[
             { id: 'All', label: '✨ All Assets' },
@@ -909,8 +909,8 @@ export const ZerodhaAuthPortal: React.FC = () => {
               }}
               className={`groww-pill border transition-all cursor-pointer ${
                 activeCategoryPill === pill.id
-                  ? 'bg-[var(--groww-emerald)] text-slate-950 border-[var(--groww-emerald)] shadow-md shadow-emerald-500/20 font-black scale-105'
-                  : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border-color)] hover:border-[var(--groww-emerald)] font-bold hover:text-[var(--text-primary)]'
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/25 font-black scale-105'
+                  : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border-color)] hover:border-blue-500/40 font-bold hover:text-[var(--text-primary)]'
               }`}
             >
               {pill.label}
@@ -928,8 +928,8 @@ export const ZerodhaAuthPortal: React.FC = () => {
                 <>
                   {/* Category Value Proposition & Tagline */}
                   <div className="space-y-4">
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-[var(--groww-emerald)] border border-emerald-500/20 text-xs font-bold tracking-wide">
-                      <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs font-bold tracking-wide">
+                      <ShieldCheck className="w-4 h-4 text-blue-500 shrink-0" />
                       <span>{currentCategory.badge}</span>
                     </div>
 
@@ -948,7 +948,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                     <div className="grid grid-cols-3 gap-3 pt-1 max-w-xl">
                       <div className="p-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xs">
                         <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] block">{currentCategory.stat1.label}</span>
-                        <span className="text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400 font-mono mt-0.5 block">{currentCategory.stat1.value}</span>
+                        <span className="text-sm sm:text-base font-black text-blue-600 dark:text-blue-400 font-mono mt-0.5 block">{currentCategory.stat1.value}</span>
                       </div>
                       <div className="p-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xs">
                         <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] block">{currentCategory.stat2.label}</span>
@@ -956,7 +956,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                       </div>
                       <div className="p-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xs">
                         <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] block">{currentCategory.stat3.label}</span>
-                        <span className="text-sm sm:text-base font-black text-blue-600 dark:text-blue-400 font-mono mt-0.5 block">{currentCategory.stat3.value}</span>
+                        <span className="text-sm sm:text-base font-black text-indigo-600 dark:text-indigo-400 font-mono mt-0.5 block">{currentCategory.stat3.value}</span>
                       </div>
                     </div>
                   </div>
@@ -966,12 +966,12 @@ export const ZerodhaAuthPortal: React.FC = () => {
                     <div className="space-y-3.5 pt-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-black uppercase tracking-wider text-[var(--text-primary)] flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                          <Sparkles className="w-3.5 h-3.5 text-blue-500" />
                           <span>Featured {activeCategoryPill} Instruments & Strategies</span>
                         </span>
                         <button
                           onClick={() => setActiveCategoryPill('All')}
-                          className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                          className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                         >
                           ← View All Categories
                         </button>
@@ -981,17 +981,25 @@ export const ZerodhaAuthPortal: React.FC = () => {
                         {currentCategory.items.map(item => (
                           <div
                             key={item.id}
-                            className="p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-emerald-500/50 transition-all shadow-sm flex flex-col justify-between group"
+                            className="p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-blue-500/50 transition-all shadow-sm flex flex-col justify-between group"
                           >
                             <div>
                               <div className="flex items-start justify-between gap-2 mb-1.5">
                                 <div>
-                                  <h4 className="text-xs font-black text-[var(--text-primary)] group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                                  <h4 className="text-xs font-black text-[var(--text-primary)] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                     {item.name}
                                   </h4>
                                   <span className="text-[10px] font-mono text-[var(--text-muted)]">{item.tickerOrIssuer}</span>
                                 </div>
-                                <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black border shrink-0 ${
+                                  item.categoryType === 'fno'
+                                    ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
+                                    : item.categoryType === 'mf'
+                                    ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20'
+                                    : item.categoryType === 'money_market' || item.categoryType === 'gold' || item.categoryType === 'fd'
+                                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                                    : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+                                }`}>
                                   {item.tag}
                                 </span>
                               </div>
@@ -1004,7 +1012,17 @@ export const ZerodhaAuthPortal: React.FC = () => {
                             <div className="pt-2 border-t border-[var(--border-color)] flex items-center justify-between gap-2 mt-2">
                               <div>
                                 <span className="text-[9px] text-[var(--text-muted)] block uppercase">{item.metricLabel}</span>
-                                <span className="text-xs font-black font-mono text-emerald-600 dark:text-emerald-400">
+                                <span className={`text-xs font-black font-mono ${
+                                  item.metricColor === 'blue'
+                                    ? 'text-blue-600 dark:text-blue-400'
+                                    : item.metricColor === 'amber'
+                                    ? 'text-amber-600 dark:text-amber-400'
+                                    : item.metricColor === 'purple'
+                                    ? 'text-purple-600 dark:text-purple-400'
+                                    : item.metricColor === 'cyan'
+                                    ? 'text-cyan-600 dark:text-cyan-400'
+                                    : 'text-emerald-600 dark:text-emerald-400'
+                                }`}>
                                   {item.metricValue}
                                 </span>
                               </div>
@@ -1020,7 +1038,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                                     loginDemoUser(item.categoryType === 'fno' ? 'Institutional Prime' : 'Retail HNI');
                                   }
                                 }}
-                                className="px-3 py-1.5 rounded-xl bg-[var(--groww-emerald)] text-slate-950 font-black text-[11px] hover:bg-[var(--groww-emerald-hover)] shadow-xs transition-all flex items-center gap-1 cursor-pointer"
+                                className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-[11px] shadow-xs transition-all flex items-center gap-1 cursor-pointer"
                               >
                                 <span>{item.actionText}</span>
                                 <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
@@ -1037,7 +1055,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                         </span>
                         <button
                           onClick={() => loginDemoUser('Sandbox Demo')}
-                          className="px-3.5 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-500/30 hover:bg-emerald-500/25 transition-all cursor-pointer shrink-0"
+                          className="px-3.5 py-1.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold border border-blue-500/20 hover:bg-blue-500/20 transition-all cursor-pointer shrink-0"
                         >
                           Launch Terminal
                         </button>
@@ -1049,7 +1067,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                       <div className="groww-card p-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] space-y-4">
                         <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold">
+                            <div className="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-600 flex items-center justify-center font-bold">
                               💡
                             </div>
                             <div>
@@ -1064,7 +1082,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                             <button
                               onClick={() => setActiveGuideTab('mpt')}
                               className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                                activeGuideTab === 'mpt' ? 'bg-[var(--bg-card)] text-emerald-600 shadow-xs font-black' : 'text-[var(--text-muted)]'
+                                activeGuideTab === 'mpt' ? 'bg-[var(--bg-card)] text-indigo-600 shadow-xs font-black' : 'text-[var(--text-muted)]'
                               }`}
                             >
                               1. MPT Theory
@@ -1072,7 +1090,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                             <button
                               onClick={() => setActiveGuideTab('safe')}
                               className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                                activeGuideTab === 'safe' ? 'bg-[var(--bg-card)] text-emerald-600 shadow-xs font-black' : 'text-[var(--text-muted)]'
+                                activeGuideTab === 'safe' ? 'bg-[var(--bg-card)] text-amber-600 shadow-xs font-black' : 'text-[var(--text-muted)]'
                               }`}
                             >
                               2. 100% Safe Shield
@@ -1092,7 +1110,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                         <div className="text-xs text-[var(--text-secondary)] leading-relaxed pt-1">
                           {activeGuideTab === 'mpt' && (
                             <div className="flex items-start gap-3.5">
-                              <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 shrink-0 mt-0.5">
+                              <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-600 shrink-0 mt-0.5">
                                 <BarChart3 className="w-5 h-5" />
                               </div>
                               <div className="space-y-1">
@@ -1106,7 +1124,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
 
                           {activeGuideTab === 'safe' && (
                             <div className="flex items-start gap-3.5">
-                              <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 shrink-0 mt-0.5">
+                              <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600 shrink-0 mt-0.5">
                                 <ShieldCheck className="w-5 h-5" />
                               </div>
                               <div className="space-y-1">
@@ -1140,7 +1158,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                           <span className="font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
                             ⚡ 1-Click Fast Sandbox Personas (Select to Enter Instantly):
                           </span>
-                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">No Password Needed</span>
+                          <span className="text-[10px] text-blue-600 dark:text-blue-400 font-bold">No Password Needed</span>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1150,16 +1168,16 @@ export const ZerodhaAuthPortal: React.FC = () => {
                           >
                             <div>
                               <div className="flex items-center justify-between mb-1.5">
-                                <span className="text-xs font-black text-[var(--text-primary)] group-hover:text-emerald-500 transition-colors">
+                                <span className="text-xs font-black text-[var(--text-primary)] group-hover:text-blue-600 transition-colors">
                                   Institutional Prime
                                 </span>
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-500/15 text-emerald-600">
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                                   4x DMA
                                 </span>
                               </div>
                               <p className="text-[11px] text-[var(--text-muted)]">₹25L Portfolio with Markowitz Optimization & Risk Parity Engine.</p>
                             </div>
-                            <div className="mt-3 flex items-center justify-between text-[10px] font-bold text-emerald-600">
+                            <div className="mt-3 flex items-center justify-between text-[10px] font-bold text-blue-600 dark:text-blue-400">
                               <span>Enter as Alpha Desk</span>
                               <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                             </div>
@@ -1171,16 +1189,16 @@ export const ZerodhaAuthPortal: React.FC = () => {
                           >
                             <div>
                               <div className="flex items-center justify-between mb-1.5">
-                                <span className="text-xs font-black text-[var(--text-primary)] group-hover:text-emerald-500 transition-colors">
+                                <span className="text-xs font-black text-[var(--text-primary)] group-hover:text-indigo-600 transition-colors">
                                   Retail HNI Investor
                                 </span>
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-500/15 text-emerald-600">
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
                                   Balanced
                                 </span>
                               </div>
                               <p className="text-[11px] text-[var(--text-muted)]">₹10L Balanced Portfolio with Nifty 50 Bluechips & Sovereign Gold.</p>
                             </div>
-                            <div className="mt-3 flex items-center justify-between text-[10px] font-bold text-emerald-600">
+                            <div className="mt-3 flex items-center justify-between text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
                               <span>Enter as HNI Investor</span>
                               <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                             </div>
@@ -1192,16 +1210,16 @@ export const ZerodhaAuthPortal: React.FC = () => {
                           >
                             <div>
                               <div className="flex items-center justify-between mb-1.5">
-                                <span className="text-xs font-black text-[var(--text-primary)] group-hover:text-blue-500 transition-colors">
+                                <span className="text-xs font-black text-[var(--text-primary)] group-hover:text-amber-600 transition-colors">
                                   Beginner Sandbox
                                 </span>
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-blue-500/15 text-blue-600">
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                                   ₹10L Virtual
                                 </span>
                               </div>
                               <p className="text-[11px] text-[var(--text-muted)]">Fresh virtual demo account for learning and placing paper trades.</p>
                             </div>
-                            <div className="mt-3 flex items-center justify-between text-[10px] font-bold text-blue-600">
+                            <div className="mt-3 flex items-center justify-between text-[10px] font-bold text-amber-600 dark:text-amber-400">
                               <span>Enter Sandbox</span>
                               <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                             </div>
@@ -1222,7 +1240,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-[var(--groww-emerald)] text-slate-950 flex items-center justify-center font-black text-sm shadow-md">
+                    <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-sm shadow-md">
                       SX
                     </div>
                     <span className="font-extrabold text-sm tracking-tight text-[var(--text-primary)]">
@@ -1235,7 +1253,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                       onClick={() => { setAuthMode('login'); setLoginStep(1); setLoginError(''); }}
                       className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                         authMode === 'login'
-                          ? 'bg-[var(--bg-card)] text-emerald-600 shadow-xs font-black'
+                          ? 'bg-[var(--bg-card)] text-blue-600 dark:text-blue-400 shadow-xs font-black'
                           : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                       }`}
                     >
@@ -1245,7 +1263,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                       onClick={() => { setAuthMode('signup'); setSignupStep(1); setLoginError(''); }}
                       className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                         authMode === 'signup'
-                          ? 'bg-[var(--bg-card)] text-emerald-600 shadow-xs font-black'
+                          ? 'bg-[var(--bg-card)] text-blue-600 dark:text-blue-400 shadow-xs font-black'
                           : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                       }`}
                     >
@@ -1282,7 +1300,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                             value={userId}
                             onChange={(e) => setUserId(e.target.value)}
                             placeholder="e.g. 8512437145"
-                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl py-2.5 pl-10 pr-3 text-xs font-mono font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--groww-emerald)] transition-colors"
+                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl py-2.5 pl-10 pr-3 text-xs font-mono font-bold text-[var(--text-primary)] focus:outline-none focus:border-blue-500 transition-colors"
                           />
                         </div>
                       </div>
@@ -1295,7 +1313,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                             onClick={() => {
                               alert("Password reset OTP sent to registered email trader@sanchayx.io. Use default password 'SanchayX@2026' or 1-Click Demo.");
                             }}
-                            className="text-emerald-600 font-bold hover:underline"
+                            className="text-blue-600 dark:text-blue-400 font-bold hover:underline"
                           >
                             Forgot password?
                           </button>
@@ -1308,7 +1326,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="••••••••••••"
-                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl py-2.5 pl-10 pr-10 text-xs font-mono font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--groww-emerald)] transition-colors"
+                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl py-2.5 pl-10 pr-10 text-xs font-mono font-bold text-[var(--text-primary)] focus:outline-none focus:border-blue-500 transition-colors"
                           />
                           <button
                             type="button"
@@ -1326,7 +1344,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                             type="checkbox"
                             checked={rememberMe}
                             onChange={(e) => setRememberMe(e.target.checked)}
-                            className="w-4 h-4 rounded text-emerald-600 accent-emerald-600 cursor-pointer"
+                            className="w-4 h-4 rounded text-blue-600 accent-blue-600 cursor-pointer"
                           />
                           <span className="text-[var(--text-secondary)] font-medium">Remember User ID</span>
                         </label>
@@ -1334,7 +1352,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
 
                       <button
                         type="submit"
-                        className="w-full py-3 rounded-xl bg-[var(--groww-emerald)] hover:bg-[var(--groww-emerald-hover)] text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/25 transition-all cursor-pointer flex items-center justify-center gap-2"
+                        className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-lg shadow-blue-500/25 transition-all cursor-pointer flex items-center justify-center gap-2"
                       >
                         <span>CONTINUE TO 2FA PIN</span>
                         <ArrowRight className="w-4 h-4" />
@@ -1352,14 +1370,14 @@ export const ZerodhaAuthPortal: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setLoginStep(1)}
-                          className="text-xs font-bold text-emerald-600 hover:underline"
+                          className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
                         >
                           Change ID
                         </button>
                       </div>
 
                       <div className="flex items-center gap-3 p-3 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
-                        <div className="w-8 h-8 rounded-full bg-[var(--groww-emerald)] text-slate-950 font-black text-xs flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center">
                           SX
                         </div>
                         <div>
@@ -1382,7 +1400,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                               value={digit}
                               onChange={(e) => handlePinChange(idx, e.target.value)}
                               onKeyDown={(e) => handlePinKeyDown(idx, e)}
-                              className="w-10 h-12 text-center text-lg font-mono font-black rounded-xl bg-[var(--bg-tertiary)] border-2 border-[var(--border-color)] focus:border-[var(--groww-emerald)] focus:outline-none text-[var(--text-primary)]"
+                              className="w-10 h-12 text-center text-lg font-mono font-black rounded-xl bg-[var(--bg-tertiary)] border-2 border-[var(--border-color)] focus:border-blue-500 focus:outline-none text-[var(--text-primary)]"
                             />
                           ))}
                         </div>
@@ -1425,7 +1443,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                       <button
                         type="submit"
                         disabled={isAuthenticating}
-                        className="w-full py-3 rounded-xl bg-[var(--groww-emerald)] hover:bg-[var(--groww-emerald-hover)] text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/25 transition-all cursor-pointer flex items-center justify-center gap-2"
+                        className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-lg shadow-blue-500/25 transition-all cursor-pointer flex items-center justify-center gap-2"
                       >
                         {isAuthenticating ? (
                           <>
@@ -1448,11 +1466,11 @@ export const ZerodhaAuthPortal: React.FC = () => {
               {authMode === 'signup' && (
                 <div className="space-y-4 animate-in fade-in duration-150">
                   <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3 text-xs font-bold">
-                    <span className={signupStep === 1 ? 'text-emerald-600 font-black' : 'text-[var(--text-muted)]'}>1. Basics</span>
+                    <span className={signupStep === 1 ? 'text-blue-600 dark:text-blue-400 font-black' : 'text-[var(--text-muted)]'}>1. Basics</span>
                     <ChevronRight className="w-3.5 h-3.5 text-[var(--text-muted)]" />
-                    <span className={signupStep === 2 ? 'text-emerald-600 font-black' : 'text-[var(--text-muted)]'}>2. Segments</span>
+                    <span className={signupStep === 2 ? 'text-blue-600 dark:text-blue-400 font-black' : 'text-[var(--text-muted)]'}>2. Segments</span>
                     <ChevronRight className="w-3.5 h-3.5 text-[var(--text-muted)]" />
-                    <span className={signupStep === 3 ? 'text-emerald-600 font-black' : 'text-[var(--text-muted)]'}>3. PIN Setup</span>
+                    <span className={signupStep === 3 ? 'text-blue-600 dark:text-blue-400 font-black' : 'text-[var(--text-muted)]'}>3. PIN Setup</span>
                   </div>
 
                   {signupStep === 1 && (
@@ -1472,7 +1490,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                             placeholder="e.g. Rahul Sharma"
                             value={signupName}
                             onChange={(e) => setSignupName(e.target.value)}
-                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl py-2 pl-10 pr-3 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--groww-emerald)]"
+                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl py-2 pl-10 pr-3 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-blue-500"
                           />
                         </div>
                       </div>
@@ -1487,7 +1505,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                             placeholder="+91 98765 43210"
                             value={signupPhone}
                             onChange={(e) => setSignupPhone(e.target.value)}
-                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl py-2 pl-10 pr-3 text-xs font-mono font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--groww-emerald)]"
+                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl py-2 pl-10 pr-3 text-xs font-mono font-bold text-[var(--text-primary)] focus:outline-none focus:border-blue-500"
                           />
                         </div>
                       </div>
@@ -1502,14 +1520,14 @@ export const ZerodhaAuthPortal: React.FC = () => {
                             placeholder="rahul@investor.in"
                             value={signupEmail}
                             onChange={(e) => setSignupEmail(e.target.value)}
-                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl py-2 pl-10 pr-3 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--groww-emerald)]"
+                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl py-2 pl-10 pr-3 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-blue-500"
                           />
                         </div>
                       </div>
 
                       <button
                         type="submit"
-                        className="w-full py-2.5 rounded-xl bg-[var(--groww-emerald)] hover:bg-[var(--groww-emerald-hover)] text-slate-950 font-black text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 mt-2"
+                        className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 mt-2"
                       >
                         <span>NEXT: SELECT SEGMENTS</span>
                         <ArrowRight className="w-4 h-4" />
@@ -1538,13 +1556,13 @@ export const ZerodhaAuthPortal: React.FC = () => {
                               onClick={() => toggleSegment(seg.id)}
                               className={`p-2.5 rounded-xl border text-xs cursor-pointer transition-all flex items-center justify-between ${
                                 isSelected
-                                  ? 'bg-emerald-500/10 border-[var(--groww-emerald)] text-[var(--text-primary)]'
+                                  ? 'bg-blue-500/10 border-blue-500 text-[var(--text-primary)]'
                                   : 'bg-[var(--bg-tertiary)] border-[var(--border-color)] text-[var(--text-muted)]'
                               }`}
                             >
                               <div className="flex items-center gap-2">
                                 <div className={`w-4 h-4 rounded flex items-center justify-center text-[10px] font-bold ${
-                                  isSelected ? 'bg-[var(--groww-emerald)] text-slate-950' : 'border border-[var(--border-color)]'
+                                  isSelected ? 'bg-blue-600 text-white' : 'border border-[var(--border-color)]'
                                 }`}>
                                   {isSelected && '✓'}
                                 </div>
@@ -1571,7 +1589,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                         </button>
                         <button
                           type="submit"
-                          className="w-2/3 py-2.5 rounded-xl bg-[var(--groww-emerald)] hover:bg-[var(--groww-emerald-hover)] text-slate-950 font-black text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                          className="w-2/3 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
                         >
                           <span>SETUP 6-DIGIT PIN</span>
                           <ArrowRight className="w-4 h-4" />
@@ -1587,9 +1605,9 @@ export const ZerodhaAuthPortal: React.FC = () => {
                         <p className="text-xs text-[var(--text-muted)] mt-0.5">Use this PIN to login to Kite & authorize trades</p>
                       </div>
 
-                      <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-1">
-                        <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 font-extrabold text-xs">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                      <div className="p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 space-y-1">
+                        <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300 font-extrabold text-xs">
+                          <CheckCircle2 className="w-4 h-4 text-blue-500" />
                           <span>Instant ₹10,00,000 Sandbox Cash Pre-Credited</span>
                         </div>
                         <p className="text-[11px] text-[var(--text-muted)]">
@@ -1602,7 +1620,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                         <select
                           value={signupAccountType}
                           onChange={(e) => setSignupAccountType(e.target.value as any)}
-                          className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl py-2 px-3 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--groww-emerald)]"
+                          className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl py-2 px-3 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-blue-500"
                         >
                           <option value="Retail HNI">Retail HNI (Standard Demat + MF)</option>
                           <option value="Institutional Prime">Institutional Prime (4x DMA Margin)</option>
@@ -1613,7 +1631,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                       <button
                         type="submit"
                         disabled={isAuthenticating}
-                        className="w-full py-3 rounded-xl bg-[var(--groww-emerald)] hover:bg-[var(--groww-emerald-hover)] text-slate-950 font-black text-xs shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+                        className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
                       >
                         {isAuthenticating ? (
                           <>
@@ -1651,7 +1669,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
       <section className="w-full bg-[var(--bg-tertiary)]/50 border-y border-[var(--border-color)] py-14 px-4 sm:px-6 lg:px-8">
         <div className="max-w-[1700px] mx-auto space-y-8">
           <div className="text-center space-y-2 max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-[var(--groww-emerald)] text-xs font-black uppercase tracking-wider">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-black uppercase tracking-wider">
               <CircleDollarSign className="w-3.5 h-3.5" />
               <span>Money Market Search Hub</span>
             </div>
@@ -1671,7 +1689,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                 placeholder="Search by instrument name, issuer (e.g. RBI, HDFC, T-Bill, Sovereign Gold, Commercial Paper)..."
                 value={moneyMarketSearch}
                 onChange={(e) => setMoneyMarketSearch(e.target.value)}
-                className="w-full bg-[var(--bg-card)] border-2 border-[var(--border-color)] focus:border-[var(--groww-emerald)] rounded-2xl py-3.5 pl-12 pr-10 text-xs sm:text-sm font-bold text-[var(--text-primary)] shadow-md focus:outline-none transition-colors"
+                className="w-full bg-[var(--bg-card)] border-2 border-[var(--border-color)] focus:border-amber-500 rounded-2xl py-3.5 pl-12 pr-10 text-xs sm:text-sm font-bold text-[var(--text-primary)] shadow-md focus:outline-none transition-colors"
               />
               <Search className="w-5 h-5 text-slate-400 absolute left-4 top-3.5" />
               {moneyMarketSearch && (
@@ -1700,8 +1718,8 @@ export const ZerodhaAuthPortal: React.FC = () => {
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                     selectedCategory === cat
-                      ? 'bg-[var(--groww-emerald)] text-slate-950 shadow-sm font-black'
-                      : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border border-[var(--border-color)] hover:border-emerald-500'
+                      ? 'bg-amber-500 text-slate-950 shadow-sm font-black'
+                      : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border border-[var(--border-color)] hover:border-amber-500/50'
                   }`}
                 >
                   {cat}
@@ -1721,17 +1739,25 @@ export const ZerodhaAuthPortal: React.FC = () => {
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-[var(--groww-emerald)] font-mono">
+                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded font-mono border ${
+                        item.category.includes('T-Bills')
+                          ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+                          : item.category.includes('Gold')
+                          ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                          : item.category.includes('Liquid')
+                          ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20'
+                          : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                      }`}>
                         {item.category}
                       </span>
-                      <h3 className="text-sm font-black text-[var(--text-primary)] mt-1.5 group-hover:text-emerald-500 transition-colors">
+                      <h3 className="text-sm font-black text-[var(--text-primary)] mt-1.5 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                         {item.name}
                       </h3>
                       <p className="text-[11px] text-[var(--text-muted)]">{item.issuer}</p>
                     </div>
 
                     <div className="text-right shrink-0">
-                      <div className="text-base font-black text-emerald-600 dark:text-[var(--groww-emerald)] font-mono">
+                      <div className="text-base font-black text-amber-600 dark:text-amber-400 font-mono">
                         {item.yieldRate}
                       </div>
                       <span className="text-[9px] font-bold text-[var(--text-muted)]">Indicative Yield</span>
@@ -1749,7 +1775,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                     <span>Tenure: {item.tenure}</span>
                   </div>
 
-                  <span className="text-xs font-bold text-emerald-600 dark:text-[var(--groww-emerald)] flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                  <span className="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
                     <span>Details</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </span>
@@ -1786,11 +1812,11 @@ export const ZerodhaAuthPortal: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
           {/* Benefit 1 */}
           <div className="groww-card p-6 rounded-3xl bg-[var(--bg-card)] space-y-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold">
+            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center font-bold">
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600">ZERO DOWNSIDE RISK</span>
+              <span className="text-[10px] font-black uppercase tracking-wider text-blue-600">ZERO DOWNSIDE RISK</span>
               <h3 className="text-base font-black text-[var(--text-primary)]">100% Capital Protection Shield</h3>
             </div>
             <p className="text-xs text-[var(--text-muted)] leading-relaxed">
@@ -1890,14 +1916,14 @@ export const ZerodhaAuthPortal: React.FC = () => {
             <div className="flex items-center gap-2">
               <button
                 onClick={handlePrevTestimonial}
-                className="p-2.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-tertiary)] hover:bg-[var(--groww-emerald)] hover:text-slate-950 transition-all cursor-pointer"
+                className="p-2.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-tertiary)] hover:bg-blue-600 hover:text-white transition-all cursor-pointer"
                 title="Previous Review"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <button
                 onClick={handleNextTestimonial}
-                className="p-2.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-tertiary)] hover:bg-[var(--groww-emerald)] hover:text-slate-950 transition-all cursor-pointer"
+                className="p-2.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-tertiary)] hover:bg-blue-600 hover:text-white transition-all cursor-pointer"
                 title="Next Review"
               >
                 <ChevronRight className="w-5 h-5" />
@@ -1911,7 +1937,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
             onMouseLeave={() => setIsAutoPlayTestimonials(true)}
             className="groww-card p-8 sm:p-12 rounded-3xl bg-[var(--bg-main)] border border-[var(--border-color)] relative overflow-hidden transition-all"
           >
-            <Quote className="w-16 h-16 text-emerald-500/10 absolute right-8 top-8 pointer-events-none" />
+            <Quote className="w-16 h-16 text-blue-500/10 absolute right-8 top-8 pointer-events-none" />
 
             <div className="space-y-6 max-w-4xl">
               {/* Rating Stars & Impact Badge */}
@@ -1921,7 +1947,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                     <Star key={i} className="w-4 h-4 fill-amber-400" />
                   ))}
                 </div>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/15 text-emerald-600 dark:text-[var(--groww-emerald)] border border-emerald-500/30">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                   {TESTIMONIALS[currentTestimonialIndex].metric}
                 </span>
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-500/15 text-blue-600 border border-blue-500/30">
@@ -1936,7 +1962,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
 
               {/* User Avatar & Name */}
               <div className="flex items-center gap-3.5 pt-2">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#00d09c] to-[#0284c7] text-slate-950 font-black text-sm flex items-center justify-center shadow-md">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-md">
                   {TESTIMONIALS[currentTestimonialIndex].avatar}
                 </div>
                 <div>
@@ -1957,7 +1983,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                   key={t.id}
                   onClick={() => setCurrentTestimonialIndex(idx)}
                   className={`h-2 rounded-full transition-all cursor-pointer ${
-                    currentTestimonialIndex === idx ? 'w-8 bg-[var(--groww-emerald)]' : 'w-2 bg-slate-300 dark:bg-slate-700'
+                    currentTestimonialIndex === idx ? 'w-8 bg-blue-600' : 'w-2 bg-slate-300 dark:bg-slate-700'
                   }`}
                 />
               ))}
@@ -1974,11 +2000,11 @@ export const ZerodhaAuthPortal: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-5 gap-8">
             <div className="col-span-2 space-y-3">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-[var(--groww-emerald)] text-slate-950 flex items-center justify-center font-black text-xs">
+                <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-black text-xs">
                   SX
                 </div>
                 <span className="font-extrabold text-base text-[var(--text-primary)]">
-                  Sanchay<span className="text-[var(--groww-emerald)]">X</span> Direct
+                  Sanchay<span className="text-blue-600 dark:text-blue-400">X</span> Direct
                 </span>
               </div>
               <p className="text-[11px] leading-relaxed max-w-sm">
@@ -1992,30 +2018,30 @@ export const ZerodhaAuthPortal: React.FC = () => {
             <div className="space-y-2.5">
               <h4 className="font-bold text-[var(--text-primary)] uppercase tracking-wider text-[11px]">Company</h4>
               <ul className="space-y-1.5 text-[11px]">
-                <li><button onClick={() => setActiveNavModal('about')} className="hover:text-emerald-500 cursor-pointer">About Us</button></li>
-                <li><button onClick={() => setActiveNavModal('products')} className="hover:text-emerald-500 cursor-pointer">Products</button></li>
-                <li><button onClick={() => setActiveNavModal('pricing')} className="hover:text-emerald-500 cursor-pointer">Pricing</button></li>
-                <li><button onClick={() => setActiveNavModal('support')} className="hover:text-emerald-500 cursor-pointer">Support Desk</button></li>
+                <li><button onClick={() => setActiveNavModal('about')} className="hover:text-blue-500 cursor-pointer">About Us</button></li>
+                <li><button onClick={() => setActiveNavModal('products')} className="hover:text-blue-500 cursor-pointer">Products</button></li>
+                <li><button onClick={() => setActiveNavModal('pricing')} className="hover:text-blue-500 cursor-pointer">Pricing</button></li>
+                <li><button onClick={() => setActiveNavModal('support')} className="hover:text-blue-500 cursor-pointer">Support Desk</button></li>
               </ul>
             </div>
 
             <div className="space-y-2.5">
               <h4 className="font-bold text-[var(--text-primary)] uppercase tracking-wider text-[11px]">Support</h4>
               <ul className="space-y-1.5 text-[11px]">
-                <li><button onClick={() => setActiveNavModal('support')} className="hover:text-emerald-500 cursor-pointer">Contact Desk</button></li>
-                <li><button onClick={() => setActiveNavModal('support')} className="hover:text-emerald-500 cursor-pointer">Knowledge Base</button></li>
-                <li><button onClick={() => setActiveNavModal('about')} className="hover:text-emerald-500 cursor-pointer">MPT Whitepaper</button></li>
-                <li><button onClick={() => setActiveNavModal('pricing')} className="hover:text-emerald-500 cursor-pointer">Brokerage Calculator</button></li>
+                <li><button onClick={() => setActiveNavModal('support')} className="hover:text-blue-500 cursor-pointer">Contact Desk</button></li>
+                <li><button onClick={() => setActiveNavModal('support')} className="hover:text-blue-500 cursor-pointer">Knowledge Base</button></li>
+                <li><button onClick={() => setActiveNavModal('about')} className="hover:text-blue-500 cursor-pointer">MPT Whitepaper</button></li>
+                <li><button onClick={() => setActiveNavModal('pricing')} className="hover:text-blue-500 cursor-pointer">Brokerage Calculator</button></li>
               </ul>
             </div>
 
             <div className="space-y-2.5">
               <h4 className="font-bold text-[var(--text-primary)] uppercase tracking-wider text-[11px]">Account</h4>
               <ul className="space-y-1.5 text-[11px]">
-                <li><button onClick={() => { setAuthMode('signup'); setSignupStep(1); }} className="hover:text-emerald-500 cursor-pointer">Open Demat Account</button></li>
-                <li><button onClick={() => loginDemoUser('Institutional Prime')} className="hover:text-emerald-500 cursor-pointer">Institutional Login</button></li>
-                <li><button onClick={() => loginDemoUser('Sandbox Demo')} className="hover:text-emerald-500 cursor-pointer">Sandbox Demo</button></li>
-                <li><button onClick={() => { setAuthMode('login'); setLoginStep(1); }} className="hover:text-emerald-500 cursor-pointer">Client Login</button></li>
+                <li><button onClick={() => { setAuthMode('signup'); setSignupStep(1); }} className="hover:text-blue-500 cursor-pointer">Open Demat Account</button></li>
+                <li><button onClick={() => loginDemoUser('Institutional Prime')} className="hover:text-blue-500 cursor-pointer">Institutional Login</button></li>
+                <li><button onClick={() => loginDemoUser('Sandbox Demo')} className="hover:text-blue-500 cursor-pointer">Sandbox Demo</button></li>
+                <li><button onClick={() => { setAuthMode('login'); setLoginStep(1); }} className="hover:text-blue-500 cursor-pointer">Client Login</button></li>
               </ul>
             </div>
           </div>
@@ -2039,7 +2065,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
           <div className="bg-[var(--bg-card)] text-[var(--text-primary)] border border-[var(--border-color)] rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col">
             <div className="p-6 border-b border-[var(--border-color)] flex items-center justify-between">
               <div>
-                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 font-mono">
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono border border-amber-500/20">
                   {activeInstrumentModal.category}
                 </span>
                 <h3 className="text-base font-extrabold text-[var(--text-primary)] mt-1">{activeInstrumentModal.name}</h3>
@@ -2057,7 +2083,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 rounded-2xl bg-[var(--bg-tertiary)] space-y-0.5">
                   <div className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Annual Yield</div>
-                  <div className="text-base font-black text-emerald-600 dark:text-[var(--groww-emerald)] font-mono">
+                  <div className="text-base font-black text-amber-600 dark:text-amber-400 font-mono">
                     {activeInstrumentModal.yieldRate}
                   </div>
                 </div>
@@ -2080,7 +2106,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                 </div>
                 <div className="flex justify-between border-b border-[var(--border-color)] pb-1.5">
                   <span className="text-[var(--text-muted)]">Liquidity Profile:</span>
-                  <span className="font-bold text-emerald-600">{activeInstrumentModal.liquidity}</span>
+                  <span className="font-bold text-blue-600 dark:text-blue-400">{activeInstrumentModal.liquidity}</span>
                 </div>
                 {activeInstrumentModal.taxBenefit && (
                   <div className="flex justify-between border-b border-[var(--border-color)] pb-1.5">
@@ -2106,7 +2132,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                     setActiveInstrumentModal(null);
                     loginDemoUser('Sandbox Demo');
                   }}
-                  className="px-5 py-2 rounded-xl bg-[var(--groww-emerald)] text-slate-950 font-black text-xs cursor-pointer shadow-md"
+                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs cursor-pointer shadow-md"
                 >
                   Simulate in Terminal
                 </button>
@@ -2127,7 +2153,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
           <div className="bg-[var(--bg-card)] text-[var(--text-primary)] border border-[var(--border-color)] rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div className="p-6 border-b border-[var(--border-color)] flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-[var(--groww-emerald)] text-slate-950 flex items-center justify-center font-bold">
+                <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold">
                   SX
                 </div>
                 <div>
@@ -2165,7 +2191,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
               <div className="pt-2 flex justify-end">
                 <button
                   onClick={() => { setActiveNavModal(null); loginDemoUser('Sandbox Demo'); }}
-                  className="px-5 py-2.5 rounded-xl bg-[var(--groww-emerald)] text-slate-950 font-black text-xs cursor-pointer shadow-md"
+                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs cursor-pointer shadow-md"
                 >
                   Try in Sandbox Terminal
                 </button>
@@ -2206,13 +2232,13 @@ export const ZerodhaAuthPortal: React.FC = () => {
                 const Icon = prod.icon;
                 return (
                   <div key={idx} className="p-4 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] flex items-start gap-4">
-                    <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 shrink-0">
+                    <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600 shrink-0">
                       <Icon className="w-5 h-5" />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <span className="font-extrabold text-xs text-[var(--text-primary)]">{prod.title}</span>
-                        <span className="text-[9px] font-black px-2 py-0.5 rounded bg-[var(--bg-card)] text-emerald-600 border border-emerald-500/20">
+                        <span className="text-[9px] font-black px-2 py-0.5 rounded bg-[var(--bg-card)] text-blue-600 dark:text-blue-400 border border-blue-500/20">
                           {prod.badge}
                         </span>
                       </div>
@@ -2226,7 +2252,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
             <div className="p-4 border-t border-[var(--border-color)] bg-[var(--bg-main)] flex justify-end">
               <button
                 onClick={() => { setActiveNavModal(null); loginDemoUser('Institutional Prime'); }}
-                className="px-5 py-2 rounded-xl bg-[var(--groww-emerald)] text-slate-950 font-black text-xs cursor-pointer shadow-md"
+                className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs cursor-pointer shadow-md"
               >
                 Open Terminal & Explore
               </button>
@@ -2257,22 +2283,22 @@ export const ZerodhaAuthPortal: React.FC = () => {
             <div className="p-6 space-y-6 overflow-y-auto">
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div className="p-3 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
-                  <div className="text-2xl font-black text-emerald-600 font-mono">₹0</div>
+                  <div className="text-2xl font-black text-blue-600 dark:text-blue-400 font-mono">₹0</div>
                   <div className="text-xs font-bold text-[var(--text-primary)]">Equity Delivery</div>
                 </div>
                 <div className="p-3 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
-                  <div className="text-2xl font-black text-emerald-600 font-mono">₹20</div>
+                  <div className="text-2xl font-black text-blue-600 dark:text-blue-400 font-mono">₹20</div>
                   <div className="text-xs font-bold text-[var(--text-primary)]">Intraday & F&O</div>
                 </div>
                 <div className="p-3 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
-                  <div className="text-2xl font-black text-emerald-600 font-mono">0%</div>
+                  <div className="text-2xl font-black text-blue-600 dark:text-blue-400 font-mono">0%</div>
                   <div className="text-xs font-bold text-[var(--text-primary)]">Direct MF</div>
                 </div>
               </div>
 
               <div className="p-4 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] space-y-4">
                 <div className="flex items-center gap-2">
-                  <Calculator className="w-4 h-4 text-emerald-600" />
+                  <Calculator className="w-4 h-4 text-blue-600" />
                   <span className="font-extrabold text-xs text-[var(--text-primary)]">
                     Brokerage Savings vs Traditional Brokers (0.5%)
                   </span>
@@ -2282,7 +2308,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs font-bold">
                       <span>Trades per Month:</span>
-                      <span className="font-mono text-emerald-600">{calcTrades} trades</span>
+                      <span className="font-mono text-blue-600 dark:text-blue-400">{calcTrades} trades</span>
                     </div>
                     <input
                       type="range"
@@ -2296,7 +2322,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs font-bold">
                       <span>Average Turnover per Trade:</span>
-                      <span className="font-mono text-emerald-600">₹{calcTurnover.toLocaleString()}</span>
+                      <span className="font-mono text-blue-600 dark:text-blue-400">₹{calcTurnover.toLocaleString()}</span>
                     </div>
                     <input
                       type="range"
@@ -2311,11 +2337,11 @@ export const ZerodhaAuthPortal: React.FC = () => {
                   <div className="p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-between text-xs">
                     <div>
                       <div className="text-[11px] text-[var(--text-muted)]">Estimated Annual Brokerage Savings:</div>
-                      <div className="text-lg font-black text-emerald-600 font-mono">
+                      <div className="text-lg font-black text-blue-600 dark:text-blue-400 font-mono">
                         ₹{Math.round((calcTrades * calcTurnover * 0.005 * 12) - (calcTrades * 20 * 12)).toLocaleString()} / year
                       </div>
                     </div>
-                    <span className="text-[10px] font-black px-2 py-1 rounded bg-emerald-500/10 text-emerald-600">
+                    <span className="text-[10px] font-black px-2 py-1 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                       SAVED WITH SANCHAYX
                     </span>
                   </div>
@@ -2326,7 +2352,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
             <div className="p-4 border-t border-[var(--border-color)] bg-[var(--bg-main)] flex justify-end">
               <button
                 onClick={() => { setActiveNavModal(null); setAuthMode('signup'); setSignupStep(1); }}
-                className="px-5 py-2 rounded-xl bg-[var(--groww-emerald)] text-slate-950 font-black text-xs cursor-pointer shadow-md"
+                className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs cursor-pointer shadow-md"
               >
                 Open Free Account
               </button>
@@ -2361,7 +2387,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                   placeholder="Search questions (e.g. MPT, Sharpe ratio, charges, sandbox)..."
                   value={supportSearch}
                   onChange={(e) => setSupportSearch(e.target.value)}
-                  className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl py-2.5 pl-4 pr-10 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--groww-emerald)]"
+                  className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl py-2.5 pl-4 pr-10 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-blue-500"
                 />
                 {supportSearch && (
                   <button
@@ -2381,7 +2407,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
                   >
                     <button
                       onClick={() => setOpenFaqIndex(openFaqIndex === idx ? null : idx)}
-                      className="w-full p-3.5 text-left text-xs font-extrabold text-[var(--text-primary)] flex items-center justify-between cursor-pointer hover:text-emerald-600"
+                      className="w-full p-3.5 text-left text-xs font-extrabold text-[var(--text-primary)] flex items-center justify-between cursor-pointer hover:text-blue-600"
                     >
                       <span>{faq.q}</span>
                       <span>{openFaqIndex === idx ? '−' : '+'}</span>
@@ -2400,7 +2426,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
               <span className="text-xs text-[var(--text-muted)]">24/7 AI Desk available inside terminal</span>
               <button
                 onClick={() => { setActiveNavModal(null); loginDemoUser('Sandbox Demo'); }}
-                className="px-5 py-2 rounded-xl bg-[var(--groww-emerald)] text-slate-950 font-black text-xs cursor-pointer shadow-md"
+                className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs cursor-pointer shadow-md"
               >
                 Enter Sandbox Desk
               </button>
@@ -2422,7 +2448,7 @@ export const ZerodhaAuthPortal: React.FC = () => {
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-base font-extrabold text-[var(--text-primary)]">Global Market Hours & Exchange Schedules</h3>
-                  <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 font-mono">
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono border border-blue-500/20">
                     REAL-TIME ENGINE
                   </span>
                 </div>
@@ -2570,13 +2596,13 @@ export const ZerodhaAuthPortal: React.FC = () => {
                 disabled={isMarketDataLoading}
                 className="px-3.5 py-2 rounded-xl bg-[var(--bg-tertiary)] text-[var(--text-primary)] font-bold text-xs cursor-pointer flex items-center gap-1.5"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${isMarketDataLoading ? 'animate-spin text-emerald-500' : ''}`} />
+                <RefreshCw className={`w-3.5 h-3.5 ${isMarketDataLoading ? 'animate-spin text-blue-500' : ''}`} />
                 <span>Sync Quotes</span>
               </button>
 
               <button
                 onClick={() => { setActiveNavModal(null); loginDemoUser('Sandbox Demo'); }}
-                className="px-5 py-2 rounded-xl bg-[var(--groww-emerald)] text-slate-950 font-black text-xs cursor-pointer shadow-md"
+                className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs cursor-pointer shadow-md"
               >
                 Open Terminal & Place Simulated Trades
               </button>

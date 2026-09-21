@@ -341,21 +341,21 @@ input[type=range]::-webkit-slider-thumb:hover {
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* Groww-Inspired Innovative Design Utilities */
+/* Institutional Executive Design Utilities */
 :root {
-  --groww-emerald: #00d09c;
-  --groww-emerald-hover: #00b386;
-  --groww-emerald-glow: rgba(0, 208, 156, 0.25);
-  --groww-blue: #5367ff;
-  --groww-card-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+  --groww-emerald: #2563eb;
+  --groww-emerald-hover: #1d4ed8;
+  --groww-emerald-glow: rgba(37, 99, 235, 0.20);
+  --groww-blue: #3b82f6;
+  --groww-card-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
 }
 
 .dark {
-  --groww-emerald: #00e0a9;
-  --groww-emerald-hover: #00c997;
-  --groww-emerald-glow: rgba(0, 224, 169, 0.35);
-  --groww-blue: #6376ff;
-  --groww-card-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  --groww-emerald: #3b82f6;
+  --groww-emerald-hover: #2563eb;
+  --groww-emerald-glow: rgba(59, 130, 246, 0.30);
+  --groww-blue: #60a5fa;
+  --groww-card-shadow: 0 8px 30px rgba(0, 0, 0, 0.40);
 }
 
 .groww-card {
@@ -368,8 +368,8 @@ input[type=range]::-webkit-slider-thumb:hover {
 
 .groww-card:hover {
   transform: translateY(-4px);
-  border-color: var(--groww-emerald);
-  box-shadow: 0 14px 36px rgba(0, 208, 156, 0.12);
+  border-color: rgba(59, 130, 246, 0.45);
+  box-shadow: 0 14px 36px rgba(37, 99, 235, 0.12);
 }
 
 .groww-glow {
@@ -390,13 +390,13 @@ input[type=range]::-webkit-slider-thumb:hover {
 }
 
 .groww-pill-active {
-  background: var(--groww-emerald);
+  background: #2563eb;
   color: #ffffff;
-  box-shadow: 0 4px 14px rgba(0, 208, 156, 0.35);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.30);
 }
 
 .groww-gradient-text {
-  background: linear-gradient(135deg, #00d09c 0%, #3b82f6 50%, #f26522 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #6366f1 50%, #f26522 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
