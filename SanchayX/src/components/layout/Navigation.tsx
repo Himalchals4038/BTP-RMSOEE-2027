@@ -8,7 +8,8 @@ import {
   Globe,
   Sparkles,
   ShieldCheck,
-  FileText
+  FileText,
+  Cpu
 } from 'lucide-react';
 import {
   NseBseEmblem,
@@ -28,6 +29,7 @@ export const Navigation: React.FC = () => {
   const mainNavItems = [
     { id: 'dashboard', label: 'Portfolio', icon: LayoutDashboard },
     { id: 'builder', label: 'Stocks & Allocation', icon: Sliders },
+    { id: 'algo_studio', label: '⚡ Algo Studio', icon: Cpu, isHighlighted: true, badge: '5 HZ QUANT', style: 'amber' },
     { id: 'smart_engine', label: '🎯 Smart Investment Option', icon: Sparkles, isHighlighted: true, badge: 'SMART CORE', style: 'amber' },
     { id: 'safe_investment', label: '🛡️ 100% Safe Investment', icon: ShieldCheck, isHighlighted: true, badge: '100% SAFE', style: 'emerald' },
     { id: 'frontier', label: 'Mutual Funds & MPT', icon: TrendingUp },
@@ -37,6 +39,7 @@ export const Navigation: React.FC = () => {
 
   const secondaryNavItems = [
     { id: 'portfolio_summary', label: 'Portfolio', icon: LayoutDashboard, targetTab: 'dashboard' },
+    { id: 'algo_studio', label: 'Algo Studio', icon: Cpu, badge: '5Hz', targetTab: 'algo_studio' },
     { id: 'place_order', label: 'Place Order', icon: Level2DepthLadder, targetTab: 'builder' },
     { id: 'options_builder', label: 'Options Builder', icon: OptionDeltaGreeks, badge: 'GREEKS', targetTab: 'backtest' },
     { id: 'sip_mandates', label: 'SIP Mandates', icon: BankAutoSweepVault, badge: 'AUTO', targetTab: 'safe_investment' },

@@ -10,7 +10,10 @@ import {
   Clock,
   Target,
   Flame,
-  BarChart3
+  BarChart3,
+  ShieldAlert,
+  TrendingUp,
+  Zap
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -26,6 +29,8 @@ import {
   calculateBlackScholesGreeks,
   calculateLegPayoffAtExpiry,
   calculateLegPayoffAtTargetDate,
+  aggregatePortfolioGreeks,
+  calculateDeltaNeutralHedge,
   type OptionLeg,
   type OptionType
 } from '../../utils/blackScholes';
@@ -38,6 +43,7 @@ interface StrategyTemplate {
   description: string;
   category: 'Bullish' | 'Bearish' | 'Neutral' | 'Volatile';
   icon: string;
+  marginBenefit?: string;
   generateLegs: (spot: number) => OptionLeg[];
 }
 
@@ -48,37 +54,41 @@ export const OptionsStrategyBuilder: React.FC = () => {
   // Underlying selection
   const [underlying, setUnderlying] = useState<string>('NIFTY 50');
   const [spotPrice, setSpotPrice] = useState<number>(23346.40);
-  const ivPct = 13.8; // India VIX %
-  const daysToExpiry = 7;
+  
+  // Interactive Sensibull-Grade Sliders: Days to Expiry & India VIX
+  const [daysToExpiry, setDaysToExpiry] = useState<number>(7); // 1 to 30 DTE
+  const [ivPct, setIvPct] = useState<number>(13.8); // 9.0% to 35.0% India VIX
   const [targetDte, setTargetDte] = useState<number>(0); // T+0 today
   const [executionMessage, setExecutionMessage] = useState<string | null>(null);
 
   // Default lot size
   const lotSize = underlying.includes('BANK') ? 15 : 25;
 
-  // Pre-built Strategy Templates
+  // Pre-built Institutional Strategy Templates
   const templates: StrategyTemplate[] = useMemo(() => [
     {
       name: 'Bull Call Spread',
       description: 'Buy ATM Call + Sell OTM Call. Defined risk & capped profit for moderate upside.',
       category: 'Bullish',
       icon: '📈',
+      marginBenefit: '₹32,500 (78% Margin Relief)',
       generateLegs: (spot) => {
         const atm = Math.round(spot / 50) * 50;
         const otm = atm + 150;
-        const atmGreeks = calculateBlackScholesGreeks(spot, atm, 7 / 365, 0.065, 0.138, true);
-        const otmGreeks = calculateBlackScholesGreeks(spot, otm, 7 / 365, 0.065, 0.138, true);
+        const atmGreeks = calculateBlackScholesGreeks(spot, atm, daysToExpiry / 365, 0.065, ivPct / 100, true);
+        const otmGreeks = calculateBlackScholesGreeks(spot, otm, daysToExpiry / 365, 0.065, ivPct / 100, true);
         return [
-          { id: 'leg_1', strike: atm, type: 'CE', action: 'BUY', lots: 1, lotSize, entryPrice: atmGreeks.price, iv: 13.8, expiryDate: '7 DTE' },
-          { id: 'leg_2', strike: otm, type: 'CE', action: 'SELL', lots: 1, lotSize, entryPrice: otmGreeks.price, iv: 13.8, expiryDate: '7 DTE' }
+          { id: 'leg_1', strike: atm, type: 'CE', action: 'BUY', lots: 1, lotSize, entryPrice: atmGreeks.price, iv: ivPct, expiryDate: `${daysToExpiry} DTE` },
+          { id: 'leg_2', strike: otm, type: 'CE', action: 'SELL', lots: 1, lotSize, entryPrice: otmGreeks.price, iv: ivPct, expiryDate: `${daysToExpiry} DTE` }
         ];
       }
     },
     {
       name: 'Iron Condor',
-      description: 'Sell OTM Put + Buy Far OTM Put + Sell OTM Call + Buy Far OTM Call. Non-directional range-bound income.',
+      description: 'Sell OTM Put + Buy Far OTM Put + Sell OTM Call + Buy Far OTM Call. Non-directional range income.',
       category: 'Neutral',
       icon: '🦅',
+      marginBenefit: '₹48,200 (68% Margin Relief)',
       generateLegs: (spot) => {
         const base = Math.round(spot / 50) * 50;
         const putSell = base - 150;
@@ -86,48 +96,55 @@ export const OptionsStrategyBuilder: React.FC = () => {
         const callSell = base + 150;
         const callBuy = base + 300;
 
-        const pSellG = calculateBlackScholesGreeks(spot, putSell, 7 / 365, 0.065, 0.138, false);
-        const pBuyG = calculateBlackScholesGreeks(spot, putBuy, 7 / 365, 0.065, 0.138, false);
-        const cSellG = calculateBlackScholesGreeks(spot, callSell, 7 / 365, 0.065, 0.138, true);
-        const cBuyG = calculateBlackScholesGreeks(spot, callBuy, 7 / 365, 0.065, 0.138, true);
+        const pSellG = calculateBlackScholesGreeks(spot, putSell, daysToExpiry / 365, 0.065, ivPct / 100, false);
+        const pBuyG = calculateBlackScholesGreeks(spot, putBuy, daysToExpiry / 365, 0.065, ivPct / 100, false);
+        const cSellG = calculateBlackScholesGreeks(spot, callSell, daysToExpiry / 365, 0.065, ivPct / 100, true);
+        const cBuyG = calculateBlackScholesGreeks(spot, callBuy, daysToExpiry / 365, 0.065, ivPct / 100, true);
 
         return [
-          { id: 'leg_1', strike: putBuy, type: 'PE', action: 'BUY', lots: 1, lotSize, entryPrice: pBuyG.price, iv: 14.5, expiryDate: '7 DTE' },
-          { id: 'leg_2', strike: putSell, type: 'PE', action: 'SELL', lots: 1, lotSize, entryPrice: pSellG.price, iv: 14.0, expiryDate: '7 DTE' },
-          { id: 'leg_3', strike: callSell, type: 'CE', action: 'SELL', lots: 1, lotSize, entryPrice: cSellG.price, iv: 13.5, expiryDate: '7 DTE' },
-          { id: 'leg_4', strike: callBuy, type: 'CE', action: 'BUY', lots: 1, lotSize, entryPrice: cBuyG.price, iv: 14.0, expiryDate: '7 DTE' }
+          { id: 'leg_1', strike: putBuy, type: 'PE', action: 'BUY', lots: 1, lotSize, entryPrice: pBuyG.price, iv: ivPct + 0.5, expiryDate: `${daysToExpiry} DTE` },
+          { id: 'leg_2', strike: putSell, type: 'PE', action: 'SELL', lots: 1, lotSize, entryPrice: pSellG.price, iv: ivPct, expiryDate: `${daysToExpiry} DTE` },
+          { id: 'leg_3', strike: callSell, type: 'CE', action: 'SELL', lots: 1, lotSize, entryPrice: cSellG.price, iv: ivPct - 0.3, expiryDate: `${daysToExpiry} DTE` },
+          { id: 'leg_4', strike: callBuy, type: 'CE', action: 'BUY', lots: 1, lotSize, entryPrice: cBuyG.price, iv: ivPct + 0.2, expiryDate: `${daysToExpiry} DTE` }
         ];
       }
     },
     {
-      name: 'Long Straddle',
-      description: 'Simultaneous Buy ATM Call + Buy ATM Put. High profit on massive breakout in either direction.',
-      category: 'Volatile',
-      icon: '💥',
+      name: 'Short Straddle',
+      description: 'Sell ATM Call + Sell ATM Put. Aggressive theta decay harvesting with high premium capture.',
+      category: 'Neutral',
+      icon: '🎯',
+      marginBenefit: '₹1,45,000 (Defined Capital)',
       generateLegs: (spot) => {
         const atm = Math.round(spot / 50) * 50;
-        const cG = calculateBlackScholesGreeks(spot, atm, 7 / 365, 0.065, 0.138, true);
-        const pG = calculateBlackScholesGreeks(spot, atm, 7 / 365, 0.065, 0.138, false);
+        const cG = calculateBlackScholesGreeks(spot, atm, daysToExpiry / 365, 0.065, ivPct / 100, true);
+        const pG = calculateBlackScholesGreeks(spot, atm, daysToExpiry / 365, 0.065, ivPct / 100, false);
         return [
-          { id: 'leg_1', strike: atm, type: 'CE', action: 'BUY', lots: 1, lotSize, entryPrice: cG.price, iv: 13.8, expiryDate: '7 DTE' },
-          { id: 'leg_2', strike: atm, type: 'PE', action: 'BUY', lots: 1, lotSize, entryPrice: pG.price, iv: 14.0, expiryDate: '7 DTE' }
+          { id: 'leg_1', strike: atm, type: 'CE', action: 'SELL', lots: 1, lotSize, entryPrice: cG.price, iv: ivPct, expiryDate: `${daysToExpiry} DTE` },
+          { id: 'leg_2', strike: atm, type: 'PE', action: 'SELL', lots: 1, lotSize, entryPrice: pG.price, iv: ivPct, expiryDate: `${daysToExpiry} DTE` }
         ];
       }
     },
     {
-      name: 'Long Strangle',
-      description: 'Buy OTM Call + Buy OTM Put. Cheaper volatility play requiring larger momentum move.',
-      category: 'Volatile',
-      icon: '⚡',
+      name: 'Jade Lizard',
+      description: 'Sell OTM Put + Bear Call Spread (Sell OTM CE + Buy Far OTM CE). Zero upside risk credit strategy.',
+      category: 'Bullish',
+      icon: '🦎',
+      marginBenefit: '₹55,000 (62% Margin Relief)',
       generateLegs: (spot) => {
         const base = Math.round(spot / 50) * 50;
-        const putOtm = base - 200;
-        const callOtm = base + 200;
-        const cG = calculateBlackScholesGreeks(spot, callOtm, 7 / 365, 0.065, 0.138, true);
-        const pG = calculateBlackScholesGreeks(spot, putOtm, 7 / 365, 0.065, 0.138, false);
+        const putSell = base - 200;
+        const callSell = base + 150;
+        const callBuy = base + 250;
+
+        const pSellG = calculateBlackScholesGreeks(spot, putSell, daysToExpiry / 365, 0.065, ivPct / 100, false);
+        const cSellG = calculateBlackScholesGreeks(spot, callSell, daysToExpiry / 365, 0.065, ivPct / 100, true);
+        const cBuyG = calculateBlackScholesGreeks(spot, callBuy, daysToExpiry / 365, 0.065, ivPct / 100, true);
+
         return [
-          { id: 'leg_1', strike: callOtm, type: 'CE', action: 'BUY', lots: 1, lotSize, entryPrice: cG.price, iv: 13.5, expiryDate: '7 DTE' },
-          { id: 'leg_2', strike: putOtm, type: 'PE', action: 'BUY', lots: 1, lotSize, entryPrice: pG.price, iv: 14.2, expiryDate: '7 DTE' }
+          { id: 'leg_1', strike: putSell, type: 'PE', action: 'SELL', lots: 1, lotSize, entryPrice: pSellG.price, iv: ivPct + 0.4, expiryDate: `${daysToExpiry} DTE` },
+          { id: 'leg_2', strike: callSell, type: 'CE', action: 'SELL', lots: 1, lotSize, entryPrice: cSellG.price, iv: ivPct, expiryDate: `${daysToExpiry} DTE` },
+          { id: 'leg_3', strike: callBuy, type: 'CE', action: 'BUY', lots: 1, lotSize, entryPrice: cBuyG.price, iv: ivPct + 0.3, expiryDate: `${daysToExpiry} DTE` }
         ];
       }
     },
@@ -136,22 +153,23 @@ export const OptionsStrategyBuilder: React.FC = () => {
       description: 'Buy ATM Put + Sell OTM Put. Moderately bearish with lower net premium cost.',
       category: 'Bearish',
       icon: '📉',
+      marginBenefit: '₹34,000 (76% Margin Relief)',
       generateLegs: (spot) => {
         const atm = Math.round(spot / 50) * 50;
         const otm = atm - 150;
-        const atmG = calculateBlackScholesGreeks(spot, atm, 7 / 365, 0.065, 0.138, false);
-        const otmG = calculateBlackScholesGreeks(spot, otm, 7 / 365, 0.065, 0.138, false);
+        const atmG = calculateBlackScholesGreeks(spot, atm, daysToExpiry / 365, 0.065, ivPct / 100, false);
+        const otmG = calculateBlackScholesGreeks(spot, otm, daysToExpiry / 365, 0.065, ivPct / 100, false);
         return [
-          { id: 'leg_1', strike: atm, type: 'PE', action: 'BUY', lots: 1, lotSize, entryPrice: atmG.price, iv: 14.0, expiryDate: '7 DTE' },
-          { id: 'leg_2', strike: otm, type: 'PE', action: 'SELL', lots: 1, lotSize, entryPrice: otmG.price, iv: 14.5, expiryDate: '7 DTE' }
+          { id: 'leg_1', strike: atm, type: 'PE', action: 'BUY', lots: 1, lotSize, entryPrice: atmG.price, iv: ivPct, expiryDate: `${daysToExpiry} DTE` },
+          { id: 'leg_2', strike: otm, type: 'PE', action: 'SELL', lots: 1, lotSize, entryPrice: otmG.price, iv: ivPct, expiryDate: `${daysToExpiry} DTE` }
         ];
       }
     }
-  ], [lotSize]);
+  ], [lotSize, daysToExpiry, ivPct]);
 
   // Active strategy legs state
   const [selectedTemplateName, setSelectedTemplateName] = useState<string>('Bull Call Spread');
-  const [legs, setLegs] = useState<OptionLeg[]>(() => templates[0].generateLegs(23350));
+  const [legs, setLegs] = useState<OptionLeg[]>(() => templates[0].generateLegs(23346.40));
 
   const handleApplyTemplate = (tpl: StrategyTemplate) => {
     setSelectedTemplateName(tpl.name);
@@ -329,7 +347,45 @@ export const OptionsStrategyBuilder: React.FC = () => {
         totalVega: Number(totalVega.toFixed(1))
       }
     };
-  }, [legs, spotPrice, daysToExpiry, targetDte, lotSize]);
+  }, [legs, spotPrice, daysToExpiry, targetDte, lotSize, ivPct]);
+
+  // Aggregate Portfolio-Level Greeks for Institutional Sentinel
+  const portfolioGreeks = useMemo(() => {
+    return aggregatePortfolioGreeks(legs, spotPrice, daysToExpiry, 0.065, ivPct);
+  }, [legs, spotPrice, daysToExpiry, ivPct]);
+
+  // Calculate Automated Delta-Neutral Rebalance Recommendation
+  const deltaHedgeRec = useMemo(() => {
+    return calculateDeltaNeutralHedge(portfolioGreeks.netDelta, spotPrice, daysToExpiry, lotSize, ivPct);
+  }, [portfolioGreeks.netDelta, spotPrice, daysToExpiry, lotSize, ivPct]);
+
+  // 1-Click Automated Delta Neutralize
+  const handleDeltaNeutralize = () => {
+    if (!deltaHedgeRec || deltaHedgeRec.status === 'NEUTRAL' || deltaHedgeRec.recommendedLots <= 0) return;
+    const g = calculateBlackScholesGreeks(
+      spotPrice,
+      deltaHedgeRec.recommendedStrike,
+      daysToExpiry / 365,
+      0.065,
+      ivPct / 100,
+      deltaHedgeRec.recommendedType === 'CE'
+    );
+    const hedgeLeg: OptionLeg = {
+      id: `hedge_leg_${Date.now()}`,
+      strike: deltaHedgeRec.recommendedStrike,
+      type: deltaHedgeRec.recommendedType,
+      action: deltaHedgeRec.recommendedAction,
+      lots: deltaHedgeRec.recommendedLots,
+      lotSize,
+      entryPrice: g.price,
+      iv: ivPct,
+      expiryDate: `${daysToExpiry} DTE`
+    };
+    setLegs(prev => [...prev, hedgeLeg]);
+    soundService.playExecutionChime();
+    setExecutionMessage(`Delta hedge successfully injected: ${deltaHedgeRec.recommendedAction} ${deltaHedgeRec.recommendedLots} lot(s) of ${deltaHedgeRec.recommendedStrike} ${deltaHedgeRec.recommendedType}. Portfolio delta neutralized!`);
+    setTimeout(() => setExecutionMessage(null), 5000);
+  };
 
   // Execute Entire Multi-Leg Basket directly in simulation engine
   const handleExecuteStrategyBasket = () => {
@@ -354,6 +410,8 @@ export const OptionsStrategyBuilder: React.FC = () => {
   const axisColor = theme === 'dark' ? '#64748b' : '#94a3b8';
   const tooltipBg = theme === 'dark' ? '#0f172a' : '#ffffff';
   const tooltipBorder = theme === 'dark' ? '#1e293b' : '#e2e8f0';
+
+  const isDeltaExposed = Math.abs(portfolioGreeks.netDelta) > 0.15;
 
   return (
     <div className="space-y-6 w-full">
@@ -398,6 +456,36 @@ export const OptionsStrategyBuilder: React.FC = () => {
         </div>
       </div>
 
+      {/* Automated Delta-Neutral Sentinel Alert Banner */}
+      {isDeltaExposed && deltaHedgeRec && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-rose-500/15 to-purple-500/15 border-2 border-amber-500/40 flex flex-wrap items-center justify-between gap-4 shadow-md animate-pulse">
+          <div className="flex items-start gap-3">
+            <ShieldAlert className="w-6 h-6 text-amber-500 shrink-0 mt-0.5" />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                  DELTA-NEUTRAL SENTINEL ACTIVE
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.2 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 font-extrabold">
+                  |ΣΔ| = {Math.abs(portfolioGreeks.netDelta)} &gt; 0.15 Limit
+                </span>
+              </div>
+              <p className="text-xs text-[var(--text-primary)] font-semibold mt-1">
+                {deltaHedgeRec.description}
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={handleDeltaNeutralize}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-extrabold text-xs shadow-md flex items-center gap-2 cursor-pointer transition-all shrink-0 hover:scale-105"
+          >
+            <Zap className="w-4 h-4" />
+            1-Click Delta Neutralize
+          </button>
+        </div>
+      )}
+
       {/* Pre-Built Strategy Templates Selector */}
       <div className="space-y-2">
         <label className="text-xs font-extrabold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1.5">
@@ -430,6 +518,11 @@ export const OptionsStrategyBuilder: React.FC = () => {
                 <div className="mt-2">
                   <span className="font-extrabold text-xs text-[var(--text-primary)] block">{tpl.name}</span>
                   <span className="text-[10px] text-[var(--text-secondary)] line-clamp-2 mt-0.5">{tpl.description}</span>
+                  {tpl.marginBenefit && (
+                    <span className="text-[9px] font-mono text-emerald-600 dark:text-emerald-400 font-bold mt-1 block">
+                      {tpl.marginBenefit}
+                    </span>
+                  )}
                 </div>
               </button>
             );
@@ -448,26 +541,70 @@ export const OptionsStrategyBuilder: React.FC = () => {
                 Payoff Diagram at Expiry vs Target Date (T+{targetDte})
               </h4>
               <span className="text-[11px] text-[var(--text-secondary)]">
-                Interactive P&L curve across underlying spot price rungs
+                Sensibull™ grade visual payoff curve with interactive Expiry & India VIX sliders
               </span>
             </div>
 
-            {/* Target Date Slider (0 to DTE) */}
-            <div className="flex items-center gap-3 text-xs bg-[var(--bg-tertiary)] px-3 py-1.5 rounded-xl border border-[var(--border-color)]">
-              <span className="font-bold text-[var(--text-muted)] flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5" /> Target Date:
-              </span>
-              <input
-                type="range"
-                min="0"
-                max={daysToExpiry}
-                value={targetDte}
-                onChange={(e) => setTargetDte(Number(e.target.value))}
-                className="w-24 accent-[var(--icici-orange)] cursor-pointer"
-              />
-              <span className="font-mono font-extrabold text-[var(--icici-orange)]">
-                {targetDte === 0 ? 'Today (T+0)' : `T+${targetDte} Days`}
-              </span>
+            {/* Interactive Sliders: Target Date, India VIX, Expiry */}
+            <div className="flex flex-wrap items-center gap-3 text-xs">
+              {/* Target Date Slider */}
+              <div className="flex items-center gap-2 bg-[var(--bg-tertiary)] px-2.5 py-1 rounded-xl border border-[var(--border-color)]">
+                <span className="font-bold text-[var(--text-muted)] flex items-center gap-1 text-[11px]">
+                  <Clock className="w-3 h-3" /> Target:
+                </span>
+                <input
+                  type="range"
+                  min="0"
+                  max={daysToExpiry}
+                  value={targetDte}
+                  onChange={(e) => setTargetDte(Number(e.target.value))}
+                  className="w-16 accent-[var(--icici-orange)] cursor-pointer"
+                />
+                <span className="font-mono font-extrabold text-[var(--icici-orange)] text-[11px]">
+                  {targetDte === 0 ? 'T+0' : `T+${targetDte}d`}
+                </span>
+              </div>
+
+              {/* India VIX Slider */}
+              <div className="flex items-center gap-2 bg-[var(--bg-tertiary)] px-2.5 py-1 rounded-xl border border-[var(--border-color)]">
+                <span className="font-bold text-[var(--text-muted)] flex items-center gap-1 text-[11px]">
+                  <TrendingUp className="w-3 h-3 text-purple-500" /> VIX:
+                </span>
+                <input
+                  type="range"
+                  min="9"
+                  max="35"
+                  step="0.1"
+                  value={ivPct}
+                  onChange={(e) => setIvPct(Number(e.target.value))}
+                  className="w-16 accent-purple-500 cursor-pointer"
+                />
+                <span className="font-mono font-extrabold text-purple-600 dark:text-purple-400 text-[11px]">
+                  {ivPct}%
+                </span>
+              </div>
+
+              {/* Expiry Slider */}
+              <div className="flex items-center gap-2 bg-[var(--bg-tertiary)] px-2.5 py-1 rounded-xl border border-[var(--border-color)]">
+                <span className="font-bold text-[var(--text-muted)] text-[11px]">
+                  Expiry:
+                </span>
+                <input
+                  type="range"
+                  min="1"
+                  max="30"
+                  value={daysToExpiry}
+                  onChange={(e) => {
+                    const newDte = Number(e.target.value);
+                    setDaysToExpiry(newDte);
+                    if (targetDte > newDte) setTargetDte(newDte);
+                  }}
+                  className="w-16 accent-emerald-500 cursor-pointer"
+                />
+                <span className="font-mono font-extrabold text-emerald-600 dark:text-emerald-400 text-[11px]">
+                  {daysToExpiry} DTE
+                </span>
+              </div>
             </div>
           </div>
 
@@ -608,35 +745,68 @@ export const OptionsStrategyBuilder: React.FC = () => {
             )}
           </div>
 
-          {/* Portfolio Second-Order Greeks Summary */}
+          {/* Net Portfolio Greeks Barometer */}
           <div className="p-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] space-y-3 shadow-sm">
-            <h4 className="font-extrabold text-sm text-[var(--text-primary)] flex items-center gap-2">
-              <Activity className="w-4 h-4 text-purple-500" />
-              Net Black-Scholes Greeks
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="font-extrabold text-sm text-[var(--text-primary)] flex items-center gap-2">
+                <Activity className="w-4 h-4 text-purple-500" />
+                Net Portfolio Greeks Barometer
+              </h4>
+              <span className={`text-[10px] font-mono font-extrabold px-2 py-0.5 rounded-full ${
+                !isDeltaExposed
+                  ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                  : 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 animate-pulse'
+              }`}>
+                {!isDeltaExposed ? 'DELTA NEUTRAL' : 'DIRECTIONAL SKEW'}
+              </span>
+            </div>
+
+            <div className="text-[10px] font-mono text-[var(--text-muted)] bg-[var(--bg-tertiary)] p-2 rounded-lg border border-[var(--border-color)] flex items-center justify-between">
+              <span>ΣΔ = ∑ w_i × Δ_i</span>
+              <span>ΣΘ = ∑ w_i × Θ_i</span>
+            </div>
 
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="p-2.5 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] flex items-center justify-between">
-                <span className="text-[11px] font-semibold text-[var(--text-secondary)]">Delta (Δ):</span>
-                <span className="font-mono font-black text-xs text-[var(--text-primary)]">{summary.totalDelta}</span>
-              </div>
-
-              <div className="p-2.5 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] flex items-center justify-between">
-                <span className="text-[11px] font-semibold text-[var(--text-secondary)]">Gamma (Γ):</span>
-                <span className="font-mono font-black text-xs text-[var(--text-primary)]">{summary.totalGamma}</span>
-              </div>
-
-              <div className="p-2.5 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] flex items-center justify-between">
-                <span className="text-[11px] font-semibold text-[var(--text-secondary)]">Theta (Θ):</span>
-                <span className={`font-mono font-black text-xs ${summary.totalTheta >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                  {summary.totalTheta >= 0 ? '+' : ''}₹{summary.totalTheta}/day
+                <div>
+                  <span className="text-[11px] font-semibold text-[var(--text-secondary)] block">Net Delta (ΣΔ)</span>
+                  <span className="text-[9px] text-[var(--text-muted)]">Directional Bias</span>
+                </div>
+                <span className={`font-mono font-black text-xs ${!isDeltaExposed ? 'text-emerald-500' : 'text-amber-500 font-extrabold'}`}>
+                  {portfolioGreeks.netDelta > 0 ? '+' : ''}{portfolioGreeks.netDelta}
                 </span>
               </div>
 
               <div className="p-2.5 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] flex items-center justify-between">
-                <span className="text-[11px] font-semibold text-[var(--text-secondary)]">Vega (V):</span>
-                <span className="font-mono font-black text-xs text-blue-400">₹{summary.totalVega}/%</span>
+                <div>
+                  <span className="text-[11px] font-semibold text-[var(--text-secondary)] block">Net Gamma (ΣΓ)</span>
+                  <span className="text-[9px] text-[var(--text-muted)]">Curvature / Accel</span>
+                </div>
+                <span className="font-mono font-black text-xs text-[var(--text-primary)]">{portfolioGreeks.netGamma}</span>
               </div>
+
+              <div className="p-2.5 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] font-semibold text-[var(--text-secondary)] block">Daily Theta (ΣΘ)</span>
+                  <span className="text-[9px] text-[var(--text-muted)]">Time Decay Yield</span>
+                </div>
+                <span className={`font-mono font-black text-xs ${portfolioGreeks.netTheta >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                  {portfolioGreeks.netTheta >= 0 ? '+' : ''}₹{portfolioGreeks.netTheta}/day
+                </span>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] font-semibold text-[var(--text-secondary)] block">Net Vega (Σν)</span>
+                  <span className="text-[9px] text-[var(--text-muted)]">Per 1% IV Move</span>
+                </div>
+                <span className="font-mono font-black text-xs text-blue-400">₹{portfolioGreeks.netVega}</span>
+              </div>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-[11px] flex items-center justify-between">
+              <span className="font-semibold text-blue-700 dark:text-blue-300">Spread Margin Benefit:</span>
+              <span className="font-mono font-extrabold text-blue-600 dark:text-blue-400">~65% SEBI Reduction</span>
             </div>
           </div>
         </div>

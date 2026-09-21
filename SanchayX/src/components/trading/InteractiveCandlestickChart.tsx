@@ -2,7 +2,11 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import {
   Maximize2,
   Minimize2,
-  Layers
+  Layers,
+  Brain,
+  Sparkles,
+  FileText,
+  X
 } from 'lucide-react';
 import { useTradingSimulation, subscribeToTicker } from '../../context/TradingSimulationContext';
 
@@ -14,6 +18,28 @@ interface CandlestickData {
   low: number;
   close: number;
   volume: number;
+}
+
+export interface SebiCorporateFiling {
+  id: string;
+  candleIndex: number;
+  type: 'EARNINGS' | 'DIVIDEND' | 'SAST_INSIDER';
+  badge: 'E' | 'D' | 'S';
+  title: string;
+  regSection: string;
+  date: string;
+  details: string;
+  promoterOrEntity: string;
+  impact: 'Bullish' | 'Neutral' | 'Bearish';
+  changePct?: string;
+}
+
+export interface AiSentimentAnalysis {
+  score: number; // e.g. +0.78
+  label: 'Very Bullish' | 'Bullish' | 'Neutral' | 'Bearish' | 'Very Bearish';
+  confidence: number; // percentage e.g. 92
+  sentimentDriver: string;
+  institutionalFlow: 'Accumulation' | 'Distribution' | 'Neutral';
 }
 
 interface InteractiveCandlestickChartProps {
@@ -74,6 +100,64 @@ function generateInitialCandles(ticker: string, basePrice: number, timeframe: Ti
   return data;
 }
 
+// Generate deterministic institutional SEBI Corporate Filings for the active ticker
+function generateSebiFilings(ticker: string, candleCount: number): SebiCorporateFiling[] {
+  const cleanTicker = ticker.replace('.NS', '').replace('.BO', '');
+  const filings: SebiCorporateFiling[] = [];
+
+  if (candleCount < 20) return filings;
+
+  // Index 1: Dividend declaration ~20% of candles
+  const idxDiv = Math.floor(candleCount * 0.22);
+  filings.push({
+    id: `${cleanTicker}-DIV`,
+    candleIndex: idxDiv,
+    type: 'DIVIDEND',
+    badge: 'D',
+    title: 'Interim Dividend Corporate Action',
+    regSection: 'SEBI (LODR) Regulation 43 & Schedule III',
+    date: '18 Sep 2026',
+    details: `Board declared Interim Dividend of ₹16.50 per equity share. Record date set for depository entitlement verification.`,
+    promoterOrEntity: 'Board of Directors Audit Committee',
+    impact: 'Bullish',
+    changePct: '+2.8% Yield Impact'
+  });
+
+  // Index 2: SEBI SAST Insider Acquisition ~55% of candles
+  const idxSast = Math.floor(candleCount * 0.55);
+  filings.push({
+    id: `${cleanTicker}-SAST`,
+    candleIndex: idxSast,
+    type: 'SAST_INSIDER',
+    badge: 'S',
+    title: 'SEBI SAST Reg 29(2) Promoter Stake Disclosure',
+    regSection: 'SEBI (Substantial Acquisition of Shares & Takeovers) 2011, Reg 29(2)',
+    date: '19 Sep 2026',
+    details: `Promoter & Promoter Group acquired 145,000 equity shares via open market purchase. Shareholding increased from 51.12% to 51.34%. Zero encumbrances.`,
+    promoterOrEntity: 'Promoter Family Holding Trust',
+    impact: 'Bullish',
+    changePct: '+0.22% Net Stake Addition'
+  });
+
+  // Index 3: Quarterly Earnings Announcement ~82% of candles
+  const idxEarn = Math.floor(candleCount * 0.82);
+  filings.push({
+    id: `${cleanTicker}-EARN`,
+    candleIndex: idxEarn,
+    type: 'EARNINGS',
+    badge: 'E',
+    title: 'Q3 FY26 Audited Financial Results',
+    regSection: 'SEBI (LODR) Regulation 33 - Financial Disclosures',
+    date: '20 Sep 2026',
+    details: `Net Profit jumped 18.6% YoY with EBITDA margins expanding 95 bps. Strong institutional order book expansion reported.`,
+    promoterOrEntity: 'Chief Financial Officer & Statutory Auditor',
+    impact: 'Bullish',
+    changePct: '+18.6% Net PAT Growth'
+  });
+
+  return filings;
+}
+
 export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartProps> = ({
   ticker,
   basePrice = 2500,
@@ -88,6 +172,8 @@ export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartPr
   const [showVWAP, setShowVWAP] = useState<boolean>(true);
   const [showRSI, setShowRSI] = useState<boolean>(true);
   const [showOrderLines, setShowOrderLines] = useState<boolean>(true);
+  const [showSebiFilings, setShowSebiFilings] = useState<boolean>(true);
+  const [selectedFiling, setSelectedFiling] = useState<SebiCorporateFiling | null>(null);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [hoveredCandle, setHoveredCandle] = useState<CandlestickData | null>(null);
 
@@ -144,6 +230,45 @@ export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartPr
     return unsubscribe;
   }, [ticker]);
 
+  // Corporate Filings for this ticker
+  const sebiFilings = useMemo(() => {
+    return generateSebiFilings(ticker, candles.length);
+  }, [ticker, candles.length]);
+
+  // Real-time AI Sentiment Analyzer
+  const aiSentiment: AiSentimentAnalysis = useMemo(() => {
+    if (candles.length < 5) {
+      return {
+        score: 0.72,
+        label: 'Bullish',
+        confidence: 88,
+        sentimentDriver: 'Promoter SAST Accumulation & FII Inflows',
+        institutionalFlow: 'Accumulation'
+      };
+    }
+    const recent = candles.slice(-10);
+    const gains = recent.filter(c => c.close >= c.open).length;
+    const ratio = gains / recent.length;
+    const score = Number((ratio * 1.4 - 0.45).toFixed(2));
+    const clampedScore = Math.max(-0.95, Math.min(0.95, score));
+
+    let label: AiSentimentAnalysis['label'] = 'Neutral';
+    if (clampedScore > 0.4) label = 'Very Bullish';
+    else if (clampedScore > 0.1) label = 'Bullish';
+    else if (clampedScore < -0.4) label = 'Very Bearish';
+    else if (clampedScore < -0.1) label = 'Bearish';
+
+    return {
+      score: clampedScore,
+      label,
+      confidence: Math.round(85 + Math.abs(clampedScore) * 12),
+      sentimentDriver: clampedScore >= 0
+        ? 'SEBI SAST Promoter Buying + Q3 Margin Expansion'
+        : 'Macro Supply Overhead + Resistance at VWAP',
+      institutionalFlow: clampedScore > 0.2 ? 'Accumulation' : clampedScore < -0.2 ? 'Distribution' : 'Neutral'
+    };
+  }, [candles]);
+
   // Calculate EMA indicator series
   const calculateEMA = useCallback((period: number) => {
     if (candles.length === 0) return [];
@@ -172,18 +297,19 @@ export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartPr
 
   // Calculate VWAP series
   const vwapSeries = useMemo(() => {
-    let cumVol = 0;
-    let cumVolPrice = 0;
+    let cumulativeTPV = 0;
+    let cumulativeVol = 0;
     return candles.map(c => {
       const typicalPrice = (c.high + c.low + c.close) / 3;
-      cumVol += c.volume;
-      cumVolPrice += typicalPrice * c.volume;
-      return cumVol === 0 ? c.close : cumVolPrice / cumVol;
+      cumulativeTPV += typicalPrice * c.volume;
+      cumulativeVol += c.volume;
+      return cumulativeVol > 0 ? cumulativeTPV / cumulativeVol : c.close;
     });
   }, [candles]);
 
-  // Calculate RSI(14)
+  // Calculate 14-period RSI
   const rsiValues = useMemo(() => {
+    if (candles.length < 15) return [];
     const period = 14;
     const rsi: (number | null)[] = [];
     let gains = 0;
@@ -251,7 +377,7 @@ export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartPr
     // Padding
     const paddingLeft = 10;
     const paddingRight = 65;
-    const paddingTop = 25;
+    const paddingTop = 28;
     const paddingBottom = 40;
     const chartWidth = width - paddingLeft - paddingRight;
     const chartHeight = height - paddingTop - paddingBottom;
@@ -259,7 +385,7 @@ export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartPr
     // Price bounds
     let minPrice = Math.min(...candles.map(c => c.low));
     let maxPrice = Math.max(...candles.map(c => c.high));
-    const priceMargin = (maxPrice - minPrice) * 0.1 || 1;
+    const priceMargin = (maxPrice - minPrice) * 0.12 || 1;
     minPrice -= priceMargin;
     maxPrice += priceMargin;
 
@@ -278,43 +404,41 @@ export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartPr
     const gridLines = 5;
     ctx.strokeStyle = 'rgba(148, 163, 184, 0.12)';
     ctx.lineWidth = 1;
-    ctx.font = '10px "JetBrains Mono", monospace';
-    ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
-    ctx.textAlign = 'left';
 
     for (let i = 0; i <= gridLines; i++) {
-      const p = minPrice + (i / gridLines) * (maxPrice - minPrice);
-      const y = getY(p);
+      const price = minPrice + ((maxPrice - minPrice) / gridLines) * i;
+      const y = getY(price);
 
       ctx.beginPath();
       ctx.moveTo(paddingLeft, y);
       ctx.lineTo(width - paddingRight, y);
       ctx.stroke();
 
-      ctx.fillText(`${currency}${p.toFixed(2)}`, width - paddingRight + 6, y + 3);
+      ctx.fillStyle = 'rgba(148, 163, 184, 0.65)';
+      ctx.font = '10px "JetBrains Mono", monospace';
+      ctx.fillText(price.toFixed(2), width - paddingRight + 6, y + 3);
     }
 
-    // Draw volume bars at the bottom
+    // Draw Volume Bars at bottom
     candles.forEach((c, idx) => {
       const x = paddingLeft + idx * candleSpacing + candleSpacing / 2;
-      const isGreen = c.close >= c.open;
       const vHeight = (c.volume / maxVolume) * volumeHeight;
-      const vY = height - paddingBottom - vHeight;
+      const y = height - paddingBottom - vHeight;
+      const isUp = c.close >= c.open;
 
-      ctx.fillStyle = isGreen ? 'rgba(16, 185, 129, 0.25)' : 'rgba(244, 63, 94, 0.25)';
-      ctx.fillRect(x - candleWidth / 2, vY, candleWidth, vHeight);
+      ctx.fillStyle = isUp ? 'rgba(16, 185, 129, 0.22)' : 'rgba(239, 68, 68, 0.22)';
+      ctx.fillRect(x - candleWidth / 2, y, candleWidth, vHeight);
     });
 
-    // Draw Candlesticks (Wicks and Bodies)
+    // Draw Candlesticks (Wicks & Bodies)
     candles.forEach((c, idx) => {
       const x = paddingLeft + idx * candleSpacing + candleSpacing / 2;
-      const isGreen = c.close >= c.open;
-      const color = isGreen ? '#10b981' : '#f43f5e';
-
       const yOpen = getY(c.open);
       const yClose = getY(c.close);
       const yHigh = getY(c.high);
       const yLow = getY(c.low);
+      const isUp = c.close >= c.open;
+      const color = isUp ? '#10b981' : '#ef4444';
 
       // Wick
       ctx.strokeStyle = color;
@@ -360,14 +484,54 @@ export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartPr
     };
 
     // Draw EMAs
-    if (showEMA20) drawLine(ema20, '#06b6d4', 1.5); // Cyan
-    if (showEMA50) drawLine(ema50, '#f59e0b', 1.5); // Amber
-    if (showEMA200) drawLine(ema200, '#a855f7', 1.5); // Purple
+    if (showEMA20) drawLine(ema20, '#06b6d4', 1.5);
+    if (showEMA50) drawLine(ema50, '#f59e0b', 1.5);
+    if (showEMA200) drawLine(ema200, '#a855f7', 1.5);
 
     // Draw VWAP
-    if (showVWAP) drawLine(vwapSeries, '#eab308', 1.8, true); // Yellow dashed
+    if (showVWAP) drawLine(vwapSeries, '#eab308', 1.8, true);
 
-    // Draw Order Lines (Feature 1: horizontal limit/SL overlay)
+    // Draw SEBI Corporate Filings Markers directly above candle peaks
+    if (showSebiFilings) {
+      sebiFilings.forEach(f => {
+        if (f.candleIndex >= 0 && f.candleIndex < candles.length) {
+          const candle = candles[f.candleIndex];
+          const x = paddingLeft + f.candleIndex * candleSpacing + candleSpacing / 2;
+          const yCandleHigh = getY(candle.high);
+          const badgeY = Math.max(paddingTop - 10, yCandleHigh - 16);
+
+          // Connecting indicator stem
+          ctx.strokeStyle = f.type === 'EARNINGS' ? '#10b981' : f.type === 'DIVIDEND' ? '#06b6d4' : '#f97316';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([2, 2]);
+          ctx.beginPath();
+          ctx.moveTo(x, yCandleHigh);
+          ctx.lineTo(x, badgeY + 8);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Badge Circle with drop shadow
+          ctx.beginPath();
+          ctx.arc(x, badgeY, 9, 0, Math.PI * 2);
+          ctx.fillStyle = f.type === 'EARNINGS' ? '#10b981' : f.type === 'DIVIDEND' ? '#06b6d4' : '#f97316';
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          // Symbol Text
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 9px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(f.badge, x, badgeY);
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'alphabetic';
+        }
+      });
+    }
+
+    // Draw Active Order Lines
     if (showOrderLines) {
       activeOrders.forEach(o => {
         if (o.price && o.price >= minPrice && o.price <= maxPrice) {
@@ -385,14 +549,12 @@ export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartPr
 
           // Badge
           ctx.fillStyle = isBuy ? '#3b82f6' : '#ec4899';
-          ctx.fillStyle = isBuy ? '#3b82f6' : '#ec4899';
           ctx.fillRect(width - paddingRight + 2, y - 9, 60, 18);
           ctx.fillStyle = '#ffffff';
           ctx.font = 'bold 9px "JetBrains Mono", monospace';
           ctx.fillText(`${o.action} ${o.qty ?? o.quantity}`, width - paddingRight + 6, y + 3);
         }
 
-        // Target / Stoploss overlay
         if (o.targetPrice && o.targetPrice >= minPrice && o.targetPrice <= maxPrice) {
           const y = getY(o.targetPrice);
           ctx.setLineDash([3, 3]);
@@ -451,60 +613,36 @@ export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartPr
       }
     }
 
-    // Feature 3: Real-Time Pulsing Horizontal LTP Crosshair Line & Dynamic Badge
-    const activeLtp = liveLtp || (candles.length > 0 ? candles[candles.length - 1].close : basePrice);
-    if (activeLtp >= minPrice && activeLtp <= maxPrice) {
-      const ltpY = getY(activeLtp);
-
-      ctx.setLineDash([4, 3]);
-      ctx.strokeStyle = '#f26522'; // ICICI Orange / Terminal Accent
-      ctx.lineWidth = 1.4;
-      ctx.beginPath();
-      ctx.moveTo(paddingLeft, ltpY);
-      ctx.lineTo(width - paddingRight, ltpY);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Dynamic Axis Badge with live LTP
-      ctx.fillStyle = '#f26522';
-      ctx.fillRect(width - paddingRight + 2, ltpY - 9, 62, 18);
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 9px "JetBrains Mono", monospace';
-      ctx.fillText(`${currency}${activeLtp.toFixed(2)}`, width - paddingRight + 5, ltpY + 4);
-    }
-
-    // Time Axis Labels
-    ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
-    ctx.font = '10px "JetBrains Mono", monospace';
-    ctx.textAlign = 'center';
-    const labelStep = Math.max(1, Math.floor(candles.length / 6));
-    for (let i = 0; i < candles.length; i += labelStep) {
+    // Time Axis at Bottom
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.65)';
+    ctx.font = '9px "JetBrains Mono", monospace';
+    const step = Math.max(1, Math.floor(candles.length / 6));
+    for (let i = 0; i < candles.length; i += step) {
+      const c = candles[i];
       const x = paddingLeft + i * candleSpacing + candleSpacing / 2;
-      ctx.fillText(candles[i].time, x, height - 12);
+      ctx.fillText(c.time, x - 12, height - 10);
     }
   }, [
     candles,
-    liveLtp,
-    timeframe,
+    ema20,
+    ema50,
+    ema200,
+    vwapSeries,
     showEMA20,
     showEMA50,
     showEMA200,
     showVWAP,
     showOrderLines,
+    showSebiFilings,
+    sebiFilings,
     activeOrders,
-    activePosition,
-    currency,
-    ema20,
-    ema50,
-    ema200,
-    vwapSeries
+    activePosition
   ]);
 
-  // Render RSI sub-panel
+  // Render RSI Sub-panel canvas
   useEffect(() => {
-    if (!showRSI) return;
     const canvas = rsiCanvasRef.current;
-    if (!canvas || candles.length === 0) return;
+    if (!canvas || !showRSI || rsiValues.length === 0) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -522,36 +660,39 @@ export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartPr
 
     const paddingLeft = 10;
     const paddingRight = 65;
-    const paddingTop = 8;
-    const paddingBottom = 12;
     const chartWidth = width - paddingLeft - paddingRight;
-    const chartHeight = height - paddingTop - paddingBottom;
 
-    const getRsiY = (rsiVal: number) => {
-      return paddingTop + (1 - rsiVal / 100) * chartHeight;
+    const getRsiY = (rsi: number) => {
+      return height - (rsi / 100) * height;
     };
 
-    // Levels: 70 (Overbought), 50 (Neutral), 30 (Oversold)
-    [70, 50, 30].forEach(level => {
-      const y = getRsiY(level);
-      ctx.strokeStyle = level === 50 ? 'rgba(148, 163, 184, 0.15)' : level === 70 ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([3, 3]);
-      ctx.beginPath();
-      ctx.moveTo(paddingLeft, y);
-      ctx.lineTo(width - paddingRight, y);
-      ctx.stroke();
+    // Draw Overbought (70) and Oversold (30) zones
+    const y70 = getRsiY(70);
+    const y30 = getRsiY(30);
 
-      ctx.fillStyle = 'rgba(148, 163, 184, 0.6)';
-      ctx.font = '9px "JetBrains Mono", monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText(`${level}`, width - paddingRight + 6, y + 3);
-    });
+    ctx.fillStyle = 'rgba(236, 72, 153, 0.05)';
+    ctx.fillRect(paddingLeft, y70, chartWidth, y30 - y70);
+
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+
+    // 70 line
+    ctx.beginPath();
+    ctx.moveTo(paddingLeft, y70);
+    ctx.lineTo(width - paddingRight, y70);
+    ctx.stroke();
+
+    // 30 line
+    ctx.beginPath();
+    ctx.moveTo(paddingLeft, y30);
+    ctx.lineTo(width - paddingRight, y30);
+    ctx.stroke();
     ctx.setLineDash([]);
 
     // Draw RSI Line
     const candleSpacing = chartWidth / candles.length;
-    ctx.strokeStyle = '#ec4899'; // Pink/Purple
+    ctx.strokeStyle = '#ec4899';
     ctx.lineWidth = 1.8;
     ctx.beginPath();
     let started = false;
@@ -570,7 +711,7 @@ export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartPr
     ctx.stroke();
   }, [rsiValues, candles.length, showRSI]);
 
-  // Mouse move handler for HUD
+  // Mouse move handler for HUD and SEBI Filing hover inspection
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas || candles.length === 0) return;
@@ -590,6 +731,24 @@ export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartPr
     }
   };
 
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas || candles.length === 0) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const paddingLeft = 10;
+    const paddingRight = 65;
+    const chartWidth = rect.width - paddingLeft - paddingRight;
+    const candleSpacing = chartWidth / candles.length;
+
+    const index = Math.floor((mouseX - paddingLeft) / candleSpacing);
+    const matchedFiling = sebiFilings.find(f => Math.abs(f.candleIndex - index) <= 1);
+    if (matchedFiling) {
+      setSelectedFiling(matchedFiling);
+    }
+  };
+
   const handleMouseLeave = () => {
     setHoveredCandle(null);
   };
@@ -605,9 +764,9 @@ export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartPr
         isFullscreen ? 'fixed inset-4 z-50 overflow-hidden' : ''
       } ${className}`}
     >
-      {/* Top Header: Controls, Ticker, Indicators, Timeframes */}
+      {/* Top Header: Controls, Ticker, AI Sentinel Score HUD, Timeframes */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-color)] pb-3">
-        {/* Ticker & OHLCV HUD */}
+        {/* Ticker, LTP & AI Sentinel Score Badge */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <span className="font-mono font-extrabold text-sm text-[var(--text-primary)]">{ticker}</span>
@@ -618,6 +777,25 @@ export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartPr
             <span className="font-mono text-xs font-black text-[var(--text-primary)] px-2 py-0.5 rounded bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
               {currency}{liveLtp.toFixed(2)}
             </span>
+          </div>
+
+          {/* AI Sentinel Sentiment Barometer */}
+          <div
+            className={`flex items-center gap-2 px-2.5 py-1 rounded-xl border text-xs font-mono font-bold transition-all shadow-sm ${
+              aiSentiment.score >= 0
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                : 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400'
+            }`}
+            title={`AI Sentiment Score: ${aiSentiment.score > 0 ? '+' : ''}${aiSentiment.score} | Confidence: ${aiSentiment.confidence}%\nDriver: ${aiSentiment.sentimentDriver}`}
+          >
+            <Brain className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>
+              AI: {aiSentiment.score > 0 ? '+' : ''}{aiSentiment.score} ({aiSentiment.label})
+            </span>
+            <span className="text-[10px] opacity-75 font-normal">
+              {aiSentiment.confidence}% Conf
+            </span>
+            <span className={`w-2 h-2 rounded-full ${aiSentiment.score >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
           </div>
 
           {activeCandle && (
@@ -701,6 +879,22 @@ export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartPr
             >
               RSI
             </button>
+
+            {/* SEBI Filings Overlay Toggle */}
+            <button
+              type="button"
+              onClick={() => setShowSebiFilings(!showSebiFilings)}
+              className={`px-2 py-1 rounded text-[10px] font-bold border transition-colors cursor-pointer flex items-center gap-1.5 ${
+                showSebiFilings
+                  ? 'bg-gradient-to-r from-emerald-500/20 via-cyan-500/20 to-orange-500/20 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                  : 'bg-[var(--bg-tertiary)] border-[var(--border-color)] text-[var(--text-muted)]'
+              }`}
+              title="Toggle SEBI Corporate Filings ([E] Earnings, [D] Dividend, [S] SAST Insider)"
+            >
+              <FileText className="w-3 h-3" />
+              <span>SEBI Filings ({sebiFilings.length})</span>
+            </button>
+
             <button
               type="button"
               onClick={() => setShowOrderLines(!showOrderLines)}
@@ -731,10 +925,55 @@ export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartPr
         <canvas
           ref={canvasRef}
           onMouseMove={handleMouseMove}
+          onClick={handleCanvasClick}
           onMouseLeave={handleMouseLeave}
           className="w-full flex-1 cursor-crosshair block"
           style={{ minHeight: isFullscreen ? '450px' : '260px' }}
         />
+
+        {/* Selected SEBI Regulatory Disclosure Modal / Inspection Card */}
+        {selectedFiling && (
+          <div className="absolute top-3 left-3 right-3 sm:left-auto sm:right-3 sm:w-96 p-4 rounded-2xl bg-[var(--bg-card)]/95 backdrop-blur-md border border-[var(--border-color)] shadow-2xl z-20 space-y-3 animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-2">
+              <div className="flex items-center gap-2">
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs text-white ${
+                  selectedFiling.type === 'EARNINGS' ? 'bg-emerald-500' : selectedFiling.type === 'DIVIDEND' ? 'bg-cyan-500' : 'bg-orange-500'
+                }`}>
+                  {selectedFiling.badge}
+                </span>
+                <div>
+                  <h5 className="font-bold text-xs text-[var(--text-primary)] leading-tight">{selectedFiling.title}</h5>
+                  <span className="text-[10px] text-[var(--text-muted)] font-mono">{selectedFiling.date}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedFiling(null)}
+                className="p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <div className="p-2 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] font-mono text-[11px] text-[var(--text-secondary)]">
+                <div className="text-[10px] text-[var(--text-muted)] font-bold uppercase">REGULATORY SECTION</div>
+                <div className="text-[var(--text-primary)] font-bold mt-0.5">{selectedFiling.regSection}</div>
+              </div>
+
+              <div className="text-[var(--text-secondary)] leading-relaxed">
+                {selectedFiling.details}
+              </div>
+
+              <div className="flex items-center justify-between pt-1 border-t border-[var(--border-color)] text-[11px]">
+                <span className="text-[var(--text-muted)]">Source: {selectedFiling.promoterOrEntity}</span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                  {selectedFiling.changePct || selectedFiling.impact}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* RSI Sub-Panel */}
         {showRSI && (
@@ -755,9 +994,9 @@ export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartPr
         )}
       </div>
 
-      {/* Legend Footer */}
-      <div className="flex flex-wrap items-center justify-between text-[10px] font-mono text-[var(--text-muted)] border-t border-[var(--border-color)] pt-2">
-        <div className="flex items-center gap-4">
+      {/* Legend & SEBI Filing Indicators Footer */}
+      <div className="flex flex-wrap items-center justify-between text-[10px] font-mono text-[var(--text-muted)] border-t border-[var(--border-color)] pt-2 gap-2">
+        <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-1">
             <span className="w-2.5 h-0.5 bg-cyan-400 inline-block"></span>
             <span>EMA 20</span>
@@ -770,6 +1009,37 @@ export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartPr
             <span className="w-2.5 h-0.5 bg-yellow-400 inline-block border-b border-dashed border-yellow-400"></span>
             <span>VWAP</span>
           </div>
+
+          {showSebiFilings && (
+            <div className="flex items-center gap-2 border-l border-[var(--border-color)] pl-3">
+              <span className="text-[var(--text-muted)]">SEBI Filings:</span>
+              <button
+                type="button"
+                onClick={() => setSelectedFiling(sebiFilings.find(f => f.type === 'EARNINGS') || null)}
+                className="flex items-center gap-1 hover:underline cursor-pointer"
+              >
+                <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 text-white font-bold text-[8px] flex items-center justify-center">E</span>
+                <span>Earnings</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedFiling(sebiFilings.find(f => f.type === 'DIVIDEND') || null)}
+                className="flex items-center gap-1 hover:underline cursor-pointer"
+              >
+                <span className="w-3.5 h-3.5 rounded-full bg-cyan-500 text-white font-bold text-[8px] flex items-center justify-center">D</span>
+                <span>Dividend</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedFiling(sebiFilings.find(f => f.type === 'SAST_INSIDER') || null)}
+                className="flex items-center gap-1 hover:underline cursor-pointer"
+              >
+                <span className="w-3.5 h-3.5 rounded-full bg-orange-500 text-white font-bold text-[8px] flex items-center justify-center">S</span>
+                <span>SAST Reg 29/31</span>
+              </button>
+            </div>
+          )}
+
           {showOrderLines && (
             <div className="flex items-center gap-1">
               <span className="w-2.5 h-0.5 bg-blue-500 inline-block"></span>
@@ -777,10 +1047,13 @@ export const InteractiveCandlestickChart: React.FC<InteractiveCandlestickChartPr
             </div>
           )}
         </div>
-        <div className="text-[var(--text-muted)]">
-          Real-time DMA Canvas Renderer
+        <div className="text-[var(--text-muted)] flex items-center gap-1">
+          <Sparkles className="w-3 h-3 text-amber-400" />
+          <span>AI Sentinel DMA & Regulatory Filing Engine</span>
         </div>
       </div>
     </div>
   );
 };
+
+export default InteractiveCandlestickChart;

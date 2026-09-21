@@ -1,7 +1,7 @@
 import type { Asset, KRIMetrics, FrontierPoint, CorrelationMatrixData, BacktestConfig, BacktestResult } from '../types/portfolio';
 import { INITIAL_ASSET_CATALOG, generateHistoricalPrices, type HistoricalDataPoint } from './mockData';
 import { computeKRIMetrics, optimizeWeights } from '../utils/financialMath';
-import { calculateFrontierAsync, calculateCorrelationAsync, runBacktestAsync } from './workerClient';
+import { calculateFrontierAsync, calculateCorrelationAsync, runBacktestAsync, runWasmBenchmarkAsync } from './workerClient';
 
 let isLiveApiMode = false;
 let historicalDataCache: HistoricalDataPoint[] | null = null;
@@ -74,5 +74,10 @@ export const PortfolioApiService = {
     }
     const history = getHistoricalPrices();
     return runBacktestAsync(assets, config, history);
+  },
+
+  // Run WASM vs V8 JS Quantitative Solver Benchmark
+  async benchmarkWasm(iterations: number = 10000) {
+    return runWasmBenchmarkAsync(iterations);
   }
 };

@@ -195,3 +195,133 @@ export function calculateLegPayoffAtTargetDate(
 
   return pnlPerShare * totalQty;
 }
+
+export interface DeltaNeutralRecommendation {
+  status: 'NEUTRAL' | 'EXCESS_BULLISH' | 'EXCESS_BEARISH';
+  netDelta: number;
+  recommendedAction: 'BUY' | 'SELL';
+  recommendedType: OptionType;
+  recommendedStrike: number;
+  recommendedLots: number;
+  expectedHedgeDelta: number;
+  newNetDelta: number;
+  description: string;
+}
+
+/**
+ * Real-Time Net Portfolio Greeks Barometer
+ * ΣΔ = ∑ w_i * Δ_i
+ * ΣΘ = ∑ w_i * Θ_i
+ */
+export function aggregatePortfolioGreeks(
+  legs: OptionLeg[],
+  spot: number,
+  dte: number,
+  r = 0.065,
+  globalIvPct?: number
+) {
+  let totalDelta = 0;
+  let totalGamma = 0;
+  let totalTheta = 0;
+  let totalVega = 0;
+
+  legs.forEach(leg => {
+    const legQty = leg.lots * leg.lotSize;
+    const iv = (globalIvPct !== undefined ? globalIvPct : leg.iv) / 100;
+    const greeks = calculateBlackScholesGreeks(
+      spot,
+      leg.strike,
+      Math.max(0.1, dte) / 365,
+      r,
+      iv,
+      leg.type === 'CE'
+    );
+
+    const sign = leg.action === 'BUY' ? 1 : -1;
+    totalDelta += sign * greeks.delta * leg.lots; // per-lot delta aggregation
+    totalGamma += sign * greeks.gamma * legQty;
+    totalTheta += sign * greeks.theta * legQty;
+    totalVega += sign * greeks.vega * legQty;
+  });
+
+  return {
+    netDelta: Number(totalDelta.toFixed(3)),
+    netGamma: Number(totalGamma.toFixed(5)),
+    netTheta: Number(totalTheta.toFixed(2)),
+    netVega: Number(totalVega.toFixed(2))
+  };
+}
+
+/**
+ * Automated Delta-Neutral Rebalance Sentinel:
+ * Triggers when portfolio |ΣΔ| > 0.15 during rapid market moves.
+ * Recommends exact OTM Put or Call lots to restore zero-directional delta.
+ */
+export function calculateDeltaNeutralHedge(
+  netDelta: number,
+  spot: number,
+  dte: number,
+  _lotSize: number = 25,
+  ivPct: number = 14
+): DeltaNeutralRecommendation | null {
+  const THRESHOLD = 0.15;
+  if (Math.abs(netDelta) <= THRESHOLD) {
+    return {
+      status: 'NEUTRAL',
+      netDelta,
+      recommendedAction: 'BUY',
+      recommendedType: 'CE',
+      recommendedStrike: Math.round(spot / 50) * 50,
+      recommendedLots: 0,
+      expectedHedgeDelta: 0,
+      newNetDelta: netDelta,
+      description: `Portfolio delta is currently balanced (ΣΔ = ${netDelta > 0 ? '+' : ''}${netDelta}). No rebalancing required.`
+    };
+  }
+
+  const baseStrike = Math.round(spot / 50) * 50;
+
+  if (netDelta > THRESHOLD) {
+    // Portfolio is directional Long/Bullish. Need negative delta (Buy OTM Put or Sell OTM Call)
+    // Buy 20-30 delta OTM Put
+    const hedgeStrike = baseStrike - 150;
+    const greeks = calculateBlackScholesGreeks(spot, hedgeStrike, Math.max(0.1, dte) / 365, 0.065, ivPct / 100, false);
+    // Put delta is negative (e.g. -0.30). Buying 1 lot of put adds -0.30 to delta.
+    const putDeltaPerLot = Math.abs(greeks.delta);
+    const neededLots = Math.max(1, Math.round(netDelta / putDeltaPerLot));
+    const deltaContribution = -(neededLots * putDeltaPerLot);
+    const newNet = Number((netDelta + deltaContribution).toFixed(3));
+
+    return {
+      status: 'EXCESS_BULLISH',
+      netDelta,
+      recommendedAction: 'BUY',
+      recommendedType: 'PE',
+      recommendedStrike: hedgeStrike,
+      recommendedLots: neededLots,
+      expectedHedgeDelta: Number(deltaContribution.toFixed(3)),
+      newNetDelta: newNet,
+      description: `High positive delta (+${netDelta}) exposed to crash risk. Buy ${neededLots} lot(s) of ${hedgeStrike} PE to restore delta neutrality to ${newNet}.`
+    };
+  } else {
+    // Portfolio is directional Short/Bearish (netDelta < -0.15). Need positive delta (Buy OTM Call)
+    const hedgeStrike = baseStrike + 150;
+    const greeks = calculateBlackScholesGreeks(spot, hedgeStrike, Math.max(0.1, dte) / 365, 0.065, ivPct / 100, true);
+    const callDeltaPerLot = greeks.delta;
+    const neededLots = Math.max(1, Math.round(Math.abs(netDelta) / callDeltaPerLot));
+    const deltaContribution = neededLots * callDeltaPerLot;
+    const newNet = Number((netDelta + deltaContribution).toFixed(3));
+
+    return {
+      status: 'EXCESS_BEARISH',
+      netDelta,
+      recommendedAction: 'BUY',
+      recommendedType: 'CE',
+      recommendedStrike: hedgeStrike,
+      recommendedLots: neededLots,
+      expectedHedgeDelta: Number(deltaContribution.toFixed(3)),
+      newNetDelta: newNet,
+      description: `High negative delta (${netDelta}) exposed to upside short squeeze. Buy ${neededLots} lot(s) of ${hedgeStrike} CE to restore delta neutrality to ${newNet}.`
+    };
+  }
+}

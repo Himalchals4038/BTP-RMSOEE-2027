@@ -8,7 +8,9 @@ export type OrderType =
   | 'Bracket Order (BO)'
   | 'Cover Order (CO)'
   | 'Good-Till-Triggered (GTT)'
-  | 'Iceberg Order';
+  | 'Iceberg Order'
+  | 'TWAP Order'
+  | 'VWAP Order';
 export type OrderStatus = 'EXECUTED' | 'PENDING' | 'CANCELLED' | 'REJECTED';
 
 export interface StatutoryCharges {
@@ -44,6 +46,9 @@ export interface SimulatedOrder {
   icebergTotalQty?: number;
   icebergLegs?: number;
   icebergCurrentLeg?: number;
+  twapSlices?: number;
+  twapDurationMinutes?: number;
+  vwapSlices?: number;
   gttExpiryDays?: number;
   parentOrderId?: string;
   isOcoTarget?: boolean;
@@ -85,6 +90,8 @@ export interface SimulatedPosition {
   isMarginCall?: boolean;
 }
 
+export type BrokerName = 'Zerodha' | 'Groww' | 'Upstox' | 'ICICI Direct';
+
 export interface DematHolding {
   ticker: string;
   name: string;
@@ -102,6 +109,9 @@ export interface DematHolding {
   couponRatePct?: number;
   nextCouponDate?: string;
   accruedInterest?: number;
+  broker?: BrokerName;
+  holdingType?: 'STCG' | 'LTCG';
+  holdingPeriodDays?: number;
 }
 
 export interface UserWallet {

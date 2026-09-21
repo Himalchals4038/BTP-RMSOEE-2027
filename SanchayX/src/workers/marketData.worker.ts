@@ -130,15 +130,54 @@ function produce5HzTicks() {
     const bufferCopy = sharedTickMemory.buffer.slice(0);
     const maskCopy = dirtyMask.buffer.slice(0);
 
+    // Pillar 2: 24-byte packed binary Protobuf wire protocol serialization
+    // Pack dirty ticks into a 24-byte binary stream: [int32 token, float32 ltp, float32 vwap, uint32 volume, float32 bid, float32 ask]
+    let dirtyCount = 0;
+    for (let w = 0; w < dirtyMaskWords; w++) {
+      let mask = dirtyMask[w];
+      while (mask > 0) {
+        if (mask & 1) dirtyCount++;
+        mask >>>= 1;
+      }
+    }
+
+    const binaryBuffer = new ArrayBuffer(Math.max(1, dirtyCount) * 24);
+    const binaryView = new DataView(binaryBuffer);
+    let binOffset = 0;
+
+    for (let idx = 0; idx < instruments.length && idx < MAX_INSTRUMENTS; idx++) {
+      const word = Math.floor(idx / 32);
+      const bit = idx % 32;
+      if (dirtyMask[word] & (1 << bit)) {
+        const offset = idx * TICK_STRIDE;
+        const token = 100 + idx;
+        const ltp = sharedTickMemory[offset + SLOT_LTP];
+        const vwap = ltp; // Intraday VWAP estimate
+        const vol = sharedTickMemory[offset + SLOT_VOLUME];
+        const bid = sharedTickMemory[offset + SLOT_BID];
+        const ask = sharedTickMemory[offset + SLOT_ASK];
+
+        binaryView.setInt32(binOffset, token, true);
+        binaryView.setFloat32(binOffset + 4, ltp, true);
+        binaryView.setFloat32(binOffset + 8, vwap, true);
+        binaryView.setUint32(binOffset + 12, vol, true);
+        binaryView.setFloat32(binOffset + 16, bid, true);
+        binaryView.setFloat32(binOffset + 20, ask, true);
+        binOffset += 24;
+      }
+    }
+
     (self as unknown as { postMessage: (msg: unknown, transfer?: Transferable[]) => void }).postMessage(
       {
         type: 'TICK_BATCH',
         buffer: bufferCopy,
         dirtyMask: maskCopy,
+        binaryWireBuffer: binaryBuffer,
+        wirePayloadBytes: binOffset,
         count: instruments.length,
         timestamp: now
       },
-      [bufferCopy, maskCopy]
+      [bufferCopy, maskCopy, binaryBuffer]
     );
 
     // Reset dirty mask for next 200ms frame

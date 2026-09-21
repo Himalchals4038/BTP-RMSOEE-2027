@@ -112,3 +112,45 @@ export function runBacktestAsync(
   });
 }
 
+/**
+ * Executes quantitative benchmark comparing WebAssembly vs JavaScript
+ */
+export function runWasmBenchmarkAsync(iterations: number = 10000): Promise<{
+  wasmDurationMs: number;
+  jsDurationMs: number;
+  speedup: string;
+  isWasmActive: boolean;
+  iterations: number;
+}> {
+  return new Promise((resolve) => {
+    const worker = getMathWorker();
+    if (!worker) {
+      // Fallback: import dynamic engine directly
+      import('../wasm/wasmQuantEngine').then(({ runWasmBenchmark }) => {
+        resolve(runWasmBenchmark(iterations));
+      });
+      return;
+    }
+
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === 'WASM_BENCHMARK_RESULT') {
+        worker.removeEventListener('message', handler);
+        resolve(e.data.result);
+      }
+    };
+
+    worker.addEventListener('message', handler);
+    worker.postMessage({
+      type: 'RUN_WASM_BENCHMARK',
+      payload: { iterations }
+    });
+
+    setTimeout(() => {
+      worker.removeEventListener('message', handler);
+      import('../wasm/wasmQuantEngine').then(({ runWasmBenchmark }) => {
+        resolve(runWasmBenchmark(iterations));
+      });
+    }, 3000);
+  });
+}
+

@@ -10,6 +10,13 @@ import {
 } from '../services/liveMarketService';
 import { calculateStatutoryCharges } from '../utils/exportUtils';
 import { soundService } from '../services/soundService';
+import {
+  generateInitialSebiSnapshots,
+  evaluateCircuitBreaker,
+  type SebiMarginSnapshot,
+  type CircuitBreakerState,
+  type AutoLiquidationAlert
+} from '../services/sebiRiskSentinel';
 import type {
   OrderAction,
   ProductType,
@@ -69,6 +76,9 @@ export interface PlaceOrderParams {
   trailingStopLoss?: number;
   disclosedQty?: number;
   icebergLegs?: number;
+  twapSlices?: number;
+  twapDurationMinutes?: number;
+  vwapSlices?: number;
   gttExpiryDays?: number;
 }
 
@@ -88,6 +98,12 @@ interface TradingSimulationContextType {
   totalRealizedPnl: number;
   totalMtmPnl: number;
   hasMarginCall: boolean;
+  sebiSnapshots: SebiMarginSnapshot[];
+  circuitBreakerState: CircuitBreakerState;
+  triggerSimulatedCircuitBreaker: (level: 0 | 10 | 15 | 20) => void;
+  resetCircuitBreaker: () => void;
+  autoLiquidationAlert: AutoLiquidationAlert;
+  dismissAutoLiquidation: () => void;
   marketDepth: (symbol: string, currentLtp?: number) => Level2MarketDepth;
   placeOrder: (params: PlaceOrderParams) => { success: boolean; message: string; orderId?: string };
   squareOffPosition: (ticker: string) => { success: boolean; message: string };
@@ -97,6 +113,7 @@ interface TradingSimulationContextType {
   addFunds: (amount: number, paymentMethod?: string) => void;
   pledgeShares: (ticker: string, qty: number) => { success: boolean; message: string };
   unpledgeShares: (ticker: string, qty: number) => { success: boolean; message: string };
+  harvestTaxLosses: (tickers?: string[]) => { savedTax: number; harvestedLoss: number; count: number };
   buySgbTranche: (grams: number, trancheSymbol?: string) => { success: boolean; message: string };
   investCorporateBond: (bondName: string, amount: number, couponRatePct: number, isin?: string) => { success: boolean; message: string };
   applyIpoAsba: (ipo: { id: string; name: string; category: string; price: number; lotSize: number; gmp: string; subMultiple: string }) => { success: boolean; message: string };
@@ -199,11 +216,13 @@ function getInitialLedgerForUser(userId: string, accountType: string) {
         }
       ],
       dematHoldings: [
-        { ticker: 'RELIANCE.NS', name: 'Reliance Industries', category: 'Equity' as const, qty: 150, avgCost: 2100, ltp: 2450.50, currentValue: 367575, investedValue: 315000, pnl: 52575, pnlPct: 16.69, settlementStatus: 'Settled Demat' as const, pledgedStatus: 'Unpledged' as const },
-        { ticker: 'HDFCBANK.NS', name: 'HDFC Bank Ltd', category: 'Equity' as const, qty: 250, avgCost: 1450, ltp: 1625.00, currentValue: 406250, investedValue: 362500, pnl: 43750, pnlPct: 12.07, settlementStatus: 'Settled Demat' as const, pledgedStatus: 'Pledged (Collateral)' as const, pledgedQty: 250 },
-        { ticker: 'TCS.NS', name: 'Tata Consultancy Services', category: 'Equity' as const, qty: 80, avgCost: 3600, ltp: 4150.00, currentValue: 332000, investedValue: 288000, pnl: 44000, pnlPct: 15.28, settlementStatus: 'Settled Demat' as const, pledgedStatus: 'Unpledged' as const },
-        { ticker: 'ICICIBANK.NS', name: 'ICICI Bank Ltd', category: 'Equity' as const, qty: 350, avgCost: 920, ltp: 1180.00, currentValue: 413000, investedValue: 322000, pnl: 91000, pnlPct: 28.26, settlementStatus: 'Settled Demat' as const, pledgedStatus: 'Unpledged' as const },
-        { ticker: 'SGB2708', name: 'SGB 2019-20 Series V', category: 'SGB' as const, qty: 15, avgCost: 6800, ltp: 7245.00, currentValue: 108675, investedValue: 102000, pnl: 6675, pnlPct: 6.54, settlementStatus: 'Settled Demat' as const, pledgedStatus: 'Unpledged' as const, couponRatePct: 2.50, nextCouponDate: '28 Aug 2026', accruedInterest: 1275 }
+        { ticker: 'RELIANCE.NS', name: 'Reliance Industries', category: 'Equity' as const, qty: 150, avgCost: 2100, ltp: 2450.50, currentValue: 367575, investedValue: 315000, pnl: 52575, pnlPct: 16.69, settlementStatus: 'Settled Demat' as const, pledgedStatus: 'Unpledged' as const, broker: 'Zerodha' as const, holdingType: 'LTCG' as const, holdingPeriodDays: 420 },
+        { ticker: 'HDFCBANK.NS', name: 'HDFC Bank Ltd', category: 'Equity' as const, qty: 250, avgCost: 1450, ltp: 1625.00, currentValue: 406250, investedValue: 362500, pnl: 43750, pnlPct: 12.07, settlementStatus: 'Settled Demat' as const, pledgedStatus: 'Pledged (Collateral)' as const, pledgedQty: 250, broker: 'ICICI Direct' as const, holdingType: 'STCG' as const, holdingPeriodDays: 140 },
+        { ticker: 'TCS.NS', name: 'Tata Consultancy Services', category: 'Equity' as const, qty: 80, avgCost: 3600, ltp: 4150.00, currentValue: 332000, investedValue: 288000, pnl: 44000, pnlPct: 15.28, settlementStatus: 'Settled Demat' as const, pledgedStatus: 'Unpledged' as const, broker: 'Groww' as const, holdingType: 'LTCG' as const, holdingPeriodDays: 510 },
+        { ticker: 'ICICIBANK.NS', name: 'ICICI Bank Ltd', category: 'Equity' as const, qty: 350, avgCost: 920, ltp: 1180.00, currentValue: 413000, investedValue: 322000, pnl: 91000, pnlPct: 28.26, settlementStatus: 'Settled Demat' as const, pledgedStatus: 'Unpledged' as const, broker: 'Upstox' as const, holdingType: 'LTCG' as const, holdingPeriodDays: 390 },
+        { ticker: 'WIPRO.NS', name: 'Wipro Limited', category: 'Equity' as const, qty: 300, avgCost: 540, ltp: 472.00, currentValue: 141600, investedValue: 162000, pnl: -20400, pnlPct: -12.59, settlementStatus: 'Settled Demat' as const, pledgedStatus: 'Unpledged' as const, broker: 'Groww' as const, holdingType: 'STCG' as const, holdingPeriodDays: 85 },
+        { ticker: 'TATASTEEL.NS', name: 'Tata Steel Ltd', category: 'Equity' as const, qty: 500, avgCost: 168, ltp: 142.50, currentValue: 71250, investedValue: 84000, pnl: -12750, pnlPct: -15.18, settlementStatus: 'Settled Demat' as const, pledgedStatus: 'Unpledged' as const, broker: 'Zerodha' as const, holdingType: 'LTCG' as const, holdingPeriodDays: 410 },
+        { ticker: 'SGB2708', name: 'SGB 2019-20 Series V', category: 'SGB' as const, qty: 15, avgCost: 6800, ltp: 7245.00, currentValue: 108675, investedValue: 102000, pnl: 6675, pnlPct: 6.54, settlementStatus: 'Settled Demat' as const, pledgedStatus: 'Unpledged' as const, couponRatePct: 2.50, nextCouponDate: '28 Aug 2026', accruedInterest: 1275, broker: 'Zerodha' as const, holdingType: 'LTCG' as const, holdingPeriodDays: 780 }
       ],
       ipoApplications: [] as IpoApplication[],
       familyTaxProfiles: [
@@ -256,9 +275,10 @@ function getInitialLedgerForUser(userId: string, accountType: string) {
         }
       ],
       dematHoldings: [
-        { ticker: 'INFY.NS', name: 'Infosys Limited', category: 'Equity' as const, qty: 100, avgCost: 1750, ltp: 1810.00, currentValue: 181000, investedValue: 175000, pnl: 6000, pnlPct: 3.43, settlementStatus: 'Settled Demat' as const, pledgedStatus: 'Unpledged' as const },
-        { ticker: 'SGB2807', name: 'SGB 2020-21 Series IV', category: 'SGB' as const, qty: 10, avgCost: 7100, ltp: 7280.00, currentValue: 72800, investedValue: 71000, pnl: 1800, pnlPct: 2.54, settlementStatus: 'Settled Demat' as const, pledgedStatus: 'Unpledged' as const, couponRatePct: 2.50, nextCouponDate: '15 Sep 2026', accruedInterest: 750 },
-        { ticker: 'Shriram Finance 8.80%', name: 'Shriram Finance Senior NCD', category: 'Corporate Bond' as const, qty: 50, avgCost: 1000, ltp: 1000.00, currentValue: 50000, investedValue: 50000, pnl: 0, pnlPct: 0.00, settlementStatus: 'Settled Demat' as const, pledgedStatus: 'Unpledged' as const, couponRatePct: 8.80, nextCouponDate: '01 Oct 2026', accruedInterest: 1466 }
+        { ticker: 'INFY.NS', name: 'Infosys Limited', category: 'Equity' as const, qty: 100, avgCost: 1750, ltp: 1810.00, currentValue: 181000, investedValue: 175000, pnl: 6000, pnlPct: 3.43, settlementStatus: 'Settled Demat' as const, pledgedStatus: 'Unpledged' as const, broker: 'Zerodha' as const, holdingType: 'STCG' as const, holdingPeriodDays: 110 },
+        { ticker: 'WIPRO.NS', name: 'Wipro Limited', category: 'Equity' as const, qty: 150, avgCost: 520, ltp: 472.00, currentValue: 70800, investedValue: 78000, pnl: -7200, pnlPct: -9.23, settlementStatus: 'Settled Demat' as const, pledgedStatus: 'Unpledged' as const, broker: 'Groww' as const, holdingType: 'STCG' as const, holdingPeriodDays: 60 },
+        { ticker: 'SGB2807', name: 'SGB 2020-21 Series IV', category: 'SGB' as const, qty: 10, avgCost: 7100, ltp: 7280.00, currentValue: 72800, investedValue: 71000, pnl: 1800, pnlPct: 2.54, settlementStatus: 'Settled Demat' as const, pledgedStatus: 'Unpledged' as const, couponRatePct: 2.50, nextCouponDate: '15 Sep 2026', accruedInterest: 750, broker: 'Upstox' as const, holdingType: 'LTCG' as const, holdingPeriodDays: 520 },
+        { ticker: 'Shriram Finance 8.80%', name: 'Shriram Finance Senior NCD', category: 'Corporate Bond' as const, qty: 50, avgCost: 1000, ltp: 1000.00, currentValue: 50000, investedValue: 50000, pnl: 0, pnlPct: 0.00, settlementStatus: 'Settled Demat' as const, pledgedStatus: 'Unpledged' as const, couponRatePct: 8.80, nextCouponDate: '01 Oct 2026', accruedInterest: 1466, broker: 'ICICI Direct' as const, holdingType: 'LTCG' as const, holdingPeriodDays: 390 }
       ],
       ipoApplications: [] as IpoApplication[],
       familyTaxProfiles: [
@@ -308,6 +328,67 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
 
   // Globally selected order ticker for DMA execution
   const [selectedOrderTicker, setSelectedOrderTicker] = useState<string>('RELIANCE.NS');
+
+  // SEBI Risk & Regulatory Sentinel States
+  const [sebiSnapshots] = useState<SebiMarginSnapshot[]>(() =>
+    generateInitialSebiSnapshots(2500000, 252800)
+  );
+
+  const [circuitBreakerState, setCircuitBreakerState] = useState<CircuitBreakerState>(() => ({
+    isHalted: false,
+    triggerLevel: 0,
+    niftyMovePct: -0.42,
+    haltStartTime: null,
+    haltDurationMinutes: 0,
+    remainingHaltSeconds: 0,
+    marketPhase: 'OPEN',
+    reason: 'Normal Market Operations'
+  }));
+
+  const [autoLiquidationAlert, setAutoLiquidationAlert] = useState<AutoLiquidationAlert>({
+    isActive: false,
+    maintenanceMarginPct: 100,
+    remainingSeconds: 300,
+    mtmLoss: 0,
+    squareOffExecuted: false
+  });
+
+  const triggerSimulatedCircuitBreaker = useCallback((level: 0 | 10 | 15 | 20) => {
+    if (level === 0) {
+      setCircuitBreakerState({
+        isHalted: false,
+        triggerLevel: 0,
+        niftyMovePct: -0.42,
+        haltStartTime: null,
+        haltDurationMinutes: 0,
+        remainingHaltSeconds: 0,
+        marketPhase: 'OPEN',
+        reason: 'Normal Market Operations'
+      });
+      return;
+    }
+    const move = level === 10 ? -10.2 : level === 15 ? -15.4 : -20.1;
+    const sim = evaluateCircuitBreaker(23346.40 * (1 + move / 100), 23346.40);
+    setCircuitBreakerState(sim);
+    soundService.playOrderRejectionClick();
+  }, []);
+
+  const resetCircuitBreaker = useCallback(() => {
+    setCircuitBreakerState({
+      isHalted: false,
+      triggerLevel: 0,
+      niftyMovePct: 0.15,
+      haltStartTime: null,
+      haltDurationMinutes: 0,
+      remainingHaltSeconds: 0,
+      marketPhase: 'OPEN',
+      reason: 'Normal Market Operations'
+    });
+  }, []);
+
+  const dismissAutoLiquidation = useCallback(() => {
+    setAutoLiquidationAlert(prev => ({ ...prev, isActive: false }));
+  }, []);
 
   // Re-sync when currentUser changes (User Account Isolation & Switching)
   useEffect(() => {
@@ -671,17 +752,42 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
     return getLevel2MarketDepth(symbol, currentLtp, userPendingOrders);
   }, [ledger.orders]);
 
-  // Place Order Simulation Core with Advanced Order Types (BO, CO, GTT, Iceberg)
+  // Place Order Simulation Core with Advanced Order Types (BO, CO, GTT, Iceberg, TWAP, VWAP)
   const placeOrder = useCallback((params: PlaceOrderParams) => {
+    // 1. SEBI Circuit Breaker Check: Freeze order placement during cooling halts
+    if (circuitBreakerState.isHalted) {
+      soundService.playOrderRejectionClick();
+      return {
+        success: false,
+        message: `Order Rejected: Exchange trading halted due to ${circuitBreakerState.reason}`
+      };
+    }
+
     const tick = getLatestTick(params.ticker);
     const executionPrice = params.orderType === 'Market Order' ? (tick?.ltp || params.price) : params.price;
 
-    // Slicing calculation for Iceberg Orders
+    // Slicing calculation for Iceberg, TWAP, and VWAP Orders
     const isIceberg = params.orderType === 'Iceberg Order';
-    const disclosedQty = isIceberg
-      ? (params.disclosedQty && params.disclosedQty > 0 ? params.disclosedQty : Math.max(1, Math.round(params.qty / 5)))
-      : params.qty;
-    const currentLegQty = isIceberg ? Math.min(disclosedQty, params.qty) : params.qty;
+    const isTwap = params.orderType === 'TWAP Order';
+    const isVwap = params.orderType === 'VWAP Order';
+
+    const twapSlicesCount = params.twapSlices || 5;
+    const vwapSlicesCount = params.vwapSlices || 6;
+
+    let disclosedQty = params.qty;
+    let currentLegQty = params.qty;
+
+    if (isIceberg) {
+      disclosedQty = params.disclosedQty && params.disclosedQty > 0 ? params.disclosedQty : Math.max(1, Math.round(params.qty / 5));
+      currentLegQty = Math.min(disclosedQty, params.qty);
+    } else if (isTwap) {
+      currentLegQty = Math.max(1, Math.floor(params.qty / twapSlicesCount));
+      disclosedQty = currentLegQty;
+    } else if (isVwap) {
+      currentLegQty = Math.max(1, Math.round(params.qty * 0.25));
+      disclosedQty = currentLegQty;
+    }
+
     const icebergLegs = isIceberg ? Math.ceil(params.qty / disclosedQty) : undefined;
 
     const orderValue = currentLegQty * executionPrice;
@@ -715,6 +821,8 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
     const orderId = `ORD-${Math.floor(10000 + Math.random() * 90000)}`;
     const tradeId = `TRD-${Math.floor(10000 + Math.random() * 90000)}`;
     const isInstantFill = params.orderType === 'Market Order' ||
+      params.orderType === 'TWAP Order' ||
+      params.orderType === 'VWAP Order' ||
       (params.action === 'BUY' && params.price >= (tick?.ltp || params.price)) ||
       (params.action === 'SELL' && params.price <= (tick?.ltp || params.price));
 
@@ -737,6 +845,9 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
       icebergTotalQty: isIceberg ? params.qty : undefined,
       icebergLegs: isIceberg ? icebergLegs : undefined,
       icebergCurrentLeg: isIceberg ? 1 : undefined,
+      twapSlices: isTwap ? twapSlicesCount : undefined,
+      twapDurationMinutes: isTwap ? (params.twapDurationMinutes || 10) : undefined,
+      vwapSlices: isVwap ? vwapSlicesCount : undefined,
       gttExpiryDays: params.orderType === 'Good-Till-Triggered (GTT)' ? (params.gttExpiryDays || 365) : undefined
     };
 
@@ -916,11 +1027,18 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
       soundService.playExecutionChime();
     }
 
+    let successMsg = `${params.orderType} ${orderId} queued in exchange depth ladder at ₹${executionPrice.toLocaleString('en-IN')}`;
+    if (isTwap) {
+      successMsg = `TWAP Algo Executing: Order ${orderId} sliced into ${twapSlicesCount} time intervals. Leg 1 (${currentLegQty} shares) filled at ₹${executionPrice.toLocaleString('en-IN')}.`;
+    } else if (isVwap) {
+      successMsg = `VWAP Algo Executing: Order ${orderId} sliced into ${vwapSlicesCount} volume tranches. Tranche 1 (${currentLegQty} shares) filled at ₹${executionPrice.toLocaleString('en-IN')}.`;
+    } else if (isInstantFill) {
+      successMsg = `${params.orderType} ${orderId} filled instantly at ₹${executionPrice.toLocaleString('en-IN')}${isIceberg ? ` (Leg 1 of ${icebergLegs})` : ''}`;
+    }
+
     return {
       success: true,
-      message: isInstantFill
-        ? `${params.orderType} ${orderId} filled instantly at ₹${executionPrice.toLocaleString('en-IN')}${isIceberg ? ` (Leg 1 of ${icebergLegs})` : ''}`
-        : `${params.orderType} ${orderId} queued in exchange depth ladder at ₹${executionPrice.toLocaleString('en-IN')}`,
+      message: successMsg,
       orderId
     };
   }, [ledger.wallet.availableMargin, persistLedger]);
@@ -1217,6 +1335,53 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
 
     return { success: true, message: `Unpledged ${qty} shares of ${ticker}.` };
   }, [ledger.dematHoldings, ledger.wallet.availableMargin]);
+
+  // Cross-Broker Tax-Loss Harvesting Engine (Budget 2024–2026: STCG 20%, LTCG 12.5%)
+  const harvestTaxLosses = useCallback((tickers?: string[]) => {
+    let totalLossHarvested = 0;
+    let totalTaxSaved = 0;
+    let affectedCount = 0;
+
+    setLedger((prev: typeof ledger) => {
+      const updatedHoldings = prev.dematHoldings.map((h: DematHolding) => {
+        if ((!tickers || tickers.includes(h.ticker)) && h.pnl < 0) {
+          const loss = Math.abs(h.pnl);
+          totalLossHarvested += loss;
+          const taxRate = h.holdingType === 'LTCG' ? 0.125 : 0.20;
+          totalTaxSaved += loss * taxRate;
+          affectedCount++;
+
+          // Reset cost basis to current market LTP (tax-loss booked and realized)
+          const newAvgCost = h.ltp;
+          const newInvested = Number((h.qty * newAvgCost).toFixed(2));
+          return {
+            ...h,
+            avgCost: newAvgCost,
+            investedValue: newInvested,
+            pnl: 0,
+            pnlPct: 0
+          };
+        }
+        return h;
+      });
+
+      return {
+        ...prev,
+        dematHoldings: updatedHoldings,
+        wallet: {
+          ...prev.wallet,
+          cashBalance: Number((prev.wallet.cashBalance + totalTaxSaved).toFixed(2)),
+          availableMargin: Number((prev.wallet.availableMargin + totalTaxSaved).toFixed(2))
+        }
+      };
+    });
+
+    return {
+      savedTax: Number(totalTaxSaved.toFixed(2)),
+      harvestedLoss: Number(totalLossHarvested.toFixed(2)),
+      count: affectedCount
+    };
+  }, []);
 
   // Buy SGB Tranche
   const buySgbTranche = useCallback((grams: number, trancheSymbol?: string) => {
@@ -1563,6 +1728,12 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
         totalRealizedPnl,
         totalMtmPnl,
         hasMarginCall,
+        sebiSnapshots,
+        circuitBreakerState,
+        triggerSimulatedCircuitBreaker,
+        resetCircuitBreaker,
+        autoLiquidationAlert,
+        dismissAutoLiquidation,
         marketDepth,
         placeOrder,
         squareOffPosition,
@@ -1572,6 +1743,7 @@ export const TradingSimulationProvider: React.FC<{ children: React.ReactNode }> 
         addFunds,
         pledgeShares,
         unpledgeShares,
+        harvestTaxLosses,
         buySgbTranche,
         investCorporateBond,
         applyIpoAsba,

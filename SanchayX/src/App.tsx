@@ -18,6 +18,7 @@ const SafeInvestmentEngine = lazy(() => import('./pages/SafeInvestmentEngine').t
 const EfficientFrontierPage = lazy(() => import('./pages/EfficientFrontier').then(m => ({ default: m.EfficientFrontierPage })));
 const BacktesterPage = lazy(() => import('./pages/Backtester').then(m => ({ default: m.BacktesterPage })));
 const MarketExplorerPage = lazy(() => import('./pages/MarketExplorer').then(m => ({ default: m.MarketExplorerPage })));
+const AlgoStudioPage = lazy(() => import('./pages/AlgoStudioPage').then(m => ({ default: m.AlgoStudioPage })));
 
 const TradingConsolePage = lazy(() => import('./pages/TradingConsolePage').then(m => ({ default: m.TradingConsolePage })));
 const FloatingAIChatbot = lazy(() => import('./components/layout/FloatingAIChatbot').then(m => ({ default: m.FloatingAIChatbot })));
@@ -39,6 +40,8 @@ const MainContent: React.FC = () => {
     ? 'pattern-dashboard'
     : activeTab === 'builder'
     ? 'pattern-builder'
+    : activeTab === 'algo_studio'
+    ? 'pattern-smart-engine'
     : activeTab === 'smart_engine'
     ? 'pattern-smart-engine'
     : activeTab === 'safe_investment'
@@ -55,13 +58,16 @@ const MainContent: React.FC = () => {
     <div className={`w-full flex-1 transition-all duration-300 ${pagePatternClass}`}>
       <main className="w-full max-w-[1750px] mx-auto min-h-[calc(100vh-140px)] relative px-3 lg:px-5 py-3.5">
         <Suspense fallback={<PageLoaderFallback />}>
-          {/* If a dedicated sub-tab option (e.g. Place Order, Open Positions, Order Book, Funds, Holdings, Gold, IPO, FD/Bonds) is selected, render dedicated Trading Console Page */}
-          {activeSubTab ? (
+          {/* If a dedicated sub-tab option is selected, render dedicated Trading Console or Algo Studio Page */}
+          {activeSubTab === 'algo_studio' ? (
+            <AlgoStudioPage />
+          ) : activeSubTab ? (
             <TradingConsolePage />
           ) : (
             <>
               {activeTab === 'dashboard' && <ExecutiveDashboard />}
               {activeTab === 'builder' && <PortfolioBuilder />}
+              {activeTab === 'algo_studio' && <AlgoStudioPage />}
               {activeTab === 'smart_engine' && <DualShieldSmartEngine />}
               {activeTab === 'safe_investment' && <SafeInvestmentEngine />}
               {activeTab === 'frontier' && <EfficientFrontierPage />}

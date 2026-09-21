@@ -1,18 +1,38 @@
 import type { Asset, FrontierPoint, CorrelationMatrixData } from '../types/portfolio';
 import { runStrategyBacktest } from '../utils/financialMath';
+import {
+  initWasmQuantEngine,
+  computeSharpeWasm,
+  isWasmReady,
+  runWasmBenchmark
+} from '../wasm/wasmQuantEngine';
+
+// Initialize WASM module inside worker asynchronously on startup
+initWasmQuantEngine().catch(() => {});
 
 // Self-contained mathematical functions for worker thread
 const RISK_FREE_RATE = 0.045; // 4.5% Risk-free rate
 
 function computeSharpeRatio(expectedReturn: number, volatility: number): number {
+  if (isWasmReady()) {
+    return computeSharpeWasm(expectedReturn, volatility, RISK_FREE_RATE);
+  }
   if (volatility <= 0) return 0;
   return (expectedReturn - RISK_FREE_RATE) / volatility;
 }
 
-self.onmessage = (e: MessageEvent) => {
+self.onmessage = async (e: MessageEvent) => {
   const { type, payload } = e.data;
 
-  if (type === 'CALC_FRONTIER') {
+  if (type === 'INIT_WASM') {
+    const ready = await initWasmQuantEngine();
+    self.postMessage({ type: 'WASM_INITIALIZED', isReady: ready });
+  } else if (type === 'RUN_WASM_BENCHMARK') {
+    const iters = payload?.iterations || 10000;
+    const result = await runWasmBenchmark(iters);
+    self.postMessage({ type: 'WASM_BENCHMARK_RESULT', result });
+  } else if (type === 'CALC_FRONTIER') {
+    const startTime = performance.now();
     const assets: Asset[] = payload.assets || [];
     const samples: number = payload.samples || 500;
     const activeAssets = assets.filter(a => a.weight > 0);
@@ -121,7 +141,13 @@ self.onmessage = (e: MessageEvent) => {
       });
     }
 
-    self.postMessage({ type: 'FRONTIER_RESULT', points: frontier });
+    const durationMs = Number((performance.now() - startTime).toFixed(2));
+    self.postMessage({
+      type: 'FRONTIER_RESULT',
+      points: frontier,
+      computeDurationMs: durationMs,
+      wasmAccelerated: isWasmReady()
+    });
   } else if (type === 'CALC_CORRELATION') {
     const assets: Asset[] = payload.assets || [];
     const activeAssets = assets.filter(a => a.weight > 0);

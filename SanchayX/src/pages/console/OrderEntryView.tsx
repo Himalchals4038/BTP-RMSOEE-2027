@@ -8,7 +8,10 @@ import {
   AlertTriangle,
   CheckCircle2,
   Sparkles,
-  GripVertical
+  GripVertical,
+  ShieldAlert,
+  Clock,
+  RefreshCw
 } from 'lucide-react';
 import { useTradingSimulation } from '../../context/TradingSimulationContext';
 import { usePortfolio } from '../../context/PortfolioContext';
@@ -94,7 +97,19 @@ export const OrderEntryView: React.FC<OrderEntryViewProps> = ({
   exchangeOptions,
   l2Depth
 }) => {
-  const { wallet, orders, cancelOrder, modifyOrderPrice } = useTradingSimulation();
+  const {
+    wallet,
+    orders,
+    cancelOrder,
+    modifyOrderPrice,
+    circuitBreakerState,
+    triggerSimulatedCircuitBreaker,
+    resetCircuitBreaker,
+    sebiSnapshots,
+    autoLiquidationAlert,
+    dismissAutoLiquidation,
+    panicSquareOffAllIntraday
+  } = useTradingSimulation();
   const { currency } = usePortfolio();
 
   const [orderSearchQuery, setOrderSearchQuery] = useState<string>('');
@@ -103,6 +118,12 @@ export const OrderEntryView: React.FC<OrderEntryViewProps> = ({
   const [draggedOrderId, setDraggedOrderId] = useState<string | null>(null);
   const [dropTargetPrice, setDropTargetPrice] = useState<number | null>(null);
   const [dragModifyMessage, setDragModifyMessage] = useState<string | null>(null);
+
+  // Institutional Smart Algo Slicing Parameters
+  const [twapDuration, setTwapDuration] = useState<number>(10);
+  const [twapSlices, setTwapSlices] = useState<number>(5);
+  const [vwapSlices, setVwapSlices] = useState<number>(6);
+
   const searchedSecurities = React.useMemo(() => {
     if (!orderSearchQuery.trim()) return filteredAssets;
     const q = orderSearchQuery.toLowerCase().trim();
@@ -127,7 +148,7 @@ export const OrderEntryView: React.FC<OrderEntryViewProps> = ({
             Institutional DMA Multi-Asset Order Entry Console
           </h3>
           <p className="text-xs text-[var(--text-secondary)]">
-            Direct Market Access to NSE, BSE, MCX with Bracket (BO), Cover (CO), GTT & Iceberg Order Types
+            Direct Market Access to NSE, BSE, MCX with Bracket (BO), TWAP, VWAP & Stealth Iceberg Slicing
           </p>
         </div>
 
@@ -157,6 +178,166 @@ export const OrderEntryView: React.FC<OrderEntryViewProps> = ({
         </div>
       </div>
 
+      {/* Auto-Liquidation 80% Maintenance Margin Call Alert */}
+      {autoLiquidationAlert?.isActive && (
+        <div className="p-4 rounded-2xl bg-rose-600/15 border-2 border-rose-500 flex flex-wrap items-center justify-between gap-4 animate-pulse">
+          <div className="flex items-start gap-3">
+            <ShieldAlert className="w-6 h-6 text-rose-500 shrink-0 mt-0.5" />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black text-rose-600 dark:text-rose-400 uppercase tracking-wider">
+                  EMERGENCY AUTO-LIQUIDATION MARGIN CALL
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.2 rounded bg-rose-500/20 text-rose-300 font-black">
+                  Maintenance Margin {autoLiquidationAlert.maintenanceMarginPct}% (&lt;80% Limit)
+                </span>
+              </div>
+              <p className="text-xs text-[var(--text-primary)] font-bold mt-1">
+                Open intraday positions have incurred critical MTM losses (-₹{autoLiquidationAlert.mtmLoss.toLocaleString()}).
+                Simulated auto square-off in{' '}
+                <span className="font-mono text-sm text-rose-500 font-black">
+                  {Math.floor(autoLiquidationAlert.remainingSeconds / 60)}:
+                  {autoLiquidationAlert.remainingSeconds % 60 < 10 ? '0' : ''}
+                  {autoLiquidationAlert.remainingSeconds % 60}
+                </span>{' '}
+                minutes!
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => panicSquareOffAllIntraday()}
+              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-md cursor-pointer transition-all"
+            >
+              Panic Square-Off All MIS
+            </button>
+            <button
+              onClick={() => dismissAutoLiquidation()}
+              className="px-3 py-2 rounded-xl bg-[var(--bg-tertiary)] hover:bg-[var(--bg-card)] border border-[var(--border-color)] text-xs font-bold text-[var(--text-secondary)] cursor-pointer"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* SEBI Circuit Breaker Sentinel Banner */}
+      <div className={`p-4 rounded-2xl border transition-all ${
+        circuitBreakerState.isHalted
+          ? 'bg-rose-500/15 border-rose-500/50 shadow-md ring-2 ring-rose-500/30 animate-pulse'
+          : 'bg-[var(--bg-card)] border-[var(--border-color)]'
+      }`}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className={`p-2 rounded-xl ${
+              circuitBreakerState.isHalted ? 'bg-rose-500/20 text-rose-500' : 'bg-emerald-500/15 text-emerald-500'
+            }`}>
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black text-[var(--text-primary)]">
+                  SEBI Index Circuit Breaker Sentinel
+                </span>
+                <span className={`text-[10px] font-mono px-2 py-0.2 rounded font-extrabold ${
+                  circuitBreakerState.isHalted
+                    ? 'bg-rose-500 text-white'
+                    : 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                }`}>
+                  {circuitBreakerState.marketPhase}
+                </span>
+              </div>
+              <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+                {circuitBreakerState.reason} (NIFTY move: {circuitBreakerState.niftyMovePct}%)
+              </p>
+            </div>
+          </div>
+
+          {/* Interactive Simulation Controls */}
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="text-[10px] font-bold text-[var(--text-muted)] mr-1">Simulate Halt:</span>
+            <button
+              type="button"
+              onClick={() => triggerSimulatedCircuitBreaker(10)}
+              className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-400 border border-amber-500/30 cursor-pointer"
+            >
+              10% (45m)
+            </button>
+            <button
+              type="button"
+              onClick={() => triggerSimulatedCircuitBreaker(15)}
+              className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-rose-500/15 hover:bg-rose-500/25 text-rose-600 dark:text-rose-400 border border-rose-500/30 cursor-pointer"
+            >
+              15% (45m)
+            </button>
+            <button
+              type="button"
+              onClick={() => triggerSimulatedCircuitBreaker(20)}
+              className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-purple-500/15 hover:bg-purple-500/25 text-purple-600 dark:text-purple-400 border border-purple-500/30 cursor-pointer"
+            >
+              20% (Day)
+            </button>
+            {circuitBreakerState.isHalted && (
+              <button
+                type="button"
+                onClick={resetCircuitBreaker}
+                className="px-3 py-1 rounded-lg text-[11px] font-black bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer ml-1 shadow-sm flex items-center gap-1"
+              >
+                <RefreshCw className="w-3 h-3" /> Resume
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* SEBI 4-Time Intraday Peak Margin Snapshot Tracker */}
+      <div className="p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-[var(--icici-orange)]" />
+            <span className="text-xs font-black text-[var(--text-primary)]">
+              SEBI 4-Time Intraday Peak Margin Snapshots (Mandate Audit)
+            </span>
+          </div>
+          <span className="text-[10px] font-mono text-[var(--text-muted)]">
+            Captures random leverage snapshots (09:15–15:30 IST)
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          {sebiSnapshots.map((snap) => (
+            <div
+              key={snap.id}
+              className={`p-2.5 rounded-xl border text-xs space-y-1 ${
+                snap.status === 'PENALTY_BREACH'
+                  ? 'bg-rose-500/15 border-rose-500/40 text-rose-500'
+                  : snap.status === 'WARNING'
+                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-500'
+                  : 'bg-[var(--bg-tertiary)] border-[var(--border-color)] text-[var(--text-primary)]'
+              }`}
+            >
+              <div className="flex items-center justify-between text-[10px]">
+                <span className="font-bold text-[var(--text-muted)]">{snap.timeStr}</span>
+                <span className={`px-1.5 py-0.2 rounded font-black text-[9px] ${
+                  snap.status === 'COMPLIANT'
+                    ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                    : snap.status === 'WARNING'
+                    ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300'
+                    : 'bg-rose-500 text-white'
+                }`}>
+                  {snap.status}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between pt-0.5">
+                <span className="font-extrabold text-xs">{snap.name.split(' ')[1]}</span>
+                <span className="font-mono font-black text-xs">{snap.marginUtilizedPct}% Utilized</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Dynamic Order Feedback Banner */}
       {orderFeedback && (
         <div className={`p-4 rounded-xl border text-xs font-bold flex items-center gap-2.5 animate-bounce ${
@@ -169,7 +350,7 @@ export const OrderEntryView: React.FC<OrderEntryViewProps> = ({
           ) : (
             <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
           )}
-          {orderFeedback.message}
+          <span>{orderFeedback.message}</span>
         </div>
       )}
 
@@ -310,6 +491,8 @@ export const OrderEntryView: React.FC<OrderEntryViewProps> = ({
                 <option value="Cover Order (CO)">Cover Order (CO) — 10x Intraday Leverage</option>
                 <option value="Good-Till-Triggered (GTT)">Good-Till-Triggered (GTT) — 365 Days Validity</option>
                 <option value="Iceberg Order">Iceberg Order — Block Slicing</option>
+                <option value="TWAP Order">TWAP Order — Institutional Time Slicing</option>
+                <option value="VWAP Order">VWAP Order — Intraday Volume-Curve Slicing</option>
               </select>
             </div>
 
@@ -447,6 +630,81 @@ export const OrderEntryView: React.FC<OrderEntryViewProps> = ({
                       className="w-full bg-[var(--bg-card)] border border-blue-500/40 rounded-lg p-1.5 text-xs font-mono font-bold text-[var(--text-primary)]"
                     />
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* 5. TWAP Order Parameters */}
+            {orderType === 'TWAP Order' && (
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2">
+                <div className="flex items-center justify-between text-xs font-black text-amber-500">
+                  <span>Institutional TWAP Execution Parameters</span>
+                  <span className="text-[10px] font-mono">{twapSlices} Slices ({Math.max(1, Math.floor(quantity / twapSlices))} shares/slice)</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-[var(--text-muted)] block">Total Duration</label>
+                    <select
+                      value={twapDuration}
+                      onChange={(e) => setTwapDuration(Number(e.target.value))}
+                      className="w-full bg-[var(--bg-card)] border border-amber-500/40 rounded-lg p-1.5 text-xs font-mono font-bold text-[var(--text-primary)]"
+                    >
+                      <option value="5">5 Minutes</option>
+                      <option value="10">10 Minutes</option>
+                      <option value="15">15 Minutes</option>
+                      <option value="30">30 Minutes</option>
+                      <option value="60">1 Hour</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-[var(--text-muted)] block">Time Slices Count</label>
+                    <select
+                      value={twapSlices}
+                      onChange={(e) => setTwapSlices(Number(e.target.value))}
+                      className="w-full bg-[var(--bg-card)] border border-amber-500/40 rounded-lg p-1.5 text-xs font-mono font-bold text-[var(--text-primary)]"
+                    >
+                      <option value="3">3 Slices</option>
+                      <option value="5">5 Slices (Default)</option>
+                      <option value="10">10 Slices</option>
+                      <option value="15">15 Slices</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="text-[10px] font-mono text-[var(--text-secondary)]">
+                  Pace: 1 slice executed every {(twapDuration / twapSlices).toFixed(1)} mins to eliminate market impact.
+                </div>
+              </div>
+            )}
+
+            {/* 6. VWAP Order Parameters */}
+            {orderType === 'VWAP Order' && (
+              <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 space-y-2">
+                <div className="flex items-center justify-between text-xs font-black text-purple-400">
+                  <span>Institutional VWAP Volume-Curve Engine</span>
+                  <span className="text-[10px] font-mono">{vwapSlices} Tranches</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-[var(--text-muted)] block">Volume Tranches</label>
+                    <select
+                      value={vwapSlices}
+                      onChange={(e) => setVwapSlices(Number(e.target.value))}
+                      className="w-full bg-[var(--bg-card)] border border-purple-500/40 rounded-lg p-1.5 text-xs font-mono font-bold text-[var(--text-primary)]"
+                    >
+                      <option value="4">4 Tranches</option>
+                      <option value="6">6 Tranches (U-Curve)</option>
+                      <option value="8">8 Tranches (Granular)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-[var(--text-muted)] block">Initial Fill Size</label>
+                    <div className="p-1.5 rounded-lg bg-[var(--bg-card)] border border-purple-500/30 font-mono font-bold text-xs text-purple-500">
+                      {Math.round(quantity * 0.25)} shares (25%)
+                    </div>
+                  </div>
+                </div>
+                <div className="text-[10px] font-mono text-[var(--text-secondary)]">
+                  Shapes execution to track Indian exchange volume profile (heavy morning/closing weights).
                 </div>
               </div>
             )}
