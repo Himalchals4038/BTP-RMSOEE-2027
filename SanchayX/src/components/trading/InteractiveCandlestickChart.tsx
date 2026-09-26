@@ -81,8 +81,10 @@ function generateInitialCandles(ticker: string, basePrice: number, timeframe: Ti
     const change = (seededRandom() - 0.49) * volatility * 2;
     const open = Math.round(currentPrice * 100) / 100;
     const close = Math.round(Math.max(1, open + change) * 100) / 100;
-    const high = Math.round(Math.max(open, close) + seededRandom() * volatility * 1.2 * 100) / 100;
-    const low = Math.round(Math.max(0.5, Math.min(open, close) - seededRandom() * volatility * 1.2) * 100) / 100;
+    const upperWick = (seededRandom() * 0.5 + 0.1) * volatility;
+    const lowerWick = (seededRandom() * 0.5 + 0.1) * volatility;
+    const high = Math.round((Math.max(open, close) + upperWick) * 100) / 100;
+    const low = Math.round((Math.max(0.5, Math.min(open, close) - lowerWick)) * 100) / 100;
     const volume = Math.floor(1000 + seededRandom() * 25000);
 
     data.push({

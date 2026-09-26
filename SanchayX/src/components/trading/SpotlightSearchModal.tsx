@@ -67,6 +67,7 @@ export const SpotlightSearchModal: React.FC<SpotlightSearchModalProps> = ({
       { id: 'demat_holdings', label: 'CDSL / NSDL Demat Holdings', sub: 'Depository securities, collateral pledge' },
       { id: 'funds', label: 'Funds & Margin Liquidity', sub: 'Collateral headroom, instant UPI deposit' },
       { id: 'gold', label: 'Sovereign Gold Bonds (SGB)', sub: 'RBI 2.5% p.a. gold tranches & digital gold' },
+      { id: 'indian_bonds', label: 'Indian Sovereign & Corporate Debt Terminal', sub: 'CCIL NDS-OM 5-Depth, Sovereign Yield Curve & Clean/Dirty pricing' },
       { id: 'ipo', label: 'IPO & NFO ASBA Portal', sub: 'Direct SEBI ASBA application & allotment lottery' },
       { id: 'fd_bonds', label: 'Fixed Deposits & Corporate NCDs', sub: 'AAA-rated corporate bonds with fixed yields' },
       { id: 'reports', label: 'Tax & P&L Statements', sub: 'Trade journal, GitHub heatmap, STCG & LTCG' },

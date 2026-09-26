@@ -204,3 +204,197 @@ export const SGB_ARBITRAGE_CATALOG = [
   { symbol: 'SGB30JUN', series: 'SGB 2022-23 Series I', tradedPrice: 7080, maturity: 'Jun 2030' },
   { symbol: 'SGB31DEC', series: 'SGB 2023-24 Series III', tradedPrice: 7120, maturity: 'Dec 2031' }
 ];
+
+/**
+ * Interest Rate Sensitivity Risk Simulator (Modified Duration & Convexity)
+ * Predicts price change per delta bps shift in RBI repo/market rates:
+ * ΔP / P ≈ -D_mod * Δy + 0.5 * C * (Δy)^2
+ */
+export interface RateShiftScenario {
+  deltaBps: number;
+  label: string;
+  priceChangePct: number;
+  priceChangeAmount: number;
+  projectedPrice: number;
+  projectedYtm: number;
+}
+
+export function simulateInterestRateShift(
+  cleanPrice: number,
+  ytmPct: number,
+  modifiedDuration: number,
+  convexity: number = 25,
+  deltaBps: number = 25
+): RateShiftScenario {
+  const deltaY = deltaBps / 10000; // e.g. 25 bps = 0.0025
+  const durationEffect = -modifiedDuration * deltaY;
+  const convexityEffect = 0.5 * convexity * Math.pow(deltaY, 2);
+  const priceChangePct = Number(((durationEffect + convexityEffect) * 100).toFixed(3));
+  const priceChangeAmount = Number((cleanPrice * (priceChangePct / 100)).toFixed(2));
+  const projectedPrice = Number((cleanPrice + priceChangeAmount).toFixed(2));
+  const projectedYtm = Number((ytmPct + (deltaBps / 100)).toFixed(2));
+
+  return {
+    deltaBps,
+    label: deltaBps >= 0 ? `+${deltaBps} bps Rate Hike` : `${deltaBps} bps Rate Cut`,
+    priceChangePct,
+    priceChangeAmount,
+    projectedPrice,
+    projectedYtm
+  };
+}
+
+/**
+ * Benchmark Sovereign Yield Curve Tenors (3M to 30Y)
+ */
+export interface YieldCurveTenorPoint {
+  tenor: string;
+  tenorYears: number;
+  label: string;
+  isin: string;
+  yieldPct: number;
+  prevMonthYieldPct: number;
+  changeBps: number;
+  volumeCr: number;
+}
+
+export const SOVEREIGN_YIELD_CURVE_BENCHMARKS: YieldCurveTenorPoint[] = [
+  { tenor: '3M', tenorYears: 0.25, label: '3-Month T-Bill', isin: 'IN002024X012', yieldPct: 6.75, prevMonthYieldPct: 6.79, changeBps: -4, volumeCr: 2800 },
+  { tenor: '6M', tenorYears: 0.50, label: '6-Month T-Bill', isin: 'IN002024Y024', yieldPct: 6.82, prevMonthYieldPct: 6.85, changeBps: -3, volumeCr: 2200 },
+  { tenor: '1Y', tenorYears: 1.00, label: '1-Year T-Bill', isin: 'IN002024Z036', yieldPct: 6.90, prevMonthYieldPct: 6.94, changeBps: -4, volumeCr: 3100 },
+  { tenor: '2Y', tenorYears: 2.00, label: '2-Year G-Sec', isin: 'IN0020240035', yieldPct: 6.95, prevMonthYieldPct: 6.97, changeBps: -2, volumeCr: 1400 },
+  { tenor: '5Y', tenorYears: 5.00, label: '5-Year G-Sec', isin: 'IN0020240027', yieldPct: 7.02, prevMonthYieldPct: 7.05, changeBps: -3, volumeCr: 2100 },
+  { tenor: '10Y', tenorYears: 10.00, label: '10-Year Benchmark', isin: 'IN0020230085', yieldPct: 7.18, prevMonthYieldPct: 7.14, changeBps: +4, volumeCr: 3500 },
+  { tenor: '30Y', tenorYears: 30.00, label: '30-Year Long Sovereign', isin: 'IN0020230093', yieldPct: 7.30, prevMonthYieldPct: 7.33, changeBps: -3, volumeCr: 950 }
+];
+
+export interface YieldCurveDynamics {
+  slope10Y2Y: number; // in bps
+  slope10Y3M: number; // in bps
+  curveShape: 'NORMAL_STEEPENING' | 'FLATTENING' | 'INVERTED';
+  rbiRepoRate: number;
+  benchmarkSpread: number;
+  analysisSummary: string;
+}
+
+export function calculateYieldCurveDynamics(): YieldCurveDynamics {
+  const p3M = SOVEREIGN_YIELD_CURVE_BENCHMARKS.find(p => p.tenor === '3M')?.yieldPct || 6.75;
+  const p2Y = SOVEREIGN_YIELD_CURVE_BENCHMARKS.find(p => p.tenor === '2Y')?.yieldPct || 6.95;
+  const p10Y = SOVEREIGN_YIELD_CURVE_BENCHMARKS.find(p => p.tenor === '10Y')?.yieldPct || 7.18;
+
+  const slope10Y2Y = Math.round((p10Y - p2Y) * 100);
+  const slope10Y3M = Math.round((p10Y - p3M) * 100);
+
+  let curveShape: YieldCurveDynamics['curveShape'] = 'NORMAL_STEEPENING';
+  if (slope10Y2Y < 0 || slope10Y3M < 0) {
+    curveShape = 'INVERTED';
+  } else if (slope10Y2Y < 15) {
+    curveShape = 'FLATTENING';
+  }
+
+  return {
+    slope10Y2Y,
+    slope10Y3M,
+    curveShape,
+    rbiRepoRate: 6.50,
+    benchmarkSpread: Math.round((p10Y - 6.50) * 100),
+    analysisSummary: curveShape === 'NORMAL_STEEPENING'
+      ? 'Healthy upward sloping sovereign yield curve (+23 bps 10Y-2Y slope) reflecting robust growth expectations and orderly liquidity.'
+      : curveShape === 'FLATTENING'
+      ? 'Yield curve flattening signaled by tightening term spreads across short and long-dated securities.'
+      : 'Inverted yield curve detected! Short-term rates exceed long-term yields signaling macroeconomic tightening.'
+  };
+}
+
+/**
+ * CCIL NDS-OM Level-2 5-Depth Order Ladder
+ * Supports dual bidding mechanisms: Price-based (₹ Clean) and Yield-based (% YTM).
+ */
+export interface BondDepthRung {
+  rank: number;
+  orders: number;
+  qtyCr: number;
+  cleanPrice: number;
+  dirtyPrice: number;
+  ytmPct: number;
+  depthPct: number;
+}
+
+export interface BondNdsOmDepth {
+  bids: BondDepthRung[];
+  asks: BondDepthRung[];
+  totalBidQtyCr: number;
+  totalAskQtyCr: number;
+  spreadPriceInr: number;
+  spreadBps: number;
+}
+
+export function generateBondNdsOmDepth(cleanPrice: number, ytmPct: number, faceValue: number = 100): BondNdsOmDepth {
+  const is100Base = faceValue === 100;
+  const priceStep = is100Base ? 0.02 : 0.25;
+  const ytmStep = 0.003; // ~0.3 bps tick
+
+  const bids: BondDepthRung[] = [];
+  const asks: BondDepthRung[] = [];
+
+  let totalBid = 0;
+  let totalAsk = 0;
+
+  // Generate 5 Bids (Buyers wanting lower price / higher yield)
+  for (let i = 1; i <= 5; i++) {
+    const bPrice = Number((cleanPrice - (i - 1) * priceStep - 0.01).toFixed(2));
+    const bYtm = Number((ytmPct + (i - 1) * ytmStep + 0.001).toFixed(3));
+    const qty = Number((15 + i * 12.5 + (i % 2 === 0 ? 8 : 0)).toFixed(1));
+    const orders = 3 + i * 2;
+    totalBid += qty;
+
+    bids.push({
+      rank: i,
+      orders,
+      qtyCr: qty,
+      cleanPrice: bPrice,
+      dirtyPrice: Number((bPrice + 0.72).toFixed(2)),
+      ytmPct: bYtm,
+      depthPct: 0 // populated below
+    });
+  }
+
+  // Generate 5 Asks (Sellers wanting higher price / lower yield)
+  for (let i = 1; i <= 5; i++) {
+    const aPrice = Number((cleanPrice + (i - 1) * priceStep + 0.01).toFixed(2));
+    const aYtm = Number((ytmPct - (i - 1) * ytmStep - 0.001).toFixed(3));
+    const qty = Number((12 + i * 10.5 + (i % 3 === 0 ? 15 : 0)).toFixed(1));
+    const orders = 2 + i * 2;
+    totalAsk += qty;
+
+    asks.push({
+      rank: i,
+      orders,
+      qtyCr: qty,
+      cleanPrice: aPrice,
+      dirtyPrice: Number((aPrice + 0.72).toFixed(2)),
+      ytmPct: aYtm,
+      depthPct: 0 // populated below
+    });
+  }
+
+  bids.forEach(b => {
+    b.depthPct = Math.round((b.qtyCr / totalBid) * 100);
+  });
+  asks.forEach(a => {
+    a.depthPct = Math.round((a.qtyCr / totalAsk) * 100);
+  });
+
+  const spreadPrice = Number((asks[0].cleanPrice - bids[0].cleanPrice).toFixed(2));
+  const spreadBps = Math.round(Math.abs(bids[0].ytmPct - asks[0].ytmPct) * 100);
+
+  return {
+    bids,
+    asks,
+    totalBidQtyCr: Number(totalBid.toFixed(1)),
+    totalAskQtyCr: Number(totalAsk.toFixed(1)),
+    spreadPriceInr: spreadPrice,
+    spreadBps: Math.max(1, spreadBps)
+  };
+}
+

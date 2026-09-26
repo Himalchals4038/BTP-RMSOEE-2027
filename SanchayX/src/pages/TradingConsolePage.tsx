@@ -68,6 +68,7 @@ const OptionsStrategyBuilder = React.lazy(() => import('../components/trading/Op
 const SipMandatesEngine = React.lazy(() => import('../components/trading/SipMandatesEngine'));
 const SubAccountVaults = React.lazy(() => import('../components/trading/SubAccountVaults'));
 const CapitalGainsTaxAuditor = React.lazy(() => import('../components/trading/CapitalGainsTaxAuditor'));
+const IndianBondsView = React.lazy(() => import('./console/IndianBondsView'));
 
 export const TradingConsolePage: React.FC = () => {
   const { assets, currency, activeSubTab, setActiveSubTab, exportReportCSV, exportReportPDF } = usePortfolio();
@@ -101,6 +102,7 @@ export const TradingConsolePage: React.FC = () => {
     trade_book: 'Trade Book',
     funds: 'Funds & Liquidity',
     demat_holdings: 'Demat Holdings',
+    indian_bonds: 'Indian Sovereign & Corporate Debt Terminal',
     gold: 'Sovereign Gold',
     ipo: 'IPO & NFO',
     fd_bonds: 'FD & Bonds',
@@ -3516,6 +3518,13 @@ export const TradingConsolePage: React.FC = () => {
         {activeTabId === 'tax_auditor' && (
           <Suspense fallback={<div className="p-12 text-center text-xs text-[var(--text-muted)] font-mono animate-pulse">Loading Capital Gains Tax Auditor & ITR Schedule CG Engine...</div>}>
             <CapitalGainsTaxAuditor />
+          </Suspense>
+        )}
+
+        {/* SECTION 20: INDIAN SOVEREIGN & CORPORATE DEBT TERMINAL */}
+        {activeTabId === 'indian_bonds' && (
+          <Suspense fallback={<div className="p-12 text-center text-xs text-[var(--text-muted)] font-mono animate-pulse">Loading Indian Debt Terminal & CCIL NDS-OM Engine...</div>}>
+            <IndianBondsView />
           </Suspense>
         )}
       </div>

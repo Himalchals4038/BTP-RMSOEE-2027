@@ -36,23 +36,104 @@ export const Navigation: React.FC = () => {
     { id: 'explorer', label: 'Commodity & Markets', icon: Globe }
   ];
 
-  const secondaryNavItems = [
-    { id: 'portfolio_summary', label: 'Portfolio', icon: LayoutDashboard, targetTab: 'dashboard' },
-    { id: 'algo_studio', label: '⚡ Algo Studio', icon: Cpu, badge: '5Hz', targetTab: 'algo_studio' },
-    { id: 'place_order', label: 'Place Order', icon: Level2DepthLadder, targetTab: 'builder' },
-    { id: 'options_builder', label: 'Options Builder', icon: OptionDeltaGreeks, badge: 'GREEKS', targetTab: 'backtest' },
-    { id: 'sip_mandates', label: 'SIP Mandates', icon: BankAutoSweepVault, badge: 'AUTO', targetTab: 'safe_investment' },
-    { id: 'open_positions', label: 'Open Positions', icon: CandlestickTerminal, targetTab: 'dashboard' },
-    { id: 'order_book', label: 'Order Book', icon: NseBseEmblem, targetTab: 'backtest' },
-    { id: 'trade_book', label: 'Trade Book', icon: FileText, targetTab: 'backtest' },
-    { id: 'funds', label: 'Funds & Liquidity', icon: BankAutoSweepVault, targetTab: 'builder' },
-    { id: 'demat_holdings', label: 'Demat Holdings', icon: NseBseEmblem, targetTab: 'builder' },
-    { id: 'gold', label: 'Sovereign Gold', icon: SovereignGoldCoin, badge: 'SGB', targetTab: 'safe_investment' },
-    { id: 'ipo', label: 'IPO & NFO', icon: IpoAllotmentLottery, badge: 'Hot', targetTab: 'explorer' },
-    { id: 'fd_bonds', label: 'FD & Bonds', icon: SecuredBondShield, badge: '8.8%', targetTab: 'safe_investment' },
-    { id: 'tax_auditor', label: 'Tax Auditor', icon: ZeroTdsCertificate, badge: 'FY25-26', targetTab: 'builder' },
-    { id: 'reports', label: 'Reports', icon: FileText, targetTab: 'builder' }
+  interface WorkspaceItem {
+    id: string;
+    label: string;
+    icon: any;
+    targetTab?: string;
+    badge?: string;
+  }
+
+  interface WorkspaceGroup {
+    id: string;
+    label: string;
+    tag: string;
+    icon: any;
+    color: string;
+    items: WorkspaceItem[];
+  }
+
+  // 4 CONSOLIDATED INSTITUTIONAL WORKSPACES
+  const workspaces: WorkspaceGroup[] = [
+    {
+      id: 'trading',
+      label: 'Trading Console',
+      tag: 'ACTIVE EXECUTION',
+      icon: CandlestickTerminal,
+      color: 'blue',
+      items: [
+        { id: 'place_order', label: 'Place Order', icon: Level2DepthLadder, targetTab: 'builder' },
+        { id: 'order_book', label: 'Order Book', icon: NseBseEmblem, targetTab: 'builder' },
+        { id: 'trade_book', label: 'Trade Book', icon: FileText, targetTab: 'builder' },
+        { id: 'open_positions', label: 'Open Positions & MTM', icon: CandlestickTerminal, targetTab: 'builder' }
+      ]
+    },
+    {
+      id: 'debt',
+      label: 'Debt & Demat',
+      tag: 'LONG-TERM WEALTH',
+      icon: SecuredBondShield,
+      color: 'emerald',
+      items: [
+        { id: 'indian_bonds', label: 'Indian Bond Terminal', icon: SecuredBondShield, badge: 'NDS-OM', targetTab: 'builder' },
+        { id: 'demat_holdings', label: 'Demat Holdings', icon: NseBseEmblem, targetTab: 'builder' },
+        { id: 'gold', label: 'Sovereign Gold', icon: SovereignGoldCoin, badge: 'SGB', targetTab: 'safe_investment' },
+        { id: 'fd_bonds', label: 'FD & Coupon Calendar', icon: SecuredBondShield, badge: '8.8%', targetTab: 'safe_investment' }
+      ]
+    },
+    {
+      id: 'primary',
+      label: 'Primary Markets',
+      tag: 'CAPITAL GROWTH',
+      icon: IpoAllotmentLottery,
+      color: 'amber',
+      items: [
+        { id: 'ipo', label: 'IPO & NFO ASBA', icon: IpoAllotmentLottery, badge: 'Hot', targetTab: 'explorer' },
+        { id: 'sip_mandates', label: 'SIP Mandates', icon: BankAutoSweepVault, badge: 'AUTO', targetTab: 'safe_investment' },
+        { id: 'portfolio_vaults', label: 'Goal Vaults', icon: BankAutoSweepVault, targetTab: 'builder' },
+        { id: 'funds', label: 'Funds & Liquidity', icon: BankAutoSweepVault, targetTab: 'builder' }
+      ]
+    },
+    {
+      id: 'quant',
+      label: 'Quant & Compliance',
+      tag: 'INSTITUTIONAL SUITE',
+      icon: OptionDeltaGreeks,
+      color: 'purple',
+      items: [
+        { id: 'options_builder', label: 'Options Builder', icon: OptionDeltaGreeks, badge: 'GREEKS', targetTab: 'backtest' },
+        { id: 'algo_studio', label: '⚡ Algo Studio', icon: Cpu, badge: '5Hz', targetTab: 'algo_studio' },
+        { id: 'tax_auditor', label: 'Tax Auditor', icon: ZeroTdsCertificate, badge: 'FY25-26', targetTab: 'builder' },
+        { id: 'reports', label: 'Verified PnL Reports', icon: FileText, targetTab: 'builder' }
+      ]
+    }
   ];
+
+  // Auto-detect which workspace the current activeSubTab belongs to
+  const activeWorkspaceId = React.useMemo(() => {
+    if (!activeSubTab) return 'trading';
+    for (const ws of workspaces) {
+      if (ws.items.some(it => it.id === activeSubTab)) {
+        return ws.id;
+      }
+    }
+    return 'trading';
+  }, [activeSubTab]);
+
+  const [selectedWorkspace, setSelectedWorkspace] = React.useState<string>(activeWorkspaceId);
+
+  React.useEffect(() => {
+    if (activeSubTab) {
+      for (const ws of workspaces) {
+        if (ws.items.some(it => it.id === activeSubTab)) {
+          setSelectedWorkspace(ws.id);
+          break;
+        }
+      }
+    }
+  }, [activeSubTab]);
+
+  const currentWorkspace = workspaces.find(w => w.id === selectedWorkspace) || workspaces[0];
 
   return (
     <div className="w-full flex flex-col shadow-xs border-b border-[var(--border-color)]">
@@ -118,36 +199,69 @@ export const Navigation: React.FC = () => {
         </div>
       </nav>
 
-      {/* STACK 2: Secondary Quick-Ribbon Bar */}
-      <div className="w-full bg-[var(--bg-tertiary)] py-1.5 px-4 lg:px-6 overflow-x-auto">
-        <div className="max-w-[1750px] mx-auto flex items-center justify-center divide-x divide-[var(--border-subtle)] text-xs font-semibold text-[var(--text-secondary)] whitespace-nowrap">
-          {secondaryNavItems.map((sItem) => {
-            const isSubActive = activeSubTab === sItem.id || (sItem.id === 'algo_studio' && activeTab === 'algo_studio');
-            const Icon = sItem.icon;
+      {/* STACK 2: Decluttered 4-Consolidated Workspaces Ribbon */}
+      <div className="w-full bg-[var(--bg-tertiary)] py-1.5 px-4 lg:px-6 border-t border-[var(--border-subtle)]">
+        <div className="max-w-[1750px] mx-auto flex flex-wrap items-center justify-between gap-2.5">
+          {/* 4 Workspace Hub Selectors */}
+          <div className="flex items-center gap-1 bg-[var(--bg-card)] p-0.5 rounded-xl border border-[var(--border-color)] shadow-2xs">
+            {workspaces.map((ws) => {
+              const isWsActive = selectedWorkspace === ws.id;
+              const WsIcon = ws.icon;
+              return (
+                <button
+                  key={ws.id}
+                  onClick={() => {
+                    setSelectedWorkspace(ws.id);
+                    // When switching workspace, activate its first item if current sub-tab isn't in it
+                    if (!ws.items.some(it => it.id === activeSubTab)) {
+                      const first = ws.items[0];
+                      setActiveSubTab(first.id);
+                      if (first.targetTab) setActiveTab(first.targetTab);
+                    }
+                  }}
+                  className={`px-3 py-1 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
+                    isWsActive
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
+                  }`}
+                >
+                  <WsIcon className="w-3.5 h-3.5" />
+                  <span>{ws.label}</span>
+                </button>
+              );
+            })}
+          </div>
 
-            return (
-              <button
-                key={sItem.id}
-                onClick={() => {
-                  setActiveSubTab(sItem.id);
-                  if (sItem.targetTab) setActiveTab(sItem.targetTab);
-                }}
-                className={`px-2.5 py-1 flex items-center gap-1.5 transition-colors cursor-pointer text-[11px] ${
-                  isSubActive
-                    ? 'text-[var(--icici-orange)] font-bold bg-[var(--bg-card)] rounded shadow-2xs border border-[var(--border-color)]'
-                    : 'hover:text-[var(--text-primary)]'
-                }`}
-              >
-                {Icon && <Icon className={`w-3.5 h-3.5 shrink-0 ${isSubActive ? 'text-[var(--icici-orange)]' : 'text-[var(--text-muted)]'}`} />}
-                <span>{sItem.label}</span>
-                {sItem.badge && (
-                  <span className="text-[8.5px] bg-red-500 text-white px-1.5 py-0.2 rounded font-extrabold">
-                    {sItem.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+          {/* Active Workspace Dedicated Tools (High-Density, Zero Overflow) */}
+          <div className="flex items-center divide-x divide-[var(--border-subtle)] bg-[var(--bg-card)] px-1.5 py-0.5 rounded-xl border border-[var(--border-color)] shadow-2xs">
+            {currentWorkspace.items.map((sItem) => {
+              const isSubActive = activeSubTab === sItem.id || (sItem.id === 'algo_studio' && activeTab === 'algo_studio');
+              const Icon = sItem.icon;
+
+              return (
+                <button
+                  key={sItem.id}
+                  onClick={() => {
+                    setActiveSubTab(sItem.id);
+                    if (sItem.targetTab) setActiveTab(sItem.targetTab);
+                  }}
+                  className={`px-3 py-1 flex items-center gap-1.5 transition-colors cursor-pointer text-xs font-bold ${
+                    isSubActive
+                      ? 'text-blue-600 dark:text-blue-400 font-extrabold bg-blue-500/10 dark:bg-blue-500/20 rounded-md'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  {Icon && <Icon className={`w-3.5 h-3.5 shrink-0 ${isSubActive ? 'text-blue-600 dark:text-blue-400' : 'text-[var(--text-muted)]'}`} />}
+                  <span>{sItem.label}</span>
+                  {sItem.badge && (
+                    <span className="text-[8.5px] bg-blue-600 text-white px-1.5 py-0.2 rounded font-extrabold">
+                      {sItem.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

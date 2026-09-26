@@ -16,7 +16,7 @@ import {
 import { useTradingSimulation } from '../../context/TradingSimulationContext';
 import { usePortfolio } from '../../context/PortfolioContext';
 import { formatCompactCurrency } from '../../utils/financialMath';
-import { InteractiveCandlestickChart } from '../../components/trading/InteractiveCandlestickChart';
+import { TradingViewChart } from '../../components/trading/TradingViewChart';
 
 interface OrderEntryViewProps {
   orderAction: 'BUY' | 'SELL';
@@ -816,12 +816,13 @@ export const OrderEntryView: React.FC<OrderEntryViewProps> = ({
             </span>
           </div>
 
-          {/* View 1: Candlestick Chart Engine */}
+          {/* View 1: TradingView-Grade Interactive Candlestick Chart Engine */}
           {activeRightTab === 'chart' && (
-            <InteractiveCandlestickChart
+            <TradingViewChart
               ticker={selectedAsset}
               basePrice={selectedAssetObj.price}
               currency={currency}
+              exchange={exchange.split(' ')[0]}
             />
           )}
 
