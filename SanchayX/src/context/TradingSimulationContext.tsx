@@ -156,16 +156,16 @@ function getInitialLedgerForUser(userId: string, accountType: string) {
           status: 'OPEN' as const
         },
         {
-          ticker: 'NIFTY 24500 CE',
-          name: 'NIFTY 28 Aug Call Option',
-          product: 'F&O Options' as ProductType,
+          ticker: 'TCS.NS',
+          name: 'Tata Consultancy Services',
+          product: 'Delivery (CNC)' as ProductType,
           action: 'BUY' as OrderAction,
-          qty: 150,
-          avgBuyPrice: 120.00,
-          ltp: 135.00,
+          qty: 50,
+          avgBuyPrice: 4180.00,
+          ltp: 4225.00,
           pnl: 2250,
-          pnlPct: 12.50,
-          marginBlocked: 18000,
+          pnlPct: 1.08,
+          marginBlocked: 209000,
           status: 'OPEN' as const
         },
         {

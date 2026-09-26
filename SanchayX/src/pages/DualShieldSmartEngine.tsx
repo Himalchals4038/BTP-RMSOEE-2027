@@ -42,14 +42,36 @@ import {
   Legend
 } from 'recharts';
 
+import { ValuationSentinelModal, type RebalanceMandate } from '../components/trading/ValuationSentinelModal';
+
+export type IndianRiskAppetite = 'Ultra-Safe' | 'Conservative Income' | 'Balanced Wealth Builder' | 'Aggressive Growth';
+
 export const DualShieldSmartEngine: React.FC = () => {
   const { currency, setActiveTab } = usePortfolio();
 
-  // Controls State
-  const [totalCapital, setTotalCapital] = useState<number>(1000000); // Default ₹10 Lakhs
-  const [addIncrementAmount, setAddIncrementAmount] = useState<number>(100000); // Default increment ₹1 Lakh
-  const [targetFixedPct, setTargetFixedPct] = useState<number>(7.5); // Fixed % return desired (Max 10%)
-  const [riskPreference, setRiskPreference] = useState<'Conservative' | 'Balanced Growth' | 'Aggressive Wealth'>('Balanced Growth');
+  // Controls State (₹1 Lakh to ₹10 Crores input)
+  const [totalCapital, setTotalCapital] = useState<number>(2500000); // Default ₹25 Lakhs
+  const [targetFixedPct, setTargetFixedPct] = useState<number>(6.5); // Fixed % return desired (Max 10%)
+  const [riskPreference, setRiskPreference] = useState<IndianRiskAppetite>('Balanced Wealth Builder');
+
+  // Valuation Sentinel Mandate State
+  const [isSentinelModalOpen, setIsSentinelModalOpen] = useState<boolean>(false);
+  const activeMandate: RebalanceMandate = {
+    id: 'MND-2026-VAL-849',
+    title: 'Semi-Automated Valuation Sentinel: Overvalued FMCG to Undervalued Infra & G-Sec',
+    timestamp: '2026-09-26 14:45 IST',
+    totalRotationAmount: 350000,
+    projectedTaxImpact: '₹0.00 Tax via Section 112A harvesting & Section 70 loss offset',
+    rationale: 'Valuation Sentinel evaluated 20-year multiples across Top 1000 Indian stocks: Trent Ltd (TRENT) & Titan Company have breached +2.2 Standard Deviations above their 20-year mean P/E (P/E > 120x). Rebalance Sentinel proposes locking in ₹3.5L paper profits and rotating into undervalued State Bank of India (SBIN, P/E 10.5 vs 15.2 mean, ROCE 18.2%) and 7.18% Government of India G-Sec 2033.',
+    sourceLegs: [
+      { ticker: 'TRENT.NS', name: 'Trent Limited (Zudio)', action: 'SELL', qty: 25, price: 6850, reason: 'P/E at 135x vs 20-yr mean 65x (Overvalued Cyclical Peak)', metric: 'P/E 135.0 (+2.2σ)' },
+      { ticker: 'TITAN.NS', name: 'Titan Company Ltd', action: 'SELL', qty: 52, price: 3420, reason: 'P/E at 88x vs 20-yr mean 55x (Overvalued Peak)', metric: 'P/E 88.4 (+1.8σ)' }
+    ],
+    targetLegs: [
+      { ticker: 'LT.NS', name: 'Larsen & Toubro Ltd', action: 'BUY', qty: 48, price: 3620, reason: 'ROCE 22.4%, D/E 0.35, Capex order book ATH', metric: 'ROCE 22.4%, D/E 0.35' },
+      { ticker: 'SBIN.NS', name: 'State Bank of India', action: 'BUY', qty: 208, price: 845, reason: 'P/E 10.5 vs 20-yr mean 15.2 (Undervalued Quality Value)', metric: 'P/E 10.5, ROCE 18.2%' }
+    ]
+  };
 
   // Live Rates State & IndexedDB Sync
   const [marketRates, setMarketRates] = useState<MarketRateItem[]>(DEFAULT_MARKET_RATES);
@@ -79,7 +101,6 @@ export const DualShieldSmartEngine: React.FC = () => {
   }, []);
 
   // Financial Engine Science Calculation:
-  // Weighted Avg Fixed Income Yield = 8.5%
   const avgFixedYield = 0.085;
   const desiredAnnualFixedIncome = totalCapital * (targetFixedPct / 100);
 
@@ -92,41 +113,62 @@ export const DualShieldSmartEngine: React.FC = () => {
 
   // Breakdown of Fixed Sleeve (Bonds, FDs, SGBs)
   const fixedAssets = [
-    { name: 'RBI Floating Rate Savings Bonds (8.05%)', amount: fixedCapital * 0.35, yieldPct: 8.05, annualPayout: fixedCapital * 0.35 * 0.0805, rating: 'Sovereign' },
-    { name: 'Shriram Finance Senior FD (8.80%)', amount: fixedCapital * 0.25, yieldPct: 8.80, annualPayout: fixedCapital * 0.25 * 0.0880, rating: 'CRISIL AAA' },
-    { name: 'L&T Finance Corporate NCD Bond (9.15%)', amount: fixedCapital * 0.20, yieldPct: 9.15, annualPayout: fixedCapital * 0.20 * 0.0915, rating: 'ICRA AA+' },
-    { name: 'RBI Sovereign Gold Bonds (SGB 2.5% + Gold)', amount: fixedCapital * 0.20, yieldPct: 7.50, annualPayout: fixedCapital * 0.20 * 0.0750, rating: 'Tax-Free Sovereign' }
+    { name: '7.18% Government of India G-Sec 2033', amount: fixedCapital * 0.35, yieldPct: 7.18, annualPayout: fixedCapital * 0.35 * 0.0718, rating: 'Sovereign (Zero Default)' },
+    { name: 'REC / PFC AAA PSU Tax-Free Bonds', amount: fixedCapital * 0.25, yieldPct: 7.80, annualPayout: fixedCapital * 0.25 * 0.0780, rating: 'Sec 10(15)(iv)(h) 100% Tax-Free' },
+    { name: 'Shriram Finance Senior NCD (8.80%)', amount: fixedCapital * 0.20, yieldPct: 8.80, annualPayout: fixedCapital * 0.20 * 0.0880, rating: 'CRISIL AAA' },
+    { name: 'RBI Sovereign Gold Bonds (SGB 2.5% + Gold)', amount: fixedCapital * 0.20, yieldPct: 7.50, annualPayout: fixedCapital * 0.20 * 0.0750, rating: 'Sec 47(viic) Tax-Free Sovereign' }
   ];
 
   const totalFixedAnnualPayout = fixedAssets.reduce((sum, a) => sum + a.annualPayout, 0);
 
-  // Risk Sleeve Dynamic Allocation Config
+  // 4 Standard Asset Allocation Models (Master Blueprint Section 07)
   const riskConfig = {
-    'Conservative': {
-      cagrRate: 0.118,
+    'Ultra-Safe': {
+      cagrRate: 0.082,
+      maxDrawdown: '< 2.5%',
+      targetDescription: 'Retirees, senior citizens, emergency funds, corporate treasury capital.',
+      splitLabel: '60% Sovereign G-Sec/SDL, 25% AAA Corporate NCD, 10% SGB Gold, 5% Large-Cap Bluechip Equities',
       assets: [
-        { name: 'NIFTY 50 Quality Bluechips (RELIANCE, HDFCBANK, TCS)', amountPct: 0.30, category: 'Large Cap Quality', expectedYieldPct: 12.5 },
-        { name: 'Large-Cap Value Mutual Funds (ICICI Pru Bluechip)', amountPct: 0.20, category: 'Low Volatility MF', expectedYieldPct: 12.0 },
-        { name: 'Physical Gold & Silver ETFs (GOLDBEES, Silver ETF)', amountPct: 0.35, category: 'Precious Metals ETF', expectedYieldPct: 11.2 },
-        { name: 'NIFTY 50 Index Passively Managed ETF', amountPct: 0.15, category: 'Index ETF', expectedYieldPct: 11.5 }
+        { name: '7.18% Government of India Benchmark G-Sec & SDLs', amountPct: 0.60, category: 'Sovereign Debt (Zero Risk)', expectedYieldPct: 7.2 },
+        { name: 'AAA Corporate NCDs (HDFC, L&T Finance)', amountPct: 0.25, category: 'High-Yield Senior NCD', expectedYieldPct: 8.8 },
+        { name: 'RBI Sovereign Gold Bonds (SGB 2026/2030 Tranches)', amountPct: 0.10, category: 'Tax-Free Gold (Sec 47(viic))', expectedYieldPct: 10.5 },
+        { name: 'NIFTY 50 Bluechip Monopolies (RELIANCE, HDFCBANK, TCS)', amountPct: 0.05, category: 'Ultra Large-Cap Bluechips', expectedYieldPct: 13.0 }
       ]
     },
-    'Balanced Growth': {
-      cagrRate: 0.142,
+    'Conservative Income': {
+      cagrRate: 0.098,
+      maxDrawdown: '< 5.2%',
+      targetDescription: 'Salaried professionals seeking steady returns beating inflation with minimal volatility.',
+      splitLabel: '40% G-Sec/PSU Bonds, 30% AAA Corporate NCD, 15% SGB Gold, 15% Large-Cap Dividend Equities',
       assets: [
-        { name: 'NIFTY 50 Bluechip Equities (RELIANCE, HDFCBANK, TCS)', amountPct: 0.45, category: 'Large Cap Stock Basket', expectedYieldPct: 14.5 },
-        { name: 'Flexi-Cap Mutual Funds (Parag Parikh Flexi Cap)', amountPct: 0.25, category: 'Diversified Value MF', expectedYieldPct: 15.2 },
-        { name: 'Silver & Commodity ETFs (Nippon Silver ETF)', amountPct: 0.15, category: 'Physical Commodity ETF', expectedYieldPct: 11.8 },
-        { name: 'NIFTYBEES & Junior BeES ETFs', amountPct: 0.15, category: 'Passively Index ETF', expectedYieldPct: 13.0 }
+        { name: 'Sovereign G-Secs & REC/PFC PSU Tax-Free Bonds', amountPct: 0.40, category: 'Tax-Free Sovereign & PSU Debt', expectedYieldPct: 7.8 },
+        { name: 'CRISIL AAA Senior Corporate NCDs', amountPct: 0.30, category: 'Fixed High-Yield Debt', expectedYieldPct: 8.9 },
+        { name: 'RBI Sovereign Gold Bonds (SGB)', amountPct: 0.15, category: 'Sec 47(viic) Tax-Free Sovereign', expectedYieldPct: 10.5 },
+        { name: 'Large-Cap High Dividend Equities (ITC, POWERGRID, TCS)', amountPct: 0.15, category: 'Dividend Aristocrats Basket', expectedYieldPct: 14.0 }
       ]
     },
-    'Aggressive Wealth': {
-      cagrRate: 0.178,
+    'Balanced Wealth Builder': {
+      cagrRate: 0.134,
+      maxDrawdown: '< 14.8%',
+      targetDescription: 'Long-term wealth creators (30–50 age group) planning retirement or education funds.',
+      splitLabel: '40% Top 200 Indian Equities, 30% G-Sec & Corporate NCD, 15% SGB Gold, 15% Auto-Sweep Cash',
       assets: [
-        { name: 'NIFTY Midcap & High-Beta Alpha Equities (BOSCH, DIXON, PERSISTENT)', amountPct: 0.55, category: 'Mid/Small Cap Alpha Basket', expectedYieldPct: 19.5 },
-        { name: 'Sectoral Growth & Tech Funds (Tech/Pharma Opportunities)', amountPct: 0.25, category: 'High-Growth Sectoral Fund', expectedYieldPct: 17.5 },
-        { name: 'Commodity & Precious Metal ETFs', amountPct: 0.10, category: 'Hedge Commodity ETF', expectedYieldPct: 11.8 },
-        { name: 'Momentum & Smallcap 250 Index ETFs', amountPct: 0.10, category: 'High Momentum ETF', expectedYieldPct: 16.0 }
+        { name: 'Top 200 Indian Quality Equities (ICICI, LT, RELIANCE, BHARTI)', amountPct: 0.40, category: 'Top 200 Large/Midcap Value Basket', expectedYieldPct: 15.5 },
+        { name: 'Sovereign G-Sec & AAA Corporate NCDs', amountPct: 0.30, category: 'Defensive Debt Cushion', expectedYieldPct: 8.2 },
+        { name: 'RBI Sovereign Gold Bonds (SGB)', amountPct: 0.15, category: 'Precious Metals Inflation Hedge', expectedYieldPct: 11.0 },
+        { name: '7.1% Overnight Auto-Sweep Cash Reserve', amountPct: 0.15, category: 'Instant Liquid Dip-Buying Cash', expectedYieldPct: 7.1 }
+      ]
+    },
+    'Aggressive Growth': {
+      cagrRate: 0.168,
+      maxDrawdown: '< 22.5%',
+      targetDescription: 'Younger investors with long time horizons seeking maximum compounding across Indian growth sectors.',
+      splitLabel: '70% Top 1000 Equities (Large/Mid/Small-cap), 15% Sovereign G-Sec, 10% SGB Gold, 5% Cash',
+      assets: [
+        { name: 'Top 1000 Indian Multi-Cap Growth Leaders (DIXON, HAL, POLYCAB, TRENT)', amountPct: 0.70, category: 'Indian High-Growth Alpha Universe', expectedYieldPct: 19.5 },
+        { name: '7.18% Government of India Benchmark G-Sec', amountPct: 0.15, category: 'Ballast Sovereign Security', expectedYieldPct: 7.2 },
+        { name: 'RBI Sovereign Gold Bonds (SGB)', amountPct: 0.10, category: 'Tax-Free SGB Tranche', expectedYieldPct: 10.5 },
+        { name: 'Liquid Overnight Cash Buffer', amountPct: 0.05, category: 'Instant Settlement Cash', expectedYieldPct: 7.1 }
       ]
     }
   };
@@ -134,7 +176,7 @@ export const DualShieldSmartEngine: React.FC = () => {
   const currentRisk = riskConfig[riskPreference];
   const volatileCagrRate = currentRisk.cagrRate;
 
-  // Dynamic Breakdown of Volatile Sleeve based on Risk Preference (NO F&O!)
+  // Dynamic Breakdown of Volatile Sleeve based on Risk Preference (100% F&O Free)
   const volatileAssets = currentRisk.assets.map(a => ({
     name: a.name,
     amount: volatileCapital * a.amountPct,
@@ -274,21 +316,91 @@ export const DualShieldSmartEngine: React.FC = () => {
         </div>
       </div>
 
-      {/* Quick Switch Banner to 100% Safe Investment Option */}
-      <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-950/60 via-teal-900/40 to-emerald-900/40 border border-emerald-500/30 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2.5">
-          <ShieldCheck className="w-5 h-5 text-emerald-400" />
-          <span className="text-xs text-emerald-100 font-semibold">
-            Looking for 100% Zero-Risk Capital Protection & Interest Auto-SIP?
-          </span>
+      {/* Quick Switch Banner to Manual Demat Trading Console or 100% Safe Investment */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-950/60 via-teal-900/40 to-emerald-900/40 border border-emerald-500/30 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
+            <span className="text-xs text-emerald-100 font-semibold">
+              Looking for 100% Zero-Risk Capital Protection &amp; Interest Auto-SIP?
+            </span>
+          </div>
+          <button
+            onClick={() => setActiveTab('safe_investment')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all cursor-pointer shadow-xs whitespace-nowrap"
+          >
+            <span>100% Safe SIP</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
-        <button
-          onClick={() => setActiveTab('safe_investment')}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all cursor-pointer shadow-xs whitespace-nowrap"
-        >
-          <span>Open 100% Safe Investment Page</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </button>
+
+        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-slate-900 via-orange-950/40 to-slate-900 border border-orange-500/30 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <Landmark className="w-5 h-5 text-amber-400 shrink-0" />
+            <span className="text-xs text-orange-100 font-semibold">
+              Prefer self-directed investing? Manual Demat Order Console is 100% accessible anytime.
+            </span>
+          </div>
+          <button
+            onClick={() => setActiveTab('trading')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--icici-orange)] hover:bg-[var(--icici-orange-hover)] text-white text-xs font-bold transition-all cursor-pointer shadow-xs whitespace-nowrap"
+          >
+            <span>Manual Demat</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* SEMI-AUTOMATED VALUATION SENTINEL: 1-CLICK MANDATE AUTHORIZATION CARD */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-amber-950/60 to-slate-950 border-2 border-amber-500/50 p-5 md:p-6 shadow-xl space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-500/30 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+              <Sparkles className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-[10px] font-black uppercase tracking-wider text-amber-300">
+                20-Year Valuation Sentinel • Actionable Mandate Available
+              </span>
+              <h3 className="text-base font-black text-white mt-0.5">
+                {activeMandate.title}
+              </h3>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setIsSentinelModalOpen(true)}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-600 to-amber-600 hover:from-amber-400 hover:to-orange-500 text-white font-black text-xs shadow-lg transition-all cursor-pointer border border-amber-300/40 active:scale-95"
+          >
+            <FileCheck className="w-4 h-4 text-amber-200" />
+            <span>Review &amp; Authorize Mandate (1-Click)</span>
+            <ArrowRight className="w-4 h-4 text-amber-200" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <div className="p-3.5 rounded-xl bg-black/40 border border-amber-500/20 space-y-1">
+            <span className="text-[10px] font-mono uppercase text-amber-400 font-bold block">1. Valuation Anomaly Trigger</span>
+            <p className="text-slate-300 text-[11px] leading-relaxed">
+              Trent &amp; Titan have reached cyclical peak valuations (&gt; 2.2 Std Dev above 20-yr mean P/E). SanchayX recommends trimming ₹3.5L to protect paper profits.
+            </p>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-black/40 border border-emerald-500/20 space-y-1">
+            <span className="text-[10px] font-mono uppercase text-emerald-400 font-bold block">2. Undervalued Quality Destination</span>
+            <p className="text-slate-300 text-[11px] leading-relaxed">
+              Rotates capital into Larsen &amp; Toubro (Capex order book ATH) and State Bank of India (P/E 10.5 vs 15.2 mean) plus 7.18% G-Sec sovereign debt.
+            </p>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-black/40 border border-blue-500/20 space-y-1">
+            <span className="text-[10px] font-mono uppercase text-blue-400 font-bold block">3. Statutory Projected Tax Impact</span>
+            <span className="font-mono font-black text-emerald-400 block text-sm">₹0.00 Net Tax Outflow</span>
+            <p className="text-slate-300 text-[10px] leading-relaxed">
+              Zero tax via Section 112A ₹1.25L annual LTCG harvesting combined with Section 70 short-term loss set-offs.
+            </p>
+          </div>
+        </div>
       </div>
 
       {savedSuccessToast && (
@@ -305,7 +417,7 @@ export const DualShieldSmartEngine: React.FC = () => {
         <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
           <h2 className="text-base font-bold text-[var(--text-primary)] flex items-center gap-2">
             <Sliders className="w-5 h-5 text-[var(--icici-orange)]" />
-            Smart Engine Investment Constraints & Target Return Selector
+            Semi-Automated Capital Allocation &amp; Indian Risk Appetite Model
           </h2>
           <button
             onClick={handleSaveToIndexedDB}
@@ -317,57 +429,56 @@ export const DualShieldSmartEngine: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Total Capital Input & Incremental Adder */}
+          {/* Total Capital Input & Quick Presets */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-[var(--text-primary)] flex items-center justify-between">
-              <span>Total Demat Capital to Invest (₹)</span>
-              <span className="text-[10px] font-mono text-[var(--icici-orange)]">Custom Input</span>
+              <span>Total Demat Capital to Deploy (₹)</span>
+              <span className="text-[10px] font-mono text-[var(--icici-orange)] font-bold">₹1 Lakh to ₹10 Crores</span>
             </label>
             <input
               type="number"
-              step="10000"
-              min="0"
+              step="50000"
+              min="100000"
+              max="100000000"
               value={totalCapital}
               onChange={(e) => setTotalCapital(Math.max(0, Number(e.target.value)))}
               className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl py-2.5 px-3.5 text-sm font-mono font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)]"
-              placeholder="Enter custom capital in ₹"
+              placeholder="Enter capital in ₹"
             />
 
-            {/* Incremental Adder Dropdown & Action Button Group */}
-            <div className="flex items-center gap-1.5 pt-1">
-              <select
-                value={addIncrementAmount}
-                onChange={(e) => setAddIncrementAmount(Number(e.target.value))}
-                className="bg-[var(--bg-tertiary)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-lg px-2 py-1.5 text-xs font-mono font-bold focus:outline-none focus:border-[var(--icici-orange)] cursor-pointer flex-1"
-                title="Select specific amount to add to existing capital"
-              >
-                <option value={10000} className="bg-[var(--bg-card)]">+ ₹10,000</option>
-                <option value={50000} className="bg-[var(--bg-card)]">+ ₹50,000</option>
-                <option value={100000} className="bg-[var(--bg-card)]">+ ₹1 Lakh</option>
-                <option value={500000} className="bg-[var(--bg-card)]">+ ₹5 Lakhs</option>
-                <option value={1000000} className="bg-[var(--bg-card)]">+ ₹10 Lakhs</option>
-                <option value={2500000} className="bg-[var(--bg-card)]">+ ₹25 Lakhs</option>
-                <option value={5000000} className="bg-[var(--bg-card)]">+ ₹50 Lakhs</option>
-                <option value={10000000} className="bg-[var(--bg-card)]">+ ₹1 Crore</option>
-                <option value={50000000} className="bg-[var(--bg-card)]">+ ₹5 Crores</option>
-              </select>
-
-              <button
-                onClick={() => setTotalCapital(prev => prev + addIncrementAmount)}
-                className="px-3 py-1.5 rounded-lg bg-[var(--icici-orange)] hover:bg-[var(--icici-orange-hover)] text-white font-extrabold text-xs shadow-xs transition-all cursor-pointer whitespace-nowrap"
-                title="Add selected incremental amount to capital"
-              >
-                + ADD
-              </button>
+            {/* Quick Capital Preset Buttons */}
+            <div className="flex flex-wrap gap-1 pt-1">
+              {[
+                { label: '₹1L', val: 100000 },
+                { label: '₹5L', val: 500000 },
+                { label: '₹10L', val: 1000000 },
+                { label: '₹25L', val: 2500000 },
+                { label: '₹50L', val: 5000000 },
+                { label: '₹1Cr', val: 10000000 },
+                { label: '₹5Cr', val: 50000000 },
+                { label: '₹10Cr', val: 100000000 }
+              ].map(preset => (
+                <button
+                  key={preset.label}
+                  onClick={() => setTotalCapital(preset.val)}
+                  className={`px-2 py-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                    totalCapital === preset.val
+                      ? 'bg-[var(--icici-orange)] text-white shadow-xs'
+                      : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-color)]'
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              ))}
             </div>
           </div>
 
           {/* Target Yearly Fixed Income Return (%) Slider */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs font-bold">
-              <label className="text-[var(--text-primary)]">Target Fixed Yearly Return (%)</label>
+              <label className="text-[var(--text-primary)]">Guaranteed Fixed Annual Yield (%)</label>
               <span className="font-mono text-sm text-emerald-600 dark:text-emerald-400 font-extrabold bg-emerald-500/10 px-2 py-0.5 rounded">
-                {targetFixedPct.toFixed(1)}% p.a. (Max 10%)
+                {targetFixedPct.toFixed(1)}% p.a.
               </span>
             </div>
             <input
@@ -381,34 +492,39 @@ export const DualShieldSmartEngine: React.FC = () => {
             />
             <div className="flex justify-between text-[10px] text-[var(--text-muted)] font-mono font-bold">
               <span>1.0% (Equity Heavy)</span>
-              <span>5.0% (Balanced)</span>
+              <span>6.5% (Balanced)</span>
               <span className="text-[var(--icici-orange)]">10.0% (Max Guarantee)</span>
             </div>
+            <p className="text-[10px] text-[var(--text-muted)] font-mono">
+              Fixed Sleeve generates {formatCompactCurrency(totalFixedAnnualPayout, currency)} / year in predictable payouts.
+            </p>
           </div>
 
-          {/* Risk Preference Category */}
+          {/* 4 Indian Investor Risk Appetite Profiles (Master Blueprint Section 07) */}
           <div className="space-y-2">
-            <label className="text-xs font-bold text-[var(--text-primary)]">Equity Growth Risk Sleeve</label>
-            <div className="grid grid-cols-3 gap-1.5 p-1 bg-[var(--bg-tertiary)] rounded-xl border border-[var(--border-color)]">
-              {(['Conservative', 'Balanced Growth', 'Aggressive Wealth'] as const).map(mode => (
+            <label className="text-xs font-bold text-[var(--text-primary)] flex items-center justify-between">
+              <span>Indian Risk Appetite Profile</span>
+              <span className="text-[10px] font-mono text-emerald-600 font-bold">20-Yr CAGR: {currentRisk.cagrRate * 100}%</span>
+            </label>
+            <div className="grid grid-cols-2 gap-1.5 p-1 bg-[var(--bg-tertiary)] rounded-xl border border-[var(--border-color)]">
+              {(['Ultra-Safe', 'Conservative Income', 'Balanced Wealth Builder', 'Aggressive Growth'] as IndianRiskAppetite[]).map(mode => (
                 <button
                   key={mode}
                   onClick={() => setRiskPreference(mode)}
-                  className={`py-1.5 px-2 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                  className={`py-2 px-2 rounded-lg text-[10px] font-bold transition-all cursor-pointer text-left ${
                     riskPreference === mode
                       ? 'bg-[var(--icici-orange)] text-white shadow-xs'
                       : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                   }`}
                 >
-                  {mode.split(' ')[0]}
+                  <div className="truncate">{mode}</div>
+                  <div className="text-[9px] font-mono opacity-80">Max DD: {riskConfig[mode].maxDrawdown}</div>
                 </button>
               ))}
             </div>
-            <p className="text-[10px] text-[var(--text-muted)]">
-              {riskPreference === 'Conservative' && 'Focus on NIFTY Large Caps & Gold ETFs.'}
-              {riskPreference === 'Balanced Growth' && 'Optimum mix of NIFTY stocks & Flexi-Cap MFs.'}
-              {riskPreference === 'Aggressive Wealth' && 'Focus on High-Beta Equities & Emerging Sector ETFs.'}
-            </p>
+            <div className="text-[10px] text-[var(--text-muted)] leading-tight bg-[var(--bg-tertiary)] p-2 rounded-lg border border-[var(--border-color)]">
+              <strong>Split:</strong> {currentRisk.splitLabel}
+            </div>
           </div>
         </div>
 
@@ -956,6 +1072,18 @@ export const DualShieldSmartEngine: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Permission-Gated Valuation Sentinel Rebalance Modal */}
+      <ValuationSentinelModal
+        isOpen={isSentinelModalOpen}
+        onClose={() => setIsSentinelModalOpen(false)}
+        mandate={activeMandate}
+        onExecuted={() => {
+          setIsSentinelModalOpen(false);
+          setSavedSuccessToast(true);
+          setTimeout(() => setSavedSuccessToast(false), 4000);
+        }}
+      />
     </div>
   );
 };

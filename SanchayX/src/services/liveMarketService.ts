@@ -100,53 +100,53 @@ export const MASTER_MARKET_QUOTES: Record<string, LiveMarketQuote> = {
     isLive: false
   },
 
-  // US Markets (NYSE / NASDAQ)
-  SP_500: {
-    symbol: 'S&P 500',
-    name: 'S&P 500 Index',
-    region: 'US',
-    price: 5540.20,
-    change: 32.10,
-    changePct: 0.58,
-    previousClose: 5508.10,
-    dayHigh: 5555.40,
-    dayLow: 5502.80,
-    volume: '2.1B',
-    currency: 'USD',
-    currencySymbol: '$',
-    lastUpdated: 'Official Close (16:00 EDT)',
+  // Indian Broader Market Benchmarks
+  NIFTY_MIDCAP: {
+    symbol: 'NIFTY MIDCAP',
+    name: 'Nifty Midcap 100 Index',
+    region: 'INDIA',
+    price: 58450.40,
+    change: 412.30,
+    changePct: 0.71,
+    previousClose: 58038.10,
+    dayHigh: 58600.00,
+    dayLow: 57980.00,
+    volume: '94.5M',
+    currency: 'INR',
+    currencySymbol: '₹',
+    lastUpdated: 'Official Close (15:30 IST)',
     isLive: false
   },
-  NASDAQ_100: {
-    symbol: 'NASDAQ 100',
-    name: 'Nasdaq 100 Index',
-    region: 'US',
-    price: 19650.80,
-    change: 145.20,
-    changePct: 0.74,
-    previousClose: 19505.60,
-    dayHigh: 19710.00,
-    dayLow: 19480.00,
-    volume: '1.4B',
-    currency: 'USD',
-    currencySymbol: '$',
-    lastUpdated: 'Official Close (16:00 EDT)',
+  NIFTY_SMALLCAP: {
+    symbol: 'NIFTY SMALLCAP',
+    name: 'Nifty Smallcap 100 Index',
+    region: 'INDIA',
+    price: 18920.60,
+    change: 185.40,
+    changePct: 0.99,
+    previousClose: 18735.20,
+    dayHigh: 18990.00,
+    dayLow: 18710.00,
+    volume: '78.2M',
+    currency: 'INR',
+    currencySymbol: '₹',
+    lastUpdated: 'Official Close (15:30 IST)',
     isLive: false
   },
-  DOW_JONES: {
-    symbol: 'DOW JONES',
-    name: 'Dow Jones Industrial Average',
-    region: 'US',
-    price: 40850.50,
-    change: 190.00,
-    changePct: 0.47,
-    previousClose: 40660.50,
-    dayHigh: 40920.00,
-    dayLow: 40610.00,
-    volume: '420.0M',
-    currency: 'USD',
-    currencySymbol: '$',
-    lastUpdated: 'Official Close (16:00 EDT)',
+  NIFTY_AUTO: {
+    symbol: 'NIFTY AUTO',
+    name: 'Nifty Auto Sector Index',
+    region: 'INDIA',
+    price: 25840.10,
+    change: 220.50,
+    changePct: 0.86,
+    previousClose: 25619.60,
+    dayHigh: 25920.00,
+    dayLow: 25580.00,
+    volume: '34.8M',
+    currency: 'INR',
+    currencySymbol: '₹',
+    lastUpdated: 'Official Close (15:30 IST)',
     isLive: false
   },
 
@@ -218,38 +218,38 @@ export const MASTER_MARKET_QUOTES: Record<string, LiveMarketQuote> = {
     isLive: false
   },
 
-  // 24/7 Cryptocurrencies
-  BITCOIN: {
-    symbol: 'BTC/USD',
-    name: 'Bitcoin (24x7 Global)',
-    region: 'CRYPTO',
-    price: 64250.00,
-    change: 1250.00,
-    changePct: 1.98,
-    previousClose: 63000.00,
-    dayHigh: 64800.00,
-    dayLow: 62850.00,
-    volume: '$28.4B',
-    currency: 'USD',
-    currencySymbol: '$',
-    lastUpdated: 'Live Streaming (24/7)',
-    isLive: true
+  // Indian Sovereign Instruments
+  SGB_GOLD: {
+    symbol: 'SGB-GOLD',
+    name: 'RBI Sovereign Gold Bond (Sec 47(viic))',
+    region: 'COMMODITY',
+    price: 7654.00,
+    change: 64.50,
+    changePct: 0.85,
+    previousClose: 7589.50,
+    dayHigh: 7680.00,
+    dayLow: 7590.00,
+    volume: '₹142 Cr',
+    currency: 'INR',
+    currencySymbol: '₹',
+    lastUpdated: 'NSE SGB Real-Time',
+    isLive: false
   },
-  ETHEREUM: {
-    symbol: 'ETH/USD',
-    name: 'Ethereum (24x7 Global)',
-    region: 'CRYPTO',
-    price: 3420.00,
-    change: 85.00,
-    changePct: 2.55,
-    previousClose: 3335.00,
-    dayHigh: 3460.00,
-    dayLow: 3310.00,
-    volume: '$16.2B',
-    currency: 'USD',
-    currencySymbol: '$',
-    lastUpdated: 'Live Streaming (24/7)',
-    isLive: true
+  GSEC_10Y: {
+    symbol: 'IN10Y',
+    name: 'India 10Y Benchmark G-Sec (7.18% 2033)',
+    region: 'INDIA',
+    price: 101.40,
+    change: 0.12,
+    changePct: 0.12,
+    previousClose: 101.28,
+    dayHigh: 101.55,
+    dayLow: 101.35,
+    volume: '₹4,850 Cr',
+    currency: 'INR',
+    currencySymbol: '₹',
+    lastUpdated: 'CCIL NDS-OM Real-Time',
+    isLive: false
   }
 };
 
@@ -507,34 +507,6 @@ export async function syncRealWorldMarketQuotes(): Promise<Record<string, LiveMa
     }
   } catch (err) {
     console.warn('Real Indian index API fetch fallback to verified offline closing price (23,346.40):', err);
-  }
-
-  // 2. Fetch live crypto (CoinGecko)
-  try {
-    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true', { signal: AbortSignal.timeout(3000) });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.bitcoin) {
-        updatedQuotes.BITCOIN = {
-          ...updatedQuotes.BITCOIN,
-          price: data.bitcoin.usd,
-          change: Number((data.bitcoin.usd * (data.bitcoin.usd_24h_change / 100)).toFixed(2)),
-          changePct: Number(data.bitcoin.usd_24h_change.toFixed(2)),
-          lastUpdated: 'Live CoinGecko (24/7)'
-        };
-      }
-      if (data.ethereum) {
-        updatedQuotes.ETHEREUM = {
-          ...updatedQuotes.ETHEREUM,
-          price: data.ethereum.usd,
-          change: Number((data.ethereum.usd * (data.ethereum.usd_24h_change / 100)).toFixed(2)),
-          changePct: Number(data.ethereum.usd_24h_change.toFixed(2)),
-          lastUpdated: 'Live CoinGecko (24/7)'
-        };
-      }
-    }
-  } catch {
-    // Offline fallback
   }
 
   // Persist verified real closing quotes to IndexedDB so they never revert to fake filler
@@ -894,35 +866,35 @@ export const MASTER_TICK_CATALOG: Record<string, LiveTick> = {
     timestamp: 'Live'
   },
 
-  // 24/7 Global Assets
-  'BTC': {
-    ticker: 'BTC',
-    name: 'Bitcoin (Global 24/7)',
-    category: 'Crypto',
-    ltp: 64250.00,
-    change: 1250.00,
-    changePct: 1.98,
-    previousClose: 63000.00,
-    high: 64800.00,
-    low: 62850.00,
+  // Indian Sovereign Instruments
+  'SGB-GOLD.NS': {
+    ticker: 'SGB-GOLD.NS',
+    name: 'RBI Sovereign Gold Bond (Sec 47(viic))',
+    category: 'SGB',
+    ltp: 7654.00,
+    change: 64.50,
+    changePct: 0.85,
+    previousClose: 7589.50,
+    high: 7680.00,
+    low: 7590.00,
     volume: 18240,
-    bid: 64245.00,
-    ask: 64250.00,
+    bid: 7650.00,
+    ask: 7654.00,
     timestamp: 'Live'
   },
-  'ETH': {
-    ticker: 'ETH',
-    name: 'Ethereum (Global 24/7)',
-    category: 'Crypto',
-    ltp: 3420.00,
-    change: 85.00,
-    changePct: 2.55,
-    previousClose: 3335.00,
-    high: 3460.00,
-    low: 3310.00,
+  'IN10Y.NS': {
+    ticker: 'IN10Y.NS',
+    name: 'India 10Y Sovereign G-Sec (7.18% 2033)',
+    category: 'Bond',
+    ltp: 101.40,
+    change: 0.12,
+    changePct: 0.12,
+    previousClose: 101.28,
+    high: 101.55,
+    low: 101.35,
     volume: 94800,
-    bid: 3419.50,
-    ask: 3420.00,
+    bid: 101.38,
+    ask: 101.40,
     timestamp: 'Live'
   },
   'GOLD 24K': {

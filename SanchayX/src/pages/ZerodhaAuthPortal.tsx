@@ -313,7 +313,7 @@ const CATEGORY_SHOWCASE: Record<string, CategoryInfo> = {
       { id: 'rel', name: 'Reliance Industries', tickerOrIssuer: 'RELIANCE • NSE', tag: 'Energy & Retail', metricLabel: 'Live Price', metricValue: '₹2,980.50 (+1.2%)', metricColor: 'blue', description: 'India’s largest conglomerate with dominant retail, telecom, and green energy market share.', brokerageTag: '₹0 Brokerage', actionText: 'Simulate Buy', categoryType: 'stocks' },
       { id: 'tcs', name: 'Tata Consultancy Services', tickerOrIssuer: 'TCS • NSE', tag: 'IT Services', metricLabel: 'Live Price', metricValue: '₹4,120.00 (+0.8%)', metricColor: 'blue', description: 'Global digital IT transformation leader with industry-leading operating profit margins.', brokerageTag: '₹0 Brokerage', actionText: 'Simulate Buy', categoryType: 'stocks' },
       { id: 'hdfc', name: 'HDFC Bank Ltd.', tickerOrIssuer: 'HDFCBANK • NSE', tag: 'Banking & Financials', metricLabel: 'Live Price', metricValue: '₹1,640.20 (+0.5%)', metricColor: 'blue', description: 'India’s largest private lender with stellar asset quality and fortress balance sheet.', brokerageTag: '₹0 Brokerage', actionText: 'Simulate Buy', categoryType: 'stocks' },
-      { id: 'aapl', name: 'Apple Inc. (US Tech)', tickerOrIssuer: 'AAPL • NASDAQ', tag: 'Global Tech', metricLabel: 'Live Price', metricValue: '$225.40 (+1.4%)', metricColor: 'blue', description: 'Consumer tech giant with $3T+ ecosystem, expanding AI devices and high-margin services.', brokerageTag: 'Zero Commission', actionText: 'Simulate Buy', categoryType: 'stocks' }
+      { id: 'lt', name: 'Larsen & Toubro Ltd.', tickerOrIssuer: 'LT • NSE', tag: 'Infrastructure & Defense', metricLabel: 'Live Price', metricValue: '₹3,620.00 (+1.1%)', metricColor: 'blue', description: 'India’s premier infrastructure engineering conglomerate with massive multi-year order books.', brokerageTag: '₹0 Brokerage', actionText: 'Simulate Buy', categoryType: 'stocks' }
     ]
   },
   'F&O': {
@@ -770,15 +770,15 @@ export const ZerodhaAuthPortal: React.FC = () => {
           getSafeQuote('SENSEX', '🇮🇳', 'SENSEX', 'BSE Sensex', 76820.10, 179.30, 0.23, 'INR', '₹'),
           getSafeQuote('BANK_NIFTY', '🏦', 'BANK NIFTY', 'Nifty Bank Index', 49850.20, 120.40, 0.24, 'INR', '₹'),
           getSafeQuote('NIFTY_IT', '💻', 'NIFTY IT', 'Nifty IT Index', 41250.00, 380.00, 0.93, 'INR', '₹'),
-          getSafeQuote('SP_500', '🇺🇸', 'S&P 500', 'S&P 500 Index', 5540.20, 32.10, 0.58, 'USD', '$'),
-          getSafeQuote('NASDAQ_100', '🇺🇸', 'NASDAQ 100', 'Nasdaq 100 Index', 19650.80, 145.20, 0.74, 'USD', '$'),
-          getSafeQuote('DOW_JONES', '🇺🇸', 'DOW JONES', 'Dow Jones Industrial', 40850.50, 190.00, 0.47, 'USD', '$'),
+          getSafeQuote('NIFTY_MIDCAP', '📈', 'NIFTY MIDCAP', 'Nifty Midcap 100', 58450.40, 412.30, 0.71, 'INR', '₹'),
+          getSafeQuote('NIFTY_SMALLCAP', '🚀', 'NIFTY SMALLCAP', 'Nifty Smallcap 100', 18920.60, 185.40, 0.99, 'INR', '₹'),
+          getSafeQuote('NIFTY_AUTO', '🚗', 'NIFTY AUTO', 'Nifty Auto Index', 25840.10, 220.50, 0.86, 'INR', '₹'),
           getSafeQuote('GOLD_24K', '🪙', 'GOLD 24K', 'MCX Gold (10g / 24K)', 71850.00, 250.00, 0.35, 'INR', '₹'),
           getSafeQuote('SILVER_1KG', '🥈', 'SILVER MCX', 'MCX Silver (1kg 999)', 84200.00, 620.00, 0.74, 'INR', '₹'),
           getSafeQuote('CRUDE_OIL', '🛢️', 'CRUDE OIL', 'Brent Crude Oil (BBL)', 6420.00, -29.00, -0.45, 'INR', '₹'),
           getSafeQuote('USD_INR', '💵', 'USD / INR', 'US Dollar / Indian Rupee', 83.92, 0.04, 0.05, 'INR', '₹'),
-          getSafeQuote('BITCOIN', '⚡', 'BTC / USD', 'Bitcoin (24x7 Global)', 64250.00, 1250.00, 1.98, 'USD', '$'),
-          getSafeQuote('ETHEREUM', '🔷', 'ETH / USD', 'Ethereum (24x7 Global)', 3420.00, 85.00, 2.55, 'USD', '$')
+          getSafeQuote('SGB_GOLD', '👑', 'SGB GOLD', 'Sovereign Gold Bond', 7654.00, 64.50, 0.85, 'INR', '₹'),
+          getSafeQuote('GSEC_10Y', '🏛️', 'IN10Y G-SEC', 'India 10Y Benchmark', 101.40, 0.12, 0.12, 'INR', '₹')
         ];
 
         return (
@@ -2577,14 +2577,14 @@ export const ZerodhaAuthPortal: React.FC = () => {
                 <div className="p-4 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-black text-[var(--text-primary)]">⚡ Global Cryptocurrencies (24/7/365)</span>
-                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 border border-blue-500/20">
-                        CONTINUOUS LIVE
+                      <span className="text-sm font-black text-[var(--text-primary)]">👑 RBI Sovereign Gold Bonds & G-Sec (NDS-OM)</span>
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                        09:00 - 17:00 IST
                       </span>
                     </div>
                   </div>
                   <p className="text-[11px] text-[var(--text-muted)]">
-                    Bitcoin (BTC), Ethereum (ETH), and digital asset markets operate 24 hours a day with instant continuous tick settlement.
+                    Sovereign Gold Bonds (SGB) and Central Government Securities (G-Sec) clear via CCIL with guaranteed T+1 settlement and 100% tax exemption under Section 47(viic).
                   </p>
                 </div>
               </div>

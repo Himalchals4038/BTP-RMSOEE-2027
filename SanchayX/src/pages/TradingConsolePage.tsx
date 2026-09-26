@@ -64,7 +64,6 @@ const TradeBookView = React.lazy(() => import('./console/TradeBookView'));
 const DematHoldingsView = React.lazy(() => import('./console/DematHoldingsView'));
 const FundsView = React.lazy(() => import('./console/FundsView'));
 const ReportsView = React.lazy(() => import('./console/ReportsView'));
-const OptionsStrategyBuilder = React.lazy(() => import('../components/trading/OptionsStrategyBuilder'));
 const SipMandatesEngine = React.lazy(() => import('../components/trading/SipMandatesEngine'));
 const SubAccountVaults = React.lazy(() => import('../components/trading/SubAccountVaults'));
 const CapitalGainsTaxAuditor = React.lazy(() => import('../components/trading/CapitalGainsTaxAuditor'));
@@ -3491,13 +3490,6 @@ export const TradingConsolePage: React.FC = () => {
               </div>
             </div>
           </div>
-        )}
-
-        {/* SECTION 16: OPTIONS STRATEGY BUILDER */}
-        {activeTabId === 'options_builder' && (
-          <Suspense fallback={<div className="p-12 text-center text-xs text-[var(--text-muted)] font-mono animate-pulse">Loading Options Strategy Builder & Payoff Engine...</div>}>
-            <OptionsStrategyBuilder />
-          </Suspense>
         )}
 
         {/* SECTION 17: SIP MANDATES ENGINE */}

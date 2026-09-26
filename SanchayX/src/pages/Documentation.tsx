@@ -69,7 +69,7 @@ export const DocumentationPage: React.FC = () => {
             <Search className="w-4 h-4 text-[var(--text-muted)] mr-2 shrink-0" />
             <input
               type="text"
-              placeholder="Search any company, ticker or financial term (e.g. HDFC Bank, NVIDIA, Bitcoin, Sharpe Ratio, High Yield Debt)..."
+              placeholder="Search any Indian company, ticker or financial term (e.g. HDFC Bank, Reliance, Section 112A, 10Y G-Sec, SGB Gold)..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-transparent text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none"
@@ -86,7 +86,7 @@ export const DocumentationPage: React.FC = () => {
           {/* Quick Preset Chips */}
           <div className="flex items-center gap-2 pt-3 flex-wrap">
             <span className="text-[11px] text-[var(--text-muted)] font-bold">Featured Topics:</span>
-            {['Modern Portfolio Theory', 'Sharpe Ratio', 'Value at Risk', 'High-Yield Bonds', 'Bitcoin', 'HDFC Bank', 'NVIDIA'].map(chip => (
+            {['Semi-Automated Investing', 'Section 112A LTCG', 'Tax-Loss Harvesting', 'Sovereign Gold Bonds', 'PSU Tax-Free Bonds', 'HDFC Bank', 'Reliance'].map(chip => (
               <button
                 key={chip}
                 onClick={() => {

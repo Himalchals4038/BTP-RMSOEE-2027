@@ -1,5 +1,0 @@
-/**
- * Pre-compiled SanchayX Quantitative WASM Bytecode (Base64)
- * Enables zero-latency, zero-HTTP synchronous module compilation inside Web Workers.
- */
-export const SANCHAYX_QUANT_WASM_BASE64 = "AGFzbQEAAAABHwRgAnx8AXxgBHx8fHwBfGADfHx8AXxgBXx8fHx8AXwDCAcAAAECAgIDB4IBBwdmYXN0QWRkAAAMZmFzdE11bHRpcGx5AAEUbWF0cml4RGV0ZXJtaW5hbnQyeDIAAhVibGFja1NjaG9sZXNJbnRyaW5zaWMAAw5tb250ZUNhcmxvU3RlcAAEC3NoYXJwZVJhdGlvAAUXcG9ydGZvbGlvVmFyaWFuY2UyQXNzZXQABgpYBwcAIAAgAaALBwAgACABogsNACAAIAOiIAEgAqKhCwcAIAAgAaELFAAgAEQAAAAAAADwPyABoCACoKILCgAgACACoSABowsQACAAIAKiIAEgA6KgIASgCw==";

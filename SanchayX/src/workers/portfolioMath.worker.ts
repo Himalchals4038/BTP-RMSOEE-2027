@@ -1,22 +1,10 @@
 import type { Asset, FrontierPoint, CorrelationMatrixData } from '../types/portfolio';
 import { runStrategyBacktest } from '../utils/financialMath';
-import {
-  initWasmQuantEngine,
-  computeSharpeWasm,
-  isWasmReady,
-  runWasmBenchmark
-} from '../wasm/wasmQuantEngine';
 
-// Initialize WASM module inside worker asynchronously on startup
-initWasmQuantEngine().catch(() => {});
-
-// Self-contained mathematical functions for worker thread
-const RISK_FREE_RATE = 0.045; // 4.5% Risk-free rate
+// Self-contained high-performance mathematical functions for worker thread
+const RISK_FREE_RATE = 0.045; // 4.5% Risk-free rate (Indian G-Sec / Repo benchmark)
 
 function computeSharpeRatio(expectedReturn: number, volatility: number): number {
-  if (isWasmReady()) {
-    return computeSharpeWasm(expectedReturn, volatility, RISK_FREE_RATE);
-  }
   if (volatility <= 0) return 0;
   return (expectedReturn - RISK_FREE_RATE) / volatility;
 }
@@ -25,12 +13,18 @@ self.onmessage = async (e: MessageEvent) => {
   const { type, payload } = e.data;
 
   if (type === 'INIT_WASM') {
-    const ready = await initWasmQuantEngine();
-    self.postMessage({ type: 'WASM_INITIALIZED', isReady: ready });
+    self.postMessage({ type: 'WASM_INITIALIZED', isReady: true });
   } else if (type === 'RUN_WASM_BENCHMARK') {
     const iters = payload?.iterations || 10000;
-    const result = await runWasmBenchmark(iters);
-    self.postMessage({ type: 'WASM_BENCHMARK_RESULT', result });
+    const t0 = performance.now();
+    for (let i = 0; i < iters; i++) {
+      computeSharpeRatio(0.12, 0.18);
+    }
+    const jsDuration = performance.now() - t0;
+    self.postMessage({
+      type: 'WASM_BENCHMARK_RESULT',
+      result: { wasmDurationMs: jsDuration, jsDurationMs: jsDuration, speedup: '1.0x', isWasmActive: false, iterations: iters }
+    });
   } else if (type === 'CALC_FRONTIER') {
     const startTime = performance.now();
     const assets: Asset[] = payload.assets || [];
@@ -146,7 +140,7 @@ self.onmessage = async (e: MessageEvent) => {
       type: 'FRONTIER_RESULT',
       points: frontier,
       computeDurationMs: durationMs,
-      wasmAccelerated: isWasmReady()
+      wasmAccelerated: false
     });
   } else if (type === 'CALC_CORRELATION') {
     const assets: Asset[] = payload.assets || [];

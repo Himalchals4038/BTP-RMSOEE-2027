@@ -78,10 +78,10 @@ export const PortfolioBuilder: React.FC = () => {
     const target = Math.max(0, Math.min(100, targetWeight));
 
     const bucketAssets = assets.filter(a => {
-      if (categoryName === 'Equities') return a.category === 'Equities' || a.category === 'ETFs' || a.category === 'Crypto';
+      if (categoryName === 'Equities') return a.category === 'Equities' || a.category === 'ETFs';
       if (categoryName === 'Debt') return a.category === 'Bonds';
       if (categoryName === 'Gold') return a.category === 'Commodities';
-      return a.category === 'Forex' || (a.category !== 'Equities' && a.category !== 'ETFs' && a.category !== 'Crypto' && a.category !== 'Bonds' && a.category !== 'Commodities');
+      return a.category === 'Forex' || (a.category !== 'Equities' && a.category !== 'ETFs' && a.category !== 'Bonds' && a.category !== 'Commodities');
     });
 
     if (bucketAssets.length === 0) return;
@@ -194,9 +194,9 @@ export const PortfolioBuilder: React.FC = () => {
     return list;
   }, [assets, selectedCategoryFilter, showTop5Only, searchQuery]);
 
-  const cryptoExposure = useMemo(() => {
-    const cryptoSum = assets.filter(a => a.category === 'Crypto').reduce((sum, a) => sum + a.weight, 0);
-    return Number(cryptoSum.toFixed(1));
+  const goldExposure = useMemo(() => {
+    const goldSum = assets.filter(a => a.category === 'Commodities' || a.ticker.includes('SGB') || a.ticker.includes('GOLD')).reduce((sum, a) => sum + a.weight, 0);
+    return Number(goldSum.toFixed(1));
   }, [assets]);
 
   const equityExposure = useMemo(() => {
@@ -919,9 +919,9 @@ export const PortfolioBuilder: React.FC = () => {
           <div className="space-y-4 pt-2 border-t border-[var(--border-color)]">
             <div className="space-y-1">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-[var(--text-primary)] font-semibold">Max Crypto Exposure Limit</span>
-                <span className={`font-mono font-bold ${cryptoExposure > constraints.maxCryptoExposure ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                  {cryptoExposure}% / {constraints.maxCryptoExposure}%
+                <span className="text-[var(--text-primary)] font-semibold">Max SGB Gold Exposure Limit</span>
+                <span className={`font-mono font-bold ${goldExposure > constraints.maxCryptoExposure ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                  {goldExposure}% / {constraints.maxCryptoExposure}%
                 </span>
               </div>
               <input
@@ -931,10 +931,10 @@ export const PortfolioBuilder: React.FC = () => {
                 value={constraints.maxCryptoExposure}
                 onChange={(e) => updateConstraints({ maxCryptoExposure: Number(e.target.value) })}
               />
-              {cryptoExposure > constraints.maxCryptoExposure && (
-                <div className="flex items-center gap-1 text-[11px] text-rose-600 font-bold">
+              {goldExposure > constraints.maxCryptoExposure && (
+                <div className="flex items-center gap-1 text-[11px] text-amber-600 font-bold">
                   <AlertTriangle className="w-3 h-3" />
-                  Crypto exposure exceeds limit!
+                  SGB Gold allocation exceeds configured risk band!
                 </div>
               )}
             </div>

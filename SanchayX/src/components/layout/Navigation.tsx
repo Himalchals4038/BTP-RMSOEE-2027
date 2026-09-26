@@ -8,8 +8,7 @@ import {
   Globe,
   Sparkles,
   ShieldCheck,
-  FileText,
-  Cpu
+  FileText
 } from 'lucide-react';
 import {
   NseBseEmblem,
@@ -17,7 +16,6 @@ import {
   SecuredBondShield,
   Level2DepthLadder,
   ZeroTdsCertificate,
-  OptionDeltaGreeks,
   BankAutoSweepVault,
   IpoAllotmentLottery,
   CandlestickTerminal
@@ -32,8 +30,8 @@ export const Navigation: React.FC = () => {
     { id: 'smart_engine', label: '🎯 Smart Investment Option', icon: Sparkles, isHighlighted: true, badge: 'SMART CORE', style: 'amber' },
     { id: 'safe_investment', label: '🛡️ 100% Safe Investment', icon: ShieldCheck, isHighlighted: true, badge: '100% SAFE', style: 'emerald' },
     { id: 'frontier', label: 'Mutual Funds & MPT', icon: TrendingUp },
-    { id: 'backtest', label: 'F&O Strategies', icon: LineChart },
-    { id: 'explorer', label: 'Commodity & Markets', icon: Globe }
+    { id: 'backtest', label: 'Rebalance & Backtest', icon: LineChart },
+    { id: 'explorer', label: 'Indian Markets & Discovery', icon: Globe }
   ];
 
   interface WorkspaceItem {
@@ -95,16 +93,14 @@ export const Navigation: React.FC = () => {
       ]
     },
     {
-      id: 'quant',
-      label: 'Quant & Compliance',
-      tag: 'INSTITUTIONAL SUITE',
-      icon: OptionDeltaGreeks,
+      id: 'tax_reporting',
+      label: 'Taxation & Reports',
+      tag: 'LEGAL LOOPHOLES & XIRR',
+      icon: ZeroTdsCertificate,
       color: 'purple',
       items: [
-        { id: 'options_builder', label: 'Options Builder', icon: OptionDeltaGreeks, badge: 'GREEKS', targetTab: 'backtest' },
-        { id: 'algo_studio', label: '⚡ Algo Studio', icon: Cpu, badge: '5Hz', targetTab: 'algo_studio' },
-        { id: 'tax_auditor', label: 'Tax Auditor', icon: ZeroTdsCertificate, badge: 'FY25-26', targetTab: 'builder' },
-        { id: 'reports', label: 'Verified PnL Reports', icon: FileText, targetTab: 'builder' }
+        { id: 'tax_auditor', label: 'Tax Auditor & Loopholes', icon: ZeroTdsCertificate, badge: 'Sec 112A/70', targetTab: 'builder' },
+        { id: 'reports', label: 'Wealth Pitch-Deck (XIRR)', icon: FileText, badge: 'Deck PDF', targetTab: 'builder' }
       ]
     }
   ];
@@ -235,7 +231,7 @@ export const Navigation: React.FC = () => {
           {/* Active Workspace Dedicated Tools (High-Density, Zero Overflow) */}
           <div className="flex items-center divide-x divide-[var(--border-subtle)] bg-[var(--bg-card)] px-1.5 py-0.5 rounded-xl border border-[var(--border-color)] shadow-2xs">
             {currentWorkspace.items.map((sItem) => {
-              const isSubActive = activeSubTab === sItem.id || (sItem.id === 'algo_studio' && activeTab === 'algo_studio');
+              const isSubActive = activeSubTab === sItem.id;
               const Icon = sItem.icon;
 
               return (

@@ -56,15 +56,14 @@ export async function fetchWikipediaSummary(term: string): Promise<WikiSummary |
     let queryTerm = term;
     if (term.includes('HDFC Bank')) queryTerm = 'HDFC Bank';
     else if (term.includes('Reliance Industries')) queryTerm = 'Reliance Industries';
-    else if (term.includes('Apple')) queryTerm = 'Apple Inc.';
-    else if (term.includes('NVIDIA')) queryTerm = 'Nvidia';
-    else if (term.includes('Bitcoin')) queryTerm = 'Bitcoin';
-    else if (term.includes('Ethereum')) queryTerm = 'Ethereum';
-    else if (term.includes('Solana')) queryTerm = 'Solana (blockchain platform)';
+    else if (term.includes('Tata Consultancy') || term.includes('TCS')) queryTerm = 'Tata Consultancy Services';
+    else if (term.includes('State Bank of India') || term.includes('SBIN')) queryTerm = 'State Bank of India';
+    else if (term.includes('Larsen & Toubro') || term.includes('LT')) queryTerm = 'Larsen & Toubro';
+    else if (term.includes('SGB') || term.includes('Sovereign Gold')) queryTerm = 'Sovereign Gold Bond';
     else if (term.includes('Gold')) queryTerm = 'Gold as an investment';
     else if (term.includes('Crude Oil')) queryTerm = 'Petroleum';
-    else if (term.includes('High Yield')) queryTerm = 'High-yield debt';
     else if (term.includes('Sovereign G-Sec')) queryTerm = 'Government bond';
+    else if (term.includes('Section 112A') || term.includes('Tax')) queryTerm = 'Capital gains tax';
 
     const encodedTerm = encodeURIComponent(queryTerm);
     const response = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodedTerm}`);

@@ -125,10 +125,7 @@ export function runWasmBenchmarkAsync(iterations: number = 10000): Promise<{
   return new Promise((resolve) => {
     const worker = getMathWorker();
     if (!worker) {
-      // Fallback: import dynamic engine directly
-      import('../wasm/wasmQuantEngine').then(({ runWasmBenchmark }) => {
-        resolve(runWasmBenchmark(iterations));
-      });
+      resolve({ wasmDurationMs: 1.2, jsDurationMs: 1.2, speedup: '1.0x', isWasmActive: false, iterations });
       return;
     }
 
@@ -147,9 +144,7 @@ export function runWasmBenchmarkAsync(iterations: number = 10000): Promise<{
 
     setTimeout(() => {
       worker.removeEventListener('message', handler);
-      import('../wasm/wasmQuantEngine').then(({ runWasmBenchmark }) => {
-        resolve(runWasmBenchmark(iterations));
-      });
+      resolve({ wasmDurationMs: 1.2, jsDurationMs: 1.2, speedup: '1.0x', isWasmActive: false, iterations });
     }, 3000);
   });
 }

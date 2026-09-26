@@ -49,40 +49,35 @@ const INDIAN_STOCKS_DATA: HeatmapTile[] = [
   { symbol: 'TITAN', name: 'Titan Company', sector: 'Consumer Luxury', price: 3420.0, changePct: 1.40, marketCapBg: 'md' }
 ];
 
-const US_STOCKS_DATA: HeatmapTile[] = [
-  // Mega Cap Tech
-  { symbol: 'NVDA', name: 'NVIDIA Corp', sector: 'Semiconductors', price: 128.50, changePct: 4.85, marketCapBg: 'xl' },
-  { symbol: 'AAPL', name: 'Apple Inc', sector: 'Consumer Tech', price: 224.30, changePct: 1.40, marketCapBg: 'xl' },
-  { symbol: 'MSFT', name: 'Microsoft Corp', sector: 'Cloud & AI', price: 448.20, changePct: 1.25, marketCapBg: 'xl' },
-  { symbol: 'GOOGL', name: 'Alphabet Inc', sector: 'Internet & AI', price: 182.40, changePct: 0.90, marketCapBg: 'xl' },
-  { symbol: 'AMZN', name: 'Amazon.com Inc', sector: 'E-Commerce', price: 195.60, changePct: 2.30, marketCapBg: 'xl' },
-  { symbol: 'META', name: 'Meta Platforms', sector: 'Social Media', price: 512.80, changePct: 3.15, marketCapBg: 'lg' },
-  { symbol: 'TSLA', name: 'Tesla Inc', sector: 'EV & Robotics', price: 245.10, changePct: 5.20, marketCapBg: 'lg' },
-
-  // Semiconductors & Hardware
-  { symbol: 'AMD', name: 'Advanced Micro Devices', sector: 'Semiconductors', price: 162.40, changePct: 3.50, marketCapBg: 'lg' },
-  { symbol: 'AVGO', name: 'Broadcom Inc', sector: 'Semiconductors', price: 172.50, changePct: 2.20, marketCapBg: 'lg' },
-  { symbol: 'INTC', name: 'Intel Corp', sector: 'Semiconductors', price: 31.20, changePct: -1.40, marketCapBg: 'md' },
-
-  // Finance & Healthcare
-  { symbol: 'JPM', name: 'JPMorgan Chase', sector: 'Banking', price: 215.40, changePct: 0.75, marketCapBg: 'lg' },
-  { symbol: 'BAC', name: 'Bank of America', sector: 'Banking', price: 42.10, changePct: -0.30, marketCapBg: 'md' },
-  { symbol: 'V', name: 'Visa Inc', sector: 'Payments', price: 274.80, changePct: 1.10, marketCapBg: 'lg' },
-  { symbol: 'LLY', name: 'Eli Lilly & Co', sector: 'Pharma', price: 920.50, changePct: 2.80, marketCapBg: 'lg' },
-  { symbol: 'JNJ', name: 'Johnson & Johnson', sector: 'Healthcare', price: 156.20, changePct: -0.45, marketCapBg: 'md' }
+const INDIAN_MID_SMALL_DATA: HeatmapTile[] = [
+  // High Growth Emerging Leaders
+  { symbol: 'TRENT', name: 'Trent Ltd (Zudio)', sector: 'Retail', price: 6850.0, changePct: 3.45, marketCapBg: 'xl' },
+  { symbol: 'HAL', name: 'Hindustan Aeronautics', sector: 'Defense', price: 4680.0, changePct: 2.45, marketCapBg: 'xl' },
+  { symbol: 'BEL', name: 'Bharat Electronics', sector: 'Defense', price: 295.4, changePct: 1.95, marketCapBg: 'lg' },
+  { symbol: 'DIXON', name: 'Dixon Technologies', sector: 'Electronics Mfg', price: 12450.0, changePct: 4.10, marketCapBg: 'lg' },
+  { symbol: 'POLYCAB', name: 'Polycab India', sector: 'Cables & Wires', price: 6540.0, changePct: 1.65, marketCapBg: 'lg' },
+  { symbol: 'PERSISTENT', name: 'Persistent Systems', sector: 'IT Services', price: 4850.0, changePct: 2.80, marketCapBg: 'md' },
+  { symbol: 'COFORGE', name: 'Coforge Ltd', sector: 'IT Services', price: 7210.0, changePct: 2.10, marketCapBg: 'md' },
+  { symbol: 'SUZLON', name: 'Suzlon Energy', sector: 'Green Energy', price: 78.4, changePct: 4.80, marketCapBg: 'md' },
+  { symbol: 'ZOMATO', name: 'Zomato Ltd', sector: 'Consumer Tech', price: 245.2, changePct: 2.95, marketCapBg: 'lg' },
+  { symbol: 'DMART', name: 'Avenue Supermarts', sector: 'Retail', price: 4820.0, changePct: 0.85, marketCapBg: 'xl' },
+  { symbol: 'CUMMINSIND', name: 'Cummins India', sector: 'Capital Goods', price: 3750.0, changePct: 1.75, marketCapBg: 'md' },
+  { symbol: 'PIDILITIND', name: 'Pidilite Industries', sector: 'Chemicals', price: 3120.0, changePct: 0.65, marketCapBg: 'lg' },
+  { symbol: 'SRF', name: 'SRF Limited', sector: 'Chemicals', price: 2420.0, changePct: 1.15, marketCapBg: 'md' },
+  { symbol: 'MAZDOCK', name: 'Mazagon Dock Ship', sector: 'Defense', price: 4320.0, changePct: 3.85, marketCapBg: 'md' }
 ];
 
 export const FloatingHeatmapDrawer: React.FC = () => {
   // Drawer Open/Close state
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [marketRegion, setMarketRegion] = useState<'INDIA' | 'US'>('INDIA');
+  const [marketRegion, setMarketRegion] = useState<'INDIA' | 'MID_SMALL'>('INDIA');
   const [isLiveFeedActive, setIsLiveFeedActive] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [lastRefreshed, setLastRefreshed] = useState<string>('Just now');
 
   // Stock Tiles Data State
   const [indianTiles, setIndianTiles] = useState<HeatmapTile[]>(INDIAN_STOCKS_DATA);
-  const [usTiles, setUsTiles] = useState<HeatmapTile[]>(US_STOCKS_DATA);
+  const [midSmallTiles, setMidSmallTiles] = useState<HeatmapTile[]>(INDIAN_MID_SMALL_DATA);
 
   const drawerRef = useRef<HTMLDivElement>(null);
 
@@ -136,9 +131,9 @@ export const FloatingHeatmapDrawer: React.FC = () => {
             return tile;
           })
         );
-      } else if (marketRegion === 'US' && usMarketOpen) {
-        setUsTiles(prev =>
-          prev.map(tile => {
+      } else if (marketRegion === 'MID_SMALL' && indiaMarketOpen) {
+        setMidSmallTiles(prev =>
+          prev.map((tile: HeatmapTile) => {
             if (Math.random() > 0.6) {
               const delta = (Math.random() * 0.4 - 0.2);
               return {
@@ -175,7 +170,7 @@ export const FloatingHeatmapDrawer: React.FC = () => {
         ...t,
         changePct: Number((t.changePct + (Math.random() * 0.6 - 0.3)).toFixed(2))
       })));
-      setUsTiles(US_STOCKS_DATA.map(t => ({
+      setMidSmallTiles(INDIAN_MID_SMALL_DATA.map(t => ({
         ...t,
         changePct: Number((t.changePct + (Math.random() * 0.6 - 0.3)).toFixed(2))
       })));
@@ -184,8 +179,8 @@ export const FloatingHeatmapDrawer: React.FC = () => {
     }, 1000);
   };
 
-  const activeTiles = marketRegion === 'INDIA' ? indianTiles : usTiles;
-  const isCurrentMarketOpen = marketRegion === 'INDIA' ? indiaMarketOpen : usMarketOpen;
+  const activeTiles = marketRegion === 'INDIA' ? indianTiles : midSmallTiles;
+  const isCurrentMarketOpen = indiaMarketOpen;
 
   // Tile Color Generator
   const getTileColor = (changePct: number) => {
@@ -242,7 +237,7 @@ export const FloatingHeatmapDrawer: React.FC = () => {
 
               {/* Controls Strip: Region Switcher, Market Status, Refresh & Live Toggle */}
               <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                {/* Indian vs US Region Toggle */}
+                {/* Indian Large Cap vs Mid & Small Cap Toggle */}
                 <div className="flex p-1 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
                   <button
                     onClick={() => setMarketRegion('INDIA')}
@@ -252,17 +247,17 @@ export const FloatingHeatmapDrawer: React.FC = () => {
                         : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                   >
-                    <Globe className="w-3.5 h-3.5" /> Indian Stocks (NSE)
+                    <Globe className="w-3.5 h-3.5" /> NIFTY 50 Bluechips
                   </button>
                   <button
-                    onClick={() => setMarketRegion('US')}
+                    onClick={() => setMarketRegion('MID_SMALL')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
-                      marketRegion === 'US'
+                      marketRegion === 'MID_SMALL'
                         ? 'bg-[var(--icici-orange)] text-white shadow-xs'
                         : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                   >
-                    <Globe className="w-3.5 h-3.5" /> US Stocks (S&P 500)
+                    <Globe className="w-3.5 h-3.5" /> Mid & Small Cap Growth
                   </button>
                 </div>
 
@@ -275,9 +270,7 @@ export const FloatingHeatmapDrawer: React.FC = () => {
                       : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
                   }`}>
                     <span className={`w-2 h-2 rounded-full ${isCurrentMarketOpen ? 'bg-emerald-500 animate-ping' : 'bg-amber-500'}`} />
-                    {marketRegion === 'INDIA'
-                      ? (indiaMarketOpen ? 'NSE India OPEN' : 'NSE India CLOSED')
-                      : (usMarketOpen ? 'US Market OPEN' : 'US Market CLOSED')}
+                    {indiaMarketOpen ? 'NSE / BSE India LIVE' : 'NSE / BSE India CLOSED'}
                   </span>
 
                   {/* Live Feed Toggle Switch */}

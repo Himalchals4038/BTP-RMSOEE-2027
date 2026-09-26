@@ -395,7 +395,7 @@ export const ICICIQuickSubView: React.FC<Props> = ({ subTab, onClose }) => {
                       <Search className="w-4 h-4 text-[var(--text-muted)] absolute left-3 top-2.5" />
                       <input
                         type="text"
-                        placeholder="Type ticker or name (e.g. BTC, RELIANCE, AAPL, SGB)..."
+                        placeholder="Type ticker or name (e.g. RELIANCE, HDFCBANK, SGB, IN10Y)..."
                         value={isSearchDropdownOpen ? orderSearchQuery : `${selectedAssetObj.ticker} — ${selectedAssetObj.name}`}
                         onFocus={() => {
                           setOrderSearchQuery('');
