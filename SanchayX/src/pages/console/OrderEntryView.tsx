@@ -11,7 +11,8 @@ import {
   GripVertical,
   ShieldAlert,
   Clock,
-  RefreshCw
+  RefreshCw,
+  X
 } from 'lucide-react';
 import { useTradingSimulation } from '../../context/TradingSimulationContext';
 import { usePortfolio } from '../../context/PortfolioContext';
@@ -124,13 +125,44 @@ export const OrderEntryView: React.FC<OrderEntryViewProps> = ({
   const [twapSlices, setTwapSlices] = useState<number>(5);
   const [vwapSlices, setVwapSlices] = useState<number>(6);
 
+  const [selectedSectorFilter, setSelectedSectorFilter] = useState<string>('ALL');
+
+  // Filter out any non-Indian / US securities
+  const indianSecurities = React.useMemo(() => {
+    return filteredAssets.filter(a => {
+      if (!a.ticker) return false;
+      if (a.category === 'Crypto' || a.category === 'US Equities') return false;
+      if (a.currency === '$') return false;
+      if (a.market?.includes('NASDAQ') || a.market?.includes('NYSE') || a.market?.includes('US Markets')) return false;
+      if (['AAPL', 'TSLA', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'SPY', 'QQQ'].includes(a.ticker)) return false;
+      return true;
+    });
+  }, [filteredAssets]);
+
   const searchedSecurities = React.useMemo(() => {
-    if (!orderSearchQuery.trim()) return filteredAssets;
+    let list = indianSecurities;
+    if (selectedSectorFilter !== 'ALL') {
+      if (selectedSectorFilter === 'NIFTY50') {
+        list = list.filter(a => a.index === 'NIFTY 50' || a.index?.includes('NIFTY') || a.weight > 0);
+      } else if (selectedSectorFilter === 'BANKING') {
+        list = list.filter(a => a.sector?.toLowerCase().includes('bank') || a.name?.toLowerCase().includes('bank') || a.ticker?.includes('BANK'));
+      } else if (selectedSectorFilter === 'TECH') {
+        list = list.filter(a => a.sector?.toLowerCase().includes('technology') || a.sector?.toLowerCase().includes('it') || ['TCS.NS', 'INFY.NS', 'WIPRO.NS', 'HCLTECH.NS', 'TECHM.NS'].includes(a.ticker));
+      } else if (selectedSectorFilter === 'ENERGY') {
+        list = list.filter(a => a.sector?.toLowerCase().includes('energy') || a.sector?.toLowerCase().includes('oil') || a.sector?.toLowerCase().includes('gas') || a.sector?.toLowerCase().includes('power') || ['RELIANCE.NS', 'NTPC.NS', 'POWERGRID.NS', 'ONGC.NS', 'BPCL.NS', 'IOC.NS'].includes(a.ticker));
+      } else if (selectedSectorFilter === 'BONDS') {
+        list = list.filter(a => a.category === 'Bonds' || a.category === 'Commodities' || a.ticker?.includes('SGB') || a.ticker?.includes('TF') || a.ticker?.includes('IN10Y'));
+      }
+    }
+
+    if (!orderSearchQuery.trim()) return list;
     const q = orderSearchQuery.toLowerCase().trim();
-    return filteredAssets.filter(a =>
-      a.ticker.toLowerCase().includes(q) || a.name.toLowerCase().includes(q)
+    return list.filter(a =>
+      a.ticker.toLowerCase().includes(q) ||
+      a.name.toLowerCase().includes(q) ||
+      (a.sector && a.sector.toLowerCase().includes(q))
     );
-  }, [filteredAssets, orderSearchQuery]);
+  }, [indianSecurities, orderSearchQuery, selectedSectorFilter]);
 
   const estOrderVal = quantity * price;
 
@@ -359,14 +391,19 @@ export const OrderEntryView: React.FC<OrderEntryViewProps> = ({
         {/* Left Column: Form (5 cols on XL) */}
         <div className={viewportMode === 'mobile' ? 'w-full' : 'xl:col-span-5'}>
           <form onSubmit={handlePlaceOrderSubmit} className="space-y-4">
-            {/* Searchable Security Selector */}
+            {/* Searchable Indian Security Selector */}
             <div className="space-y-1.5 relative">
-              <label className="text-xs font-bold text-[var(--text-primary)]">Search & Select Security</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-[var(--text-primary)]">
+                  Search & Select Indian Security ({indianSecurities.length} Listed)
+                </label>
+                <span className="text-[10px] font-mono text-emerald-500 font-bold">100% NSE / BSE Listed</span>
+              </div>
               <div className="relative">
                 <Search className="w-4 h-4 text-[var(--text-muted)] absolute left-3 top-3" />
                 <input
                   type="text"
-                  placeholder="Type ticker (e.g. RELIANCE, TCS, BTC)..."
+                  placeholder="Search all Indian stocks (e.g. RELIANCE, TCS, HDFCBANK, INFY, SBIN)..."
                   value={isSearchDropdownOpen ? orderSearchQuery : `${selectedAssetObj.ticker} — ${selectedAssetObj.name}`}
                   onFocus={() => {
                     setOrderSearchQuery('');
@@ -376,40 +413,89 @@ export const OrderEntryView: React.FC<OrderEntryViewProps> = ({
                     setOrderSearchQuery(e.target.value);
                     setIsSearchDropdownOpen(true);
                   }}
-                  className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl pl-9 pr-8 py-2.5 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)]"
+                  className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl pl-9 pr-10 py-2.5 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--icici-orange)]"
                 />
+                {isSearchDropdownOpen && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSearchDropdownOpen(false);
+                      setOrderSearchQuery('');
+                    }}
+                    className="absolute right-3 top-3 text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
 
               {isSearchDropdownOpen && (
-                <div className="absolute left-0 right-0 top-full mt-1 max-h-64 overflow-y-auto bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-2xl z-30 divide-y divide-[var(--border-subtle)]">
+                <div className="absolute left-0 right-0 top-full mt-1 max-h-80 overflow-y-auto bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-2xl z-40 divide-y divide-[var(--border-subtle)]">
+                  {/* Quick Sector Filter Chips */}
+                  <div className="p-2 bg-[var(--bg-tertiary)] flex flex-wrap gap-1 sticky top-0 z-10 border-b border-[var(--border-color)]">
+                    {[
+                      { id: 'ALL', label: `All (${indianSecurities.length})` },
+                      { id: 'NIFTY50', label: 'NIFTY 50' },
+                      { id: 'BANKING', label: 'Banking & Fin' },
+                      { id: 'TECH', label: 'IT & Tech' },
+                      { id: 'ENERGY', label: 'Energy & Infra' },
+                      { id: 'BONDS', label: 'Bonds & SGB' }
+                    ].map(chip => (
+                      <button
+                        key={chip.id}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedSectorFilter(chip.id);
+                        }}
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                          selectedSectorFilter === chip.id
+                            ? 'bg-[var(--icici-orange)] text-white shadow-xs'
+                            : 'bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-color)]'
+                        }`}
+                      >
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="px-3 py-1 bg-[var(--bg-card)] text-[10px] text-[var(--text-muted)] font-mono flex items-center justify-between border-b border-[var(--border-color)]">
+                    <span>Showing top {Math.min(80, searchedSecurities.length)} of {searchedSecurities.length} Indian securities</span>
+                    <span className="text-emerald-500 font-bold">₹ INR Cash & F&O</span>
+                  </div>
+
                   {searchedSecurities.length > 0 ? (
-                    searchedSecurities.map(a => (
+                    searchedSecurities.slice(0, 80).map(a => (
                       <div
                         key={a.ticker}
                         onClick={() => {
                           handleSelectAsset(a.ticker);
                           setIsSearchDropdownOpen(false);
+                          setOrderSearchQuery('');
                         }}
-                        className={`p-3 hover:bg-[var(--bg-tertiary)] cursor-pointer flex items-center justify-between transition-colors ${
+                        className={`p-2.5 hover:bg-[var(--bg-tertiary)] cursor-pointer flex items-center justify-between transition-colors ${
                           selectedAsset === a.ticker ? 'bg-[var(--bg-tertiary)] border-l-4 border-[var(--icici-orange)]' : ''
                         }`}
                       >
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-xs text-[var(--text-primary)]">{a.ticker}</span>
-                            <span className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${
-                              a.category === 'Crypto' ? 'bg-amber-500/20 text-amber-500' :
-                              a.category === 'Equities' ? 'bg-blue-500/20 text-blue-500' :
-                              a.category === 'Bonds' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-purple-500/20 text-purple-500'
-                            }`}>
-                              {a.category}
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono font-black text-xs text-[var(--text-primary)]">{a.ticker}</span>
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-blue-500/15 text-blue-500">
+                              {a.ticker.includes('SGB') ? 'GOLD SGB' : a.ticker.includes('TF') || a.ticker.includes('10Y') ? 'G-SEC / DEBT' : 'NSE / BSE'}
                             </span>
+                            {a.sector && (
+                              <span className="text-[10px] text-[var(--text-muted)] font-medium hidden sm:inline">
+                                • {a.sector}
+                              </span>
+                            )}
                           </div>
-                          <span className="text-[11px] text-[var(--text-secondary)] block truncate max-w-[200px]">{a.name}</span>
+                          <span className="text-[11px] text-[var(--text-secondary)] block truncate max-w-[240px] font-medium">
+                            {a.name}
+                          </span>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right shrink-0">
                           <span className="font-mono font-bold text-xs text-[var(--text-primary)] block">
-                            {a.currency}{a.price.toLocaleString()}
+                            ₹{a.price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                           <span className={`text-[10px] font-bold ${a.change24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                             {a.change24h >= 0 ? '+' : ''}{a.change24h}%
@@ -418,8 +504,9 @@ export const OrderEntryView: React.FC<OrderEntryViewProps> = ({
                       </div>
                     ))
                   ) : (
-                    <div className="p-4 text-center text-xs text-[var(--text-muted)] font-bold">
-                      No matching security found
+                    <div className="p-6 text-center text-xs text-[var(--text-muted)] font-bold space-y-1">
+                      <div>No Indian securities matching "{orderSearchQuery}"</div>
+                      <div className="text-[10px] font-normal">Try searching by ticker (RELIANCE, TCS, INFY) or company name.</div>
                     </div>
                   )}
                 </div>

@@ -57,10 +57,12 @@ export const ICICIQuickSubView: React.FC<Props> = ({ subTab, onClose }) => {
     const found = assets.find(a => a.ticker === assetTicker);
     if (found) {
       setPrice(found.price);
-      if (found.category === 'Crypto') {
-        setExchange('Binance Exchange');
-      } else if (found.currency === '$' || found.market.includes('NASDAQ') || found.market.includes('NYSE')) {
-        setExchange('NYSE — New York Stock Exchange');
+      if (found.market?.includes('BSE')) {
+        setExchange('BSE — Bombay Stock Exchange');
+      } else if (found.market?.includes('MCX') || (found.category as string) === 'Commodities') {
+        setExchange('MCX — Multi Commodity Exchange');
+      } else if (found.market?.includes('NFO') || (found.category as string) === 'Derivatives') {
+        setExchange('NFO — National Futures & Options');
       } else {
         setExchange('NSE — National Stock Exchange');
       }
@@ -275,37 +277,27 @@ export const ICICIQuickSubView: React.FC<Props> = ({ subTab, onClose }) => {
   const selectedAssetObj = assets.find(a => a.ticker === selectedAsset) || assets[0];
   const estOrderVal = quantity * price;
 
-  // Filter assets for live search input
-  const filteredAssets = assets.filter(a =>
+  // Filter assets for live search input - strictly Indian Securities
+  const indianAssets = assets.filter(a => {
+    if (['AAPL', 'TSLA', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'SPY', 'QQQ'].includes(a.ticker)) return false;
+    if (a.market?.includes('NASDAQ') || a.market?.includes('NYSE') || a.market?.includes('US Markets')) return false;
+    if (a.currency === '$' || a.category === 'Crypto') return false;
+    return true;
+  });
+
+  const filteredAssets = indianAssets.filter(a =>
     a.ticker.toLowerCase().includes(orderSearchQuery.toLowerCase()) ||
     a.name.toLowerCase().includes(orderSearchQuery.toLowerCase()) ||
     a.category.toLowerCase().includes(orderSearchQuery.toLowerCase())
   );
 
-  // Dynamic exchange options matching asset class
-  const getExchangeOptions = () => {
-    if (selectedAssetObj.category === 'Crypto') {
-      return [
-        { id: 'Binance Exchange', label: 'Binance Exchange (Crypto Spot & Derivatives)' },
-        { id: 'Binance Spot', label: 'Binance Spot Trading' },
-        { id: 'Binance Futures', label: 'Binance USDS-M Futures' },
-        { id: 'Coinbase Global', label: 'Coinbase Global Pro' }
-      ];
-    } else if (selectedAssetObj.currency === '$' || selectedAssetObj.market.includes('NASDAQ') || selectedAssetObj.market.includes('NYSE')) {
-      return [
-        { id: 'NYSE — New York Stock Exchange', label: 'NYSE — New York Stock Exchange' },
-        { id: 'NASDAQ — US Tech Market', label: 'NASDAQ — US Tech Market' },
-        { id: 'CBOE — US Options', label: 'CBOE — US Equity Options' }
-      ];
-    } else {
-      return [
-        { id: 'NSE — National Stock Exchange', label: 'NSE — National Stock Exchange' },
-        { id: 'BSE — Bombay Stock Exchange', label: 'BSE — Bombay Stock Exchange' },
-        { id: 'NFO — National Futures & Options', label: 'NFO — Derivatives (Futures & Options)' },
-        { id: 'MCX — Multi Commodity Exchange', label: 'MCX — Commodity Derivatives' }
-      ];
-    }
-  };
+  // Dynamic exchange options matching asset class - strictly Indian Exchanges
+  const getExchangeOptions = () => [
+    { id: 'NSE — National Stock Exchange', label: 'NSE — National Stock Exchange' },
+    { id: 'BSE — Bombay Stock Exchange', label: 'BSE — Bombay Stock Exchange' },
+    { id: 'NFO — National Futures & Options', label: 'NFO — Derivatives (Futures & Options)' },
+    { id: 'MCX — Multi Commodity Exchange', label: 'MCX — Commodity Derivatives' }
+  ];
 
   const exchangeOptions = getExchangeOptions();
 

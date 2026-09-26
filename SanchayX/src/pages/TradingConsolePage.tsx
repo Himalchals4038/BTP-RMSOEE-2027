@@ -55,6 +55,7 @@ import {
   Command
 } from 'lucide-react';
 import { getStocksFromIndexedDB, type StockItemRecord } from '../services/indexedDBService';
+import top1000Dataset from '../services/top1000IndianStocksDataset.json';
 
 // Code-split Trading Console sub-views via React.lazy() (Optimization 2)
 const OrderEntryView = React.lazy(() => import('./console/OrderEntryView'));
@@ -194,42 +195,49 @@ export const TradingConsolePage: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [setActiveSubTab]);
 
-  // Load stocks master dataset from IndexedDB for comprehensive multi-asset routing
+  // Load comprehensive 1,000+ Indian stocks master dataset for institutional routing
   useEffect(() => {
+    const combinedMap = new Map<string, StockItemRecord>();
+
+    // Seed all 1,000 top Indian equities from top1000IndianStocksDataset
+    (top1000Dataset as any[]).forEach(s => {
+      const ticker = s.ticker?.endsWith('.NS') || s.ticker?.endsWith('.BO') ? s.ticker : `${s.ticker || s.nse_symbol}.NS`;
+      combinedMap.set(ticker, {
+        ticker,
+        name: s.name,
+        sector: s.sector || 'NSE Equity',
+        index: s.cagr_20yr > 20 ? 'NIFTY Alpha' : 'NSE 500',
+        price: s.price,
+        changePct: 0.5,
+        high52: Number((s.price * 1.15).toFixed(2)),
+        low52: Number((s.price * 0.82).toFixed(2)),
+        lastUpdated: 'Live'
+      });
+    });
+
     getStocksFromIndexedDB().then(data => {
       if (data && data.length > 0) {
-        setStocksMasterList(data);
+        data.forEach(s => {
+          if (s.ticker && !['AAPL', 'TSLA', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'SPY', 'QQQ'].includes(s.ticker)) {
+            combinedMap.set(s.ticker, s);
+          }
+        });
       }
+      setStocksMasterList(Array.from(combinedMap.values()));
     }).catch(err => {
       console.warn('Failed to load stocks master list in TradingConsole:', err);
+      setStocksMasterList(Array.from(combinedMap.values()));
     });
   }, []);
 
-  // Helper to handle selecting asset and auto-routing appropriate Exchange
+  // Helper to handle selecting asset and auto-routing strictly to Indian Exchanges (NSE/BSE/MCX)
   const handleSelectAsset = (assetTicker: string) => {
     setSelectedAsset(assetTicker);
-    const found = assets.find(a => a.ticker === assetTicker);
+    const found = allTradableAssets.find(a => a.ticker === assetTicker);
     if (found) {
       setPrice(found.price);
-      if (found.category === 'Crypto') {
-        setExchange('Binance Exchange');
-      } else if (found.currency === '$' || found.market?.includes('NASDAQ') || found.market?.includes('NYSE')) {
-        setExchange('NYSE — New York Stock Exchange');
-      } else {
-        setExchange('NSE — National Stock Exchange');
-      }
-      return;
     }
-
-    const inMaster = stocksMasterList.find(s => s.ticker === assetTicker);
-    if (inMaster) {
-      setPrice(inMaster.price);
-      if (inMaster.index?.includes('NIFTY') || inMaster.ticker?.endsWith('.NS')) {
-        setExchange('NSE — National Stock Exchange');
-      } else {
-        setExchange('NYSE — New York Stock Exchange');
-      }
-    }
+    setExchange('NSE — National Stock Exchange');
   };
 
   // Sync selectedOrderTicker whenever clicked from global header search
@@ -637,37 +645,59 @@ export const TradingConsolePage: React.FC = () => {
     }
   };
 
-  const selectedAssetObj = useMemo(() => {
-    const found = assets.find(a => a.ticker === selectedAsset);
-    if (found) return found;
+  const allTradableAssets = useMemo(() => {
+    // 1. Strictly filter base assets to only authentic Indian securities (NSE / BSE Equities, Bonds, Gold SGB, ETFs)
+    const indianBaseAssets = assets.filter(a => {
+      if (a.category === 'Crypto' || (a.category as string) === 'US Equities') return false;
+      if (a.currency === '$') return false;
+      if (a.market?.includes('NASDAQ') || a.market?.includes('NYSE') || a.market?.includes('US Markets')) return false;
+      if (['AAPL', 'TSLA', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'SPY', 'QQQ'].includes(a.ticker)) return false;
+      return true;
+    });
 
-    const inMaster = stocksMasterList.find(s => s.ticker === selectedAsset);
-    if (inMaster) {
-      return {
-        id: inMaster.ticker.toLowerCase().replace(/[^a-z0-9]/g, ''),
-        ticker: inMaster.ticker,
-        name: inMaster.name,
-        category: inMaster.index === 'NIFTY 50' ? 'Equities' : 'US Equities',
-        market: inMaster.index === 'NIFTY 50' ? 'NSE India' : 'US Markets',
-        price: inMaster.price,
-        change24h: 0.5,
-        change24hAmount: Number((inMaster.price * 0.005).toFixed(2)),
-        annualizedReturn: 16.2,
-        annualizedVol: 21.4,
+    const existing = new Set(indianBaseAssets.map(a => a.ticker));
+
+    // 2. Map all master Indian stocks
+    const convertedFromMaster = stocksMasterList
+      .filter(s => {
+        if (!s.ticker) return false;
+        if (['AAPL', 'TSLA', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'SPY', 'QQQ'].includes(s.ticker)) return false;
+        return !existing.has(s.ticker);
+      })
+      .map(s => ({
+        id: s.ticker.toLowerCase().replace(/[^a-z0-9]/g, ''),
+        ticker: s.ticker.endsWith('.NS') || s.ticker.endsWith('.BO') ? s.ticker : `${s.ticker}.NS`,
+        name: s.name,
+        category: 'Equities',
+        sector: s.sector || 'NSE Equity',
+        index: s.index || 'NSE 500',
+        market: 'NSE India',
+        price: s.price,
+        change24h: s.changePct || 0.5,
+        change24hAmount: Number((s.price * ((s.changePct || 0.5) / 100)).toFixed(2)),
+        annualizedReturn: 16.5,
+        annualizedVol: 21.0,
         beta: 1.05,
         weight: 0,
         color: '#f97316',
-        currency: inMaster.index?.includes('NIFTY') || inMaster.ticker?.endsWith('.NS') ? '₹' : '$'
-      };
-    }
+        currency: '₹'
+      }));
+
+    return [...indianBaseAssets, ...convertedFromMaster];
+  }, [assets, stocksMasterList]);
+
+  const selectedAssetObj = useMemo(() => {
+    const found = allTradableAssets.find(a => a.ticker === selectedAsset);
+    if (found) return found;
 
     return (
-      assets.find(a => a.ticker === 'RELIANCE.NS') ||
-      assets[0] || {
+      allTradableAssets.find(a => a.ticker === 'RELIANCE.NS') ||
+      allTradableAssets[0] || {
         id: 'reliance',
         ticker: 'RELIANCE.NS',
         name: 'Reliance Industries Ltd',
         category: 'Equities',
+        sector: 'Energy, Oil & Gas',
         market: 'NSE India',
         price: 2450.0,
         change24h: 0.8,
@@ -680,55 +710,17 @@ export const TradingConsolePage: React.FC = () => {
         currency: '₹'
       }
     );
-  }, [assets, selectedAsset, stocksMasterList]);
-
-  const allTradableAssets = useMemo(() => {
-    const existing = new Set(assets.map(a => a.ticker));
-    const convertedFromMaster = stocksMasterList
-      .filter(s => !existing.has(s.ticker))
-      .map(s => ({
-        id: s.ticker.toLowerCase().replace(/[^a-z0-9]/g, ''),
-        ticker: s.ticker,
-        name: s.name,
-        category: s.index === 'NIFTY 50' ? 'Equities' : 'US Equities',
-        market: s.index === 'NIFTY 50' ? 'NSE India' : 'US Markets',
-        price: s.price,
-        change24h: 0.5,
-        change24hAmount: Number((s.price * 0.005).toFixed(2)),
-        annualizedReturn: 16.2,
-        annualizedVol: 21.4,
-        beta: 1.05,
-        weight: 0,
-        color: '#f97316',
-        currency: s.index?.includes('NIFTY') || s.ticker?.endsWith('.NS') ? '₹' : '$'
-      }));
-    return [...assets, ...convertedFromMaster];
-  }, [assets, stocksMasterList]);
+  }, [allTradableAssets, selectedAsset]);
 
   const filteredAssets = allTradableAssets;
 
   const getExchangeOptions = () => {
-    if (selectedAssetObj.category === 'Crypto') {
-      return [
-        { id: 'Binance Exchange', label: 'Binance Exchange (Crypto Spot & Derivatives)' },
-        { id: 'Binance Spot', label: 'Binance Spot Trading' },
-        { id: 'Binance Futures', label: 'Binance USDS-M Futures' },
-        { id: 'Coinbase Global', label: 'Coinbase Global Pro' }
-      ];
-    } else if (selectedAssetObj.currency === '$' || selectedAssetObj.market.includes('NASDAQ') || selectedAssetObj.market.includes('NYSE')) {
-      return [
-        { id: 'NYSE — New York Stock Exchange', label: 'NYSE — New York Stock Exchange' },
-        { id: 'NASDAQ — US Tech Market', label: 'NASDAQ — US Tech Market' },
-        { id: 'CBOE — US Options', label: 'CBOE — US Equity Options' }
-      ];
-    } else {
-      return [
-        { id: 'NSE — National Stock Exchange', label: 'NSE — National Stock Exchange' },
-        { id: 'BSE — Bombay Stock Exchange', label: 'BSE — Bombay Stock Exchange' },
-        { id: 'NFO — National Futures & Options', label: 'NFO — Derivatives (Futures & Options)' },
-        { id: 'MCX — Multi Commodity Exchange', label: 'MCX — Commodity Derivatives' }
-      ];
-    }
+    return [
+      { id: 'NSE — National Stock Exchange', label: 'NSE — National Stock Exchange (Equities & Derivatives)' },
+      { id: 'BSE — Bombay Stock Exchange', label: 'BSE — Bombay Stock Exchange' },
+      { id: 'NFO — National Futures & Options', label: 'NFO — Derivatives (Futures & Options)' },
+      { id: 'MCX — Multi Commodity Exchange', label: 'MCX — Commodity Derivatives' }
+    ];
   };
 
   const handleInvestFd = (issuer: string) => {

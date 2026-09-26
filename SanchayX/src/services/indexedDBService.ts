@@ -31,7 +31,7 @@ export interface SmartPortfolioRecord {
 export interface StockItemRecord {
   ticker: string;
   name: string;
-  index: 'NIFTY 50' | 'S&P 500';
+  index: 'NIFTY 50' | 'S&P 500' | string;
   sector: string;
   price: number;
   changePct: number;
@@ -530,7 +530,13 @@ export const getStocksFromIndexedDB = async (): Promise<StockItemRecord[]> => {
     return new Promise((resolve, reject) => {
       request.onsuccess = () => {
         if (request.result && request.result.length >= fallbackData.length) {
-          resolve(request.result);
+          // Cleanse legacy US stocks if any were previously stored in IndexedDB
+          const US_TICKERS = ['AAPL', 'TSLA', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'SPY', 'QQQ'];
+          const filtered = (request.result as StockItemRecord[]).filter(s => {
+            const t = (s.ticker || '').toUpperCase();
+            return !US_TICKERS.includes(t) && !s.index?.includes('US') && !s.sector?.includes('US');
+          });
+          resolve(filtered);
         } else {
           fallbackData.forEach(s => store.put(s));
           resolve(fallbackData);
